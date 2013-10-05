@@ -8,8 +8,8 @@ namespace MaxMind.MaxMindDb
 {
     public enum FileAccessMode
     {
-        MEMORY_MAPPED,
-        MEMORY
+        MemoryMapped,
+        Memory
     }
 
     public class MaxMindDbReader : IDisposable
@@ -38,13 +38,13 @@ namespace MaxMind.MaxMindDb
 
         #endregion
 
-        public MaxMindDbReader(string file) : this(file, FileAccessMode.MEMORY_MAPPED) { }
+        public MaxMindDbReader(string file) : this(file, FileAccessMode.MemoryMapped) { }
 
         public MaxMindDbReader(string file, FileAccessMode mode)
         {
             this.FileName = file;
 
-            if (mode == FileAccessMode.MEMORY)
+            if (mode == FileAccessMode.Memory)
                 this.fs = new FileStream(this.FileName, FileMode.Open, FileAccess.Read);
             else
                 this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
