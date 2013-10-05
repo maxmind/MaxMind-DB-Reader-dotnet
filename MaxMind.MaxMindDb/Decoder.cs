@@ -65,7 +65,7 @@ namespace MaxMind.MaxMindDb
             {
                 int nextByte = ReadOne(offset);
                 int typeNum = nextByte + 7;
-                type = GetObjectType(typeNum);
+                type = (ObjectType)typeNum;
                 offset++;
             }
 
@@ -160,20 +160,8 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private ObjectType FromControlByte(int b)
         {
-            byte p = (byte)((0xFF & b) >> 5);
-            string[] names = Enum.GetNames(typeof(ObjectType));
-            return (ObjectType)Enum.Parse(typeof(ObjectType), names[p]);
-        }
-
-        /// <summary>
-        /// Gets the type of the object.
-        /// </summary>
-        /// <param name="b">The attribute.</param>
-        /// <returns></returns>
-        private ObjectType GetObjectType(int b)
-        {
-            string[] names = Enum.GetNames(typeof(ObjectType));
-            return (ObjectType)Enum.Parse(typeof(ObjectType), names[b]);
+            int p = ((0xFF & b) >> 5);
+            return (ObjectType) p;
         }
 
         /// <summary>
