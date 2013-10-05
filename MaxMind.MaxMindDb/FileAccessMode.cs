@@ -1,3 +1,0 @@
-﻿namespace MaxMind.MaxMindDb
-{
-}
