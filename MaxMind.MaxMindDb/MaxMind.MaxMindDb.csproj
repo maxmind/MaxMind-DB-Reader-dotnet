@@ -8,8 +8,8 @@
     <ProjectGuid>{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MaxMind.GeoIP2</RootNamespace>
-    <AssemblyName>MaxMind.GeoIP2</AssemblyName>
+    <RootNamespace>MaxMind.MaxMindDb</RootNamespace>
+    <AssemblyName>MaxMind.MaxMindDb</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>

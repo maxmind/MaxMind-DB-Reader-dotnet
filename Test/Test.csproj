@@ -70,9 +70,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MaxMind.GeoIP2\MaxMind.GeoIP2.csproj">
+    <ProjectReference Include="..\MaxMind.MaxMindDb\MaxMind.MaxMindDb.csproj">
       <Project>{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}</Project>
-      <Name>MaxMind.GeoIP2</Name>
+      <Name>MaxMind.MaxMindDb</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
