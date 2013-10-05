@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MaxMind.MaxMindDb
 {
@@ -51,8 +52,8 @@ namespace MaxMind.MaxMindDb
 
             int start = this.FindMetadataStart();
             Decoder meta_decode = new Decoder(fs, 0);
-            MaxMindDbResult result = meta_decode.Decode(start);
-            this.Metadata = Deserialize<Metadata>(result.ToJson());
+            Result result = meta_decode.Decode(start);
+            this.Metadata = Deserialize<Metadata>(result.Node);
             this.Decoder = new Decoder(fs, this.Metadata.SearchTreeSize + DATA_SECTION_SEPARATOR_SIZE);
         }
 
@@ -61,7 +62,7 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="address">The address.</param>
         /// <returns></returns>
-        public Response Find(string address)
+        public JToken Find(string address)
         {
             return Find(IPAddress.Parse(address));
         }
@@ -71,14 +72,13 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="address">The address.</param>
         /// <returns></returns>
-        public Response Find(IPAddress address)
+        public JToken Find(IPAddress address)
         {
             int pointer = this.FindAddressInTree(address);
             if (pointer == 0)
                 return null;
 
-            MaxMindDbResult result = ResolveDataPointer(pointer);
-            return Deserialize<Response>(result.ToJson());
+            return ResolveDataPointer(pointer);
         }
 
         #region Private
@@ -88,10 +88,10 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="pointer">The pointer.</param>
         /// <returns></returns>
-        private MaxMindDbResult ResolveDataPointer(int pointer)
+        private JToken ResolveDataPointer(int pointer)
         {
             int resolved = (int)((pointer - this.Metadata.NodeCount) + this.Metadata.SearchTreeSize);
-            return this.Decoder.Decode(resolved);
+            return this.Decoder.Decode(resolved).Node;
         }
 
         /// <summary>
@@ -138,9 +138,10 @@ namespace MaxMind.MaxMindDb
         /// <typeparam name="T"></typeparam>
         /// <param name="value">The value.</param>
         /// <returns></returns>
-        private T Deserialize<T>(string value)
+        private T Deserialize<T>(JToken value)
         {
-            return JsonConvert.DeserializeObject<T>(value);
+            var serializer = new JsonSerializer();
+            return serializer.Deserialize<T>(new JTokenReader(value));
         }
 
         /// <summary>
