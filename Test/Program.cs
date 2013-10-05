@@ -10,7 +10,7 @@ namespace MaxMind.MaxMindDb.Benchmark
         {
             DateTime start = DateTime.UtcNow;
 
-            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MEMORY_MAPPED);
+            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
 
             var tmp = db.Find("202.196.224.1");
 
@@ -24,7 +24,7 @@ namespace MaxMind.MaxMindDb.Benchmark
 
             DateTime start = DateTime.UtcNow;
 
-            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-Country.mmdb", FileAccessMode.MEMORY);
+            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-Country.mmdb", FileAccessMode.Memory);
 
             IPAddress address = IPAddress.None;
 
@@ -45,7 +45,7 @@ namespace MaxMind.MaxMindDb.Benchmark
 
             start = DateTime.UtcNow;
 
-            db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MEMORY);
+            db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.Memory);
 
             address = IPAddress.None;
 
@@ -66,7 +66,7 @@ namespace MaxMind.MaxMindDb.Benchmark
 
             start = DateTime.UtcNow;
 
-            db = new MaxMindDbReader("GeoLite2-Country.mmdb", FileAccessMode.MEMORY_MAPPED);
+            db = new MaxMindDbReader("GeoLite2-Country.mmdb", FileAccessMode.MemoryMapped);
 
             address = IPAddress.None;
 
@@ -87,7 +87,7 @@ namespace MaxMind.MaxMindDb.Benchmark
 
             start = DateTime.UtcNow;
 
-            db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MEMORY_MAPPED);
+            db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
 
             address = IPAddress.None;
 
@@ -130,7 +130,7 @@ namespace MaxMind.MaxMindDb.Benchmark
         {
             DateTime start = DateTime.UtcNow;
 
-            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MEMORY_MAPPED);
+            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
 
             IPAddress address = IPAddress.None;
 
