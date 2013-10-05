@@ -7,7 +7,7 @@ namespace MaxMind.MaxMindDb
 {
     public enum ObjectType
     {
-        EXTENDED, POINTER, UTF8_STRING, DOUBLE, BYTES, UINT16, UINT32, MAP, INT32, UINT64, UINT128, ARRAY, CONTAINER, END_MARKER, BOOLEAN, FLOAT
+        Extended, Pointer, Utf8String, Double, Bytes, Uint16, Uint32, Map, Int32, Uint64, Uint128, Array, Container, EndMarker, Boolean, Float
     }
 
     public class Decoder
@@ -40,7 +40,7 @@ namespace MaxMind.MaxMindDb
 
             ObjectType type = FromControlByte(ctrlByte);
 
-            if (type == ObjectType.POINTER)
+            if (type == ObjectType.Pointer)
             {
                 MaxMindDbResult pointer = this.decodePointer(ctrlByte, offset);
                 MaxMindDbResult result = this.Decode(Convert.ToInt32(pointer.Node.Value));
@@ -48,7 +48,7 @@ namespace MaxMind.MaxMindDb
                 return result;
             }
 
-            if (type == ObjectType.EXTENDED)
+            if (type == ObjectType.Extended)
             {
                 int nextByte = ReadOne(offset);
                 int typeNum = nextByte + 7;
@@ -111,29 +111,29 @@ namespace MaxMind.MaxMindDb
 
             switch (type)
             {
-                case ObjectType.MAP:
+                case ObjectType.Map:
                     return decodeMap(size, offset);
-                case ObjectType.ARRAY:
+                case ObjectType.Array:
                     return decodeArray(size, offset);
-                case ObjectType.BOOLEAN:
+                case ObjectType.Boolean:
                     return MaxMindDbResult.Create<bool>(decodeBoolean(buffer), offset);
-                case ObjectType.UTF8_STRING:
+                case ObjectType.Utf8String:
                     return MaxMindDbResult.Create<string>(decodeString(buffer), new_offset);
-                case ObjectType.DOUBLE:
+                case ObjectType.Double:
                     return MaxMindDbResult.Create<double>(decodeDouble(buffer), new_offset);
-                case ObjectType.FLOAT:
+                case ObjectType.Float:
                     return MaxMindDbResult.Create<float>(decodeFloat(buffer), new_offset);
-                case ObjectType.BYTES:
+                case ObjectType.Bytes:
                     return MaxMindDbResult.Create<byte[]>(buffer, new_offset);
-                case ObjectType.UINT16:
+                case ObjectType.Uint16:
                     return MaxMindDbResult.Create<int>(decodeInteger(buffer), new_offset);
-                case ObjectType.UINT32:
+                case ObjectType.Uint32:
                     return MaxMindDbResult.Create<long>(decodeLong(buffer), new_offset);
-                case ObjectType.INT32:
+                case ObjectType.Int32:
                     return MaxMindDbResult.Create<int>(decodeInteger(buffer), new_offset);
-                case ObjectType.UINT64:
+                case ObjectType.Uint64:
                     return MaxMindDbResult.Create<long>(decodeUint64(buffer), new_offset);
-                case ObjectType.UINT128:
+                case ObjectType.Uint128:
                     return MaxMindDbResult.Create<BigInteger>(decodeBigInteger(buffer), new_offset);
                 default:
                     throw new Exception("Unable to handle type!");
