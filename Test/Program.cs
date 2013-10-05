@@ -16,7 +16,7 @@ namespace MaxMind.MaxMindDb.Benchmark
 
             DateTime stop = DateTime.UtcNow;
             TimeSpan span = stop.Subtract(start);
-            Debug.WriteLine(String.Format("test #x - {0}", span.Duration()));
+            Console.WriteLine(String.Format("test #x - {0}", span.Duration()));
 
 #if false
 
