@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
     using DType = System.UInt32; // This could be UInt32, UInt16 or Byte; not UInt64.
 

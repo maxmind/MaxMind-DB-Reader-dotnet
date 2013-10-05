@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Text;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
-    public class MaxMindDbDecoder
+    public enum ObjectType
+    {
+        EXTENDED, POINTER, UTF8_STRING, DOUBLE, BYTES, UINT16, UINT32, MAP, INT32, UINT64, UINT128, ARRAY, CONTAINER, END_MARKER, BOOLEAN, FLOAT
+    }
+
+    public class Decoder
     {
         #region Private
 
@@ -18,7 +22,7 @@ namespace MaxMind.GeoIP2
 
         #endregion
 
-        public MaxMindDbDecoder(Stream stream, long pointerBase)
+        public Decoder(Stream stream, long pointerBase)
         {
             this.pointerBase = pointerBase;
             this.fs = stream;
@@ -134,8 +138,6 @@ namespace MaxMind.GeoIP2
                 default:
                     throw new Exception("Unable to handle type!");
             }
-
-            return null;
         }
 
         /// <summary>
@@ -399,10 +401,5 @@ namespace MaxMind.GeoIP2
         }
 
         #endregion
-    }
-
-    public enum ObjectType
-    {
-        EXTENDED, POINTER, UTF8_STRING, DOUBLE, BYTES, UINT16, UINT32, MAP, INT32, UINT64, UINT128, ARRAY, CONTAINER, END_MARKER, BOOLEAN, FLOAT
     }
 }

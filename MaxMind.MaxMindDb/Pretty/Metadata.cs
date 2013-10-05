@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
     [JsonObject(MemberSerialization.OptIn)]
     public class Metadata

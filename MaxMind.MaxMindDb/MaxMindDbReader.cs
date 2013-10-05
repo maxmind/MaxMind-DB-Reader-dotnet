@@ -1,15 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Diagnostics;
 using Newtonsoft.Json;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
+    public enum FileAccessMode
+    {
+        MEMORY_MAPPED,
+        MEMORY
+    }
+
     public class MaxMindDbReader : IDisposable
     {
         /// <summary>
@@ -32,7 +34,7 @@ namespace MaxMind.GeoIP2
 
         private Stream fs { get; set; }
 
-        private MaxMindDbDecoder Decoder { get; set; }
+        private Decoder Decoder { get; set; }
 
         #endregion
 
@@ -48,10 +50,10 @@ namespace MaxMind.GeoIP2
                 this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
 
             int start = this.FindMetadataStart();
-            MaxMindDbDecoder meta_decode = new MaxMindDbDecoder(fs, 0);
+            Decoder meta_decode = new Decoder(fs, 0);
             MaxMindDbResult result = meta_decode.Decode(start);
             this.Metadata = Deserialize<Metadata>(result.ToJson());
-            this.Decoder = new MaxMindDbDecoder(fs, this.Metadata.SearchTreeSize + DATA_SECTION_SEPARATOR_SIZE);
+            this.Decoder = new Decoder(fs, this.Metadata.SearchTreeSize + DATA_SECTION_SEPARATOR_SIZE);
         }
 
         /// <summary>
@@ -180,7 +182,7 @@ namespace MaxMind.GeoIP2
             if (size == 24)
             {
                 byte[] buffer = ReadMany(baseOffset + index * 3, 3);
-                return MaxMindDbDecoder.DecodeInteger(buffer);
+                return Decoder.DecodeInteger(buffer);
             }
             else if (size == 28)
             {
@@ -188,12 +190,12 @@ namespace MaxMind.GeoIP2
                 middle = (index == 0) ? (0xF0 & middle) >> 4 : 0x0F & middle;
 
                 byte[] buffer = ReadMany(baseOffset + index * 4, 3);
-                return MaxMindDbDecoder.DecodeInteger(middle, buffer);
+                return Decoder.DecodeInteger(middle, buffer);
             }
             else if (size == 32)
             {
                 byte[] buffer = ReadMany(baseOffset + index * 4, 4);
-                return MaxMindDbDecoder.DecodeInteger(buffer);
+                return Decoder.DecodeInteger(buffer);
             }
 
             return 1;
@@ -277,11 +279,5 @@ namespace MaxMind.GeoIP2
         }
 
         #endregion
-    }
-
-    public enum FileAccessMode
-    {
-        MEMORY_MAPPED,
-        MEMORY
     }
 }

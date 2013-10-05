@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
     public class Country
     {

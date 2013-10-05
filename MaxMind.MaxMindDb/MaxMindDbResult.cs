@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MaxMind.GeoIP2
+namespace MaxMind.MaxMindDb
 {
     public class MaxMindDbResult
     {

@@ -8,8 +8,8 @@
     <ProjectGuid>{B9B6E140-C381-4C8B-A41E-117FDAA14F35}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Test</RootNamespace>
-    <AssemblyName>Test</AssemblyName>
+    <RootNamespace>MaxMind.MaxMindDb.Benchmark</RootNamespace>
+    <AssemblyName>MaxMind.MaxMindDb.Benchmark</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>
@@ -74,6 +74,11 @@
       <Project>{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}</Project>
       <Name>MaxMind.MaxMindDb</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GeoLite2-City.mmdb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
