@@ -90,12 +90,7 @@
     <Compile Include="BigInteger.cs" />
     <Compile Include="Decoder.cs" />
     <Compile Include="MaxMindDbReader.cs" />
-    <Compile Include="Pretty\Location.cs" />
-    <Compile Include="Pretty\Response.cs" />
-    <Compile Include="Pretty\Country.cs" />
-    <Compile Include="Pretty\City.cs" />
-    <Compile Include="Pretty\Region.cs" />
-    <Compile Include="Pretty\Metadata.cs" />
+    <Compile Include="Metadata.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
