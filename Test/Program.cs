@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
 using System.Diagnostics;
-using System.Threading;
-using MaxMind.GeoIP2;
+using System.Net;
 
-namespace Test
+namespace MaxMind.MaxMindDb.Benchmark
 {
     class Program
     {
@@ -15,7 +10,7 @@ namespace Test
         {
             DateTime start = DateTime.UtcNow;
 
-            MaxMindDbReader db = new MaxMindDbReader("c:/temp/content.mmdb", FileAccessMode.MEMORY_MAPPED);
+            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MEMORY_MAPPED);
 
             var tmp = db.Find("202.196.224.1");
 
