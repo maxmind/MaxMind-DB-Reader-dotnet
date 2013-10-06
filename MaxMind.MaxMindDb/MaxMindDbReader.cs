@@ -7,6 +7,8 @@ using Newtonsoft.Json.Linq;
 
 namespace MaxMind.MaxMindDb
 {
+    using Winterdom.IO.FileMap;
+
     public enum FileAccessMode
     {
         MemoryMapped,
@@ -45,10 +47,13 @@ namespace MaxMind.MaxMindDb
         {
             this.FileName = file;
 
-            if (mode == FileAccessMode.Memory)
-                this.fs = new FileStream(this.FileName, FileMode.Open, FileAccess.Read);
+            if (mode == FileAccessMode.Memory) this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
             else
-                this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
+            {
+                var fileLength = (int)new FileInfo(file).Length;
+                var memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadWrite, fileLength);
+                fs = memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
+            }
 
             int start = this.FindMetadataStart();
             Decoder meta_decode = new Decoder(fs, 0);
