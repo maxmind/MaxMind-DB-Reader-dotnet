@@ -8,16 +8,21 @@ namespace MaxMind.MaxMindDb.Benchmark
     {
         static void Main(string[] args)
         {
-            DateTime start = DateTime.UtcNow;
+            var reader = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
+            var count = 1000000;
+            var rand = new Random();
+            var start = DateTime.Now;
+            for (int i = 0; i < count; i++)
+            {
+                var ip = new IPAddress(rand.Next(int.MaxValue));
+                if(i % 50000 == 0)
+                    Console.WriteLine(i + " " + ip);
 
-            MaxMindDbReader db = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
+                var resp = reader.Find(ip);
+            }
 
-            var tmp = db.Find("202.196.224.1");
-
-            DateTime stop = DateTime.UtcNow;
-            TimeSpan span = stop.Subtract(start);
-            Console.WriteLine(String.Format("test #x - {0}", span.Duration()));
-            Console.WriteLine(tmp.ToString());
+            var stop = DateTime.Now;
+            Console.WriteLine("Requests per second: " + count/(stop-start).TotalSeconds);
 
 #if false
 
