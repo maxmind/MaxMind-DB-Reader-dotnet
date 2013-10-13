@@ -19,12 +19,48 @@ namespace MaxMind.MaxMindDb.Test
             {
                 foreach (var ipVersion in new int[]{4, 6})
                 {
-                    var reader = new MaxMindDbReader("..\\..\\TestData\\MaxMind-DB\\test-data\\MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    var file = "..\\..\\TestData\\MaxMind-DB\\test-data\\MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
+                    var reader = new MaxMindDbReader(file);
                     using (reader)
                     {
                         TestMetadata(reader, ipVersion, recordSize);
+
+                        if (ipVersion == 4)
+                        {
+                            TestIPV4(reader, file);
+                        }
                     }
                 }
+            }
+        }
+
+        private void TestIPV4(MaxMindDbReader reader, string file)
+        {
+            for (int i = 0; i <= 5; i++)
+            {
+                var address = "1.1.1." + (int)Math.Pow(2, i);
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address));
+            }
+
+            var pairs = new Dictionary<string, string>()
+                        {
+                            {"1.1.1.3", "1.1.1.2"},
+                            {"1.1.1.5", "1.1.1.4"},
+                            {"1.1.1.7", "1.1.1.4"},
+                            {"1.1.1.9", "1.1.1.8"},
+                            {"1.1.1.15", "1.1.1.8"},
+                            {"1.1.1.17", "1.1.1.16"},
+                            {"1.1.1.31", "1.1.1.16"}
+                        };
+
+            foreach (var address in pairs.Keys)
+            {
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]));
+            }
+
+            foreach (string ip in new [] { "1.1.1.33", "255.254.253.123" })
+            {
+                Assert.That(reader.Find(ip), Is.Null);
             }
         }
 
