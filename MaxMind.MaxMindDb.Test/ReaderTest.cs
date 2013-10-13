@@ -40,14 +40,14 @@ namespace MaxMind.MaxMindDb.Test
             }
         }
 
-        //[Test]
-        //public void NoIPV4SearchTree()
-        //{
-        //    var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb");
+        [Test]
+        public void NoIPV4SearchTree()
+        {
+            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb");
 
-        //    Assert.That(reader.Find("1.1.1.1").Value<string>("ip"), Is.EqualTo("::/64"));
-        //    Assert.That(reader.Find("192.1.1.1").Value<string>("ip"), Is.EqualTo("::/64"));
-        //}
+            Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+            Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+        }
 
         [Test]
         public void TestDecodingTypes()
