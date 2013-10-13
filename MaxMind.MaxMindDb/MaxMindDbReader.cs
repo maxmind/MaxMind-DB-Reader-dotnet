@@ -56,7 +56,7 @@ namespace MaxMind.MaxMindDb
             }
 
             int start = this.FindMetadataStart();
-            Decoder meta_decode = new Decoder(fs, 0);
+            Decoder meta_decode = new Decoder(fs, start);
             Result result = meta_decode.Decode(start);
             this.Metadata = Deserialize<Metadata>(result.Node);
             this.Decoder = new Decoder(fs, this.Metadata.SearchTreeSize + DATA_SECTION_SEPARATOR_SIZE);
