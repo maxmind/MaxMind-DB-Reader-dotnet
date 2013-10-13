@@ -137,7 +137,7 @@ namespace MaxMind.MaxMindDb
                 case ObjectType.Float:
                     return new Result(decodeFloat(buffer), new_offset);
                 case ObjectType.Bytes:
-                    return new Result(new JArray(buffer), new_offset);
+                    return new Result(new JValue(buffer), new_offset);
                 case ObjectType.Uint16:
                     return new Result(decodeInteger(buffer), new_offset);
                 case ObjectType.Uint32:
