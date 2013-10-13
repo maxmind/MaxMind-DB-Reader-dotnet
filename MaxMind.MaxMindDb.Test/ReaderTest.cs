@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MaxMind.MaxMindDb.Test
 {
-    using System.Runtime.CompilerServices;
-
     using NUnit.Framework;
 
     [TestFixture]
@@ -39,7 +35,7 @@ namespace MaxMind.MaxMindDb.Test
             for (int i = 0; i <= 5; i++)
             {
                 var address = "1.1.1." + (int)Math.Pow(2, i);
-                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address));
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address), string.Format("Did not find expected data record for {0} in {1}", address, file));
             }
 
             var pairs = new Dictionary<string, string>()
@@ -55,12 +51,12 @@ namespace MaxMind.MaxMindDb.Test
 
             foreach (var address in pairs.Keys)
             {
-                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]));
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]), string.Format("Did not find expected data record for {0} in {1}", address, file));
             }
 
             foreach (string ip in new [] { "1.1.1.33", "255.254.253.123" })
             {
-                Assert.That(reader.Find(ip), Is.Null);
+                Assert.That(reader.Find(ip), Is.Null, string.Format("Did not find expected data record for {0} in {1}", ip, file));
             }
         }
 
