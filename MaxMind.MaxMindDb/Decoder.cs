@@ -213,6 +213,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeDouble(byte[] buffer)
         {
+            Array.Reverse(buffer);
             return new JValue(BitConverter.ToDouble(buffer, 0));
         }
 
@@ -223,6 +224,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeFloat(byte[] buffer)
         {
+            Array.Reverse(buffer);
             return new JValue(BitConverter.ToSingle(buffer, 0));
         }
 
