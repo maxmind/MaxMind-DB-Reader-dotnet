@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="PointerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReaderTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
