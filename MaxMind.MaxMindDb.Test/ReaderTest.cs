@@ -58,7 +58,7 @@ namespace MaxMind.MaxMindDb.Test
 
             Assert.That(record.Value<bool>("boolean"), Is.True);
 
-            Assert.That(record["bytes"].Value<byte[]>(0), Is.EquivalentTo(new byte[]{0,0,0, (byte)42}));
+            Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[]{0,0,0, (byte)42}));
 
             Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
