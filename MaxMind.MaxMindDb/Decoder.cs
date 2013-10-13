@@ -223,7 +223,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeFloat(byte[] buffer)
         {
-            return new JValue((float)BitConverter.ToDouble(buffer, 0));
+            return new JValue(BitConverter.ToSingle(buffer, 0));
         }
 
         /// <summary>
@@ -343,9 +343,9 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeBigInteger(byte[] buffer)
+        private JToken decodeBigInteger(byte[] buffer)
         {
-            return new JValue(new BigInteger(buffer));
+            return JObject.FromObject(new BigInteger(buffer));
         }
 
         /// <summary>
