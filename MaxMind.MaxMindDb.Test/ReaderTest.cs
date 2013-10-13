@@ -5,11 +5,15 @@ namespace MaxMind.MaxMindDb.Test
 {
     using System.Linq;
 
+    using Newtonsoft.Json.Linq;
+
     using NUnit.Framework;
 
     [TestFixture]
     public class ReaderTest
     {
+        private const string TEST_DATA_ROOT = "..\\..\\TestData\\MaxMind-DB\\test-data\\";
+
         [Test]
         public void Test()
         {
@@ -17,7 +21,7 @@ namespace MaxMind.MaxMindDb.Test
             {
                 foreach (var ipVersion in new int[]{4, 6})
                 {
-                    var file = "..\\..\\TestData\\MaxMind-DB\\test-data\\MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
+                    var file = TEST_DATA_ROOT + "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
                     var reader = new MaxMindDbReader(file);
                     using (reader)
                     {
@@ -34,6 +38,51 @@ namespace MaxMind.MaxMindDb.Test
                     }
                 }
             }
+        }
+
+        //[Test]
+        //public void NoIPV4SearchTree()
+        //{
+        //    var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb");
+
+        //    Assert.That(reader.Find("1.1.1.1").Value<string>("ip"), Is.EqualTo("::/64"));
+        //    Assert.That(reader.Find("192.1.1.1").Value<string>("ip"), Is.EqualTo("::/64"));
+        //}
+
+        [Test]
+        public void TestDecodingTypes()
+        {
+            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb");
+
+            var record = reader.Find("::1.1.1.0");
+
+            Assert.That(record.Value<bool>("boolean"), Is.True);
+
+            Assert.That(record["bytes"].Value<byte[]>(0), Is.EquivalentTo(new byte[]{0,0,0, (byte)42}));
+
+            Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
+
+            var array = record["array"];
+            Assert.That(array, Is.InstanceOf<JArray>());
+            Assert.That(array.Count(), Is.EqualTo(3));
+            Assert.That(array[0].Value<int>(), Is.EqualTo(1));
+            Assert.That(array[1].Value<int>(), Is.EqualTo(2));
+            Assert.That(array[2].Value<int>(), Is.EqualTo(3));
+
+            var map = record["map"];
+            Assert.That(map, Is.InstanceOf<JObject>());
+            Assert.That(map.Count(), Is.EqualTo(1));
+
+            var mapX = map["mapX"];
+            Assert.That(mapX.Count(), Is.EqualTo(2));
+
+            var arrayX = mapX["arrayX"];
+            Assert.That(arrayX.Count(), Is.EqualTo(3));
+            Assert.That(arrayX[0].Value<int>(), Is.EqualTo(7));
+            Assert.That(arrayX[1].Value<int>(), Is.EqualTo(8));
+            Assert.That(arrayX[2].Value<int>(), Is.EqualTo(9));
+
+            Assert.That(mapX.Value<string>("utf8_stringX"), Is.EqualTo("hello"));
         }
 
         private void TestIPV6(MaxMindDbReader reader, string file)
