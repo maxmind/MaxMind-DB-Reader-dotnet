@@ -129,7 +129,7 @@ namespace MaxMind.MaxMindDb
                 case ObjectType.Array:
                     return decodeArray(size, offset);
                 case ObjectType.Boolean:
-                    return new Result(decodeBoolean(buffer), offset);
+                    return new Result(decodeBoolean(size), offset);
                 case ObjectType.Utf8String:
                     return new Result(decodeString(buffer), new_offset);
                 case ObjectType.Double:
@@ -201,9 +201,9 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeBoolean(byte[] buffer)
+        private JValue decodeBoolean(int size)
         {
-            return new JValue(BitConverter.ToBoolean(buffer, 0));
+            return new JValue(size != 0);
         }
 
         /// <summary>
