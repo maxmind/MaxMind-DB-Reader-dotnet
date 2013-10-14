@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace MaxMind.MaxMindDb
 {
@@ -294,6 +295,7 @@ namespace MaxMind.MaxMindDb
     ///		}
     ///	</code>
     /// </example>
+    [JsonConverter(typeof(BigIntegerJsonConverter))]
     public class BigInteger
     {
         private DigitsArray m_digits;
