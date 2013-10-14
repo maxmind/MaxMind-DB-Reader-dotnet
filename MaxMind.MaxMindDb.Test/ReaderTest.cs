@@ -44,81 +44,87 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void NoIPV4SearchTree()
         {
-            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb");
-
-            Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
-            Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb"))
+            {
+                Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+                Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+            }
         }
 
         [Test]
         public void TestDecodingTypes()
         {
-            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb");
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            {
 
-            var record = reader.Find("::1.1.1.0");
+                var record = reader.Find("::1.1.1.0");
 
-            Assert.That(record.Value<bool>("boolean"), Is.True);
+                Assert.That(record.Value<bool>("boolean"), Is.True);
 
-            Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[]{0,0,0, (byte)42}));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] {0, 0, 0, (byte) 42}));
 
-            Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
+                Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
-            var array = record["array"];
-            Assert.That(array, Is.InstanceOf<JArray>());
-            Assert.That(array.Count(), Is.EqualTo(3));
-            Assert.That(array[0].Value<int>(), Is.EqualTo(1));
-            Assert.That(array[1].Value<int>(), Is.EqualTo(2));
-            Assert.That(array[2].Value<int>(), Is.EqualTo(3));
+                var array = record["array"];
+                Assert.That(array, Is.InstanceOf<JArray>());
+                Assert.That(array.Count(), Is.EqualTo(3));
+                Assert.That(array[0].Value<int>(), Is.EqualTo(1));
+                Assert.That(array[1].Value<int>(), Is.EqualTo(2));
+                Assert.That(array[2].Value<int>(), Is.EqualTo(3));
 
-            var map = record["map"];
-            Assert.That(map, Is.InstanceOf<JObject>());
-            Assert.That(map.Count(), Is.EqualTo(1));
+                var map = record["map"];
+                Assert.That(map, Is.InstanceOf<JObject>());
+                Assert.That(map.Count(), Is.EqualTo(1));
 
-            var mapX = map["mapX"];
-            Assert.That(mapX.Count(), Is.EqualTo(2));
+                var mapX = map["mapX"];
+                Assert.That(mapX.Count(), Is.EqualTo(2));
 
-            var arrayX = mapX["arrayX"];
-            Assert.That(arrayX.Count(), Is.EqualTo(3));
-            Assert.That(arrayX[0].Value<int>(), Is.EqualTo(7));
-            Assert.That(arrayX[1].Value<int>(), Is.EqualTo(8));
-            Assert.That(arrayX[2].Value<int>(), Is.EqualTo(9));
+                var arrayX = mapX["arrayX"];
+                Assert.That(arrayX.Count(), Is.EqualTo(3));
+                Assert.That(arrayX[0].Value<int>(), Is.EqualTo(7));
+                Assert.That(arrayX[1].Value<int>(), Is.EqualTo(8));
+                Assert.That(arrayX[2].Value<int>(), Is.EqualTo(9));
 
-            Assert.That(mapX.Value<string>("utf8_stringX"), Is.EqualTo("hello"));
+                Assert.That(mapX.Value<string>("utf8_stringX"), Is.EqualTo("hello"));
 
-            Assert.AreEqual(42.123456, record.Value<double>("double"),0.000000001);
-            Assert.AreEqual(1.1, record.Value<float>("float"), 0.000001);
-            Assert.That(record.Value<int>("int32"), Is.EqualTo(-268435456));
-            Assert.That(record.Value<int>("uint16"), Is.EqualTo(100));
-            Assert.That(record.Value<int>("uint32"), Is.EqualTo(268435456));
-            Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(1152921504606846976));
-            Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger("1329227995784915872903807060280344576")));
+                Assert.AreEqual(42.123456, record.Value<double>("double"), 0.000000001);
+                Assert.AreEqual(1.1, record.Value<float>("float"), 0.000001);
+                Assert.That(record.Value<int>("int32"), Is.EqualTo(-268435456));
+                Assert.That(record.Value<int>("uint16"), Is.EqualTo(100));
+                Assert.That(record.Value<int>("uint32"), Is.EqualTo(268435456));
+                Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(1152921504606846976));
+                Assert.That(record["uint128"].ToObject<BigInteger>(),
+                    Is.EqualTo(new BigInteger("1329227995784915872903807060280344576")));
+            }
         }
 
         [Test]
         public void TestZeros()
         {
-            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb");
-            var record = reader.Find("::");
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            {
+                var record = reader.Find("::");
 
-            Assert.That(record.Value<bool>("boolean"), Is.False);
+                Assert.That(record.Value<bool>("boolean"), Is.False);
 
-            Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[0]));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[0]));
 
-            Assert.That(record.Value<string>("utf8_string"), Is.EqualTo(""));
+                Assert.That(record.Value<string>("utf8_string"), Is.EqualTo(""));
 
-            Assert.That(record["array"], Is.InstanceOf<JArray>());
-            Assert.That(record["array"].Count(), Is.EqualTo(0));
+                Assert.That(record["array"], Is.InstanceOf<JArray>());
+                Assert.That(record["array"].Count(), Is.EqualTo(0));
 
-            Assert.That(record["map"], Is.InstanceOf<JObject>());
-            Assert.That(record["map"].Count(), Is.EqualTo(0));
+                Assert.That(record["map"], Is.InstanceOf<JObject>());
+                Assert.That(record["map"].Count(), Is.EqualTo(0));
 
-            Assert.AreEqual(0, record.Value<double>("double"), 0.000000001);
-            Assert.AreEqual(0, record.Value<float>("float"), 0.000001);
-            Assert.That(record.Value<int>("int32"), Is.EqualTo(0));
-            Assert.That(record.Value<UInt16>("uint16"), Is.EqualTo(0));
-            Assert.That(record.Value<UInt32>("uint32"), Is.EqualTo(0));
-            Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(0));
-            Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger(0)));
+                Assert.AreEqual(0, record.Value<double>("double"), 0.000000001);
+                Assert.AreEqual(0, record.Value<float>("float"), 0.000001);
+                Assert.That(record.Value<int>("int32"), Is.EqualTo(0));
+                Assert.That(record.Value<UInt16>("uint16"), Is.EqualTo(0));
+                Assert.That(record.Value<UInt32>("uint32"), Is.EqualTo(0));
+                Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(0));
+                Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger(0)));
+            }
         }
 
         private void TestIPV6(MaxMindDbReader reader, string file)

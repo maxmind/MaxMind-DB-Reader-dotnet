@@ -39,6 +39,8 @@ namespace MaxMind.MaxMindDb
 
         private Decoder Decoder { get; set; }
 
+        private MemoryMappedFile memoryMappedFile;
+
         #endregion
 
         public MaxMindDbReader(string file) : this(file, FileAccessMode.MemoryMapped) { }
@@ -51,7 +53,7 @@ namespace MaxMind.MaxMindDb
             else
             {
                 var fileLength = (int)new FileInfo(file).Length;
-                var memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadWrite, fileLength);
+                memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadWrite, fileLength);
                 fs = memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
             }
 
@@ -275,7 +277,11 @@ namespace MaxMind.MaxMindDb
 
         public void Dispose()
         {
-            try { this.fs.Dispose(); }
+            try
+            {
+                this.fs.Dispose();
+                memoryMappedFile.Dispose();
+            }
             catch { }
         }
 
