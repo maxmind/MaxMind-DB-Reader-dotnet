@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BigInteger.cs" />
+    <Compile Include="BigIntegerJsonConverter.cs" />
     <Compile Include="Decoder.cs" />
     <Compile Include="MaxMindDbReader.cs" />
     <Compile Include="Metadata.cs" />

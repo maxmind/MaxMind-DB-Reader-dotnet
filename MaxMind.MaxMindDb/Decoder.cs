@@ -337,7 +337,12 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeUint64(byte[] buffer)
         {
-            return new JValue(BigInteger.ToInt64(new BigInteger(buffer)));
+            UInt64 integer = 0;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                integer = (integer << 8) | (UInt64)(buffer[i] & 0xFF);
+            }
+            return new JValue(integer);
         }
 
         /// <summary>
@@ -347,7 +352,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JToken decodeBigInteger(byte[] buffer)
         {
-            return JObject.FromObject(new BigInteger(buffer));
+            return JValue.FromObject(new BigInteger(buffer));
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace MaxMind.MaxMindDb.Test
 {
@@ -83,6 +84,14 @@ namespace MaxMind.MaxMindDb.Test
             Assert.That(arrayX[2].Value<int>(), Is.EqualTo(9));
 
             Assert.That(mapX.Value<string>("utf8_stringX"), Is.EqualTo("hello"));
+
+            Assert.AreEqual(42.123456, record.Value<double>("double"),0.000000001);
+            Assert.AreEqual(1.1, record.Value<float>("float"), 0.000001);
+            Assert.That(record.Value<int>("int32"), Is.EqualTo(-268435456));
+            Assert.That(record.Value<int>("uint16"), Is.EqualTo(100));
+            Assert.That(record.Value<int>("uint32"), Is.EqualTo(268435456));
+            Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(1152921504606846976));
+            Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger("1329227995784915872903807060280344576")));
         }
 
         private void TestIPV6(MaxMindDbReader reader, string file)
