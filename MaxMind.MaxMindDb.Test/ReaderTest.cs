@@ -94,6 +94,33 @@ namespace MaxMind.MaxMindDb.Test
             Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger("1329227995784915872903807060280344576")));
         }
 
+        [Test]
+        public void TestZeros()
+        {
+            var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb");
+            var record = reader.Find("::");
+
+            Assert.That(record.Value<bool>("boolean"), Is.False);
+
+            Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[0]));
+
+            Assert.That(record.Value<string>("utf8_string"), Is.EqualTo(""));
+
+            Assert.That(record["array"], Is.InstanceOf<JArray>());
+            Assert.That(record["array"].Count(), Is.EqualTo(0));
+
+            Assert.That(record["map"], Is.InstanceOf<JObject>());
+            Assert.That(record["map"].Count(), Is.EqualTo(0));
+
+            Assert.AreEqual(0, record.Value<double>("double"), 0.000000001);
+            Assert.AreEqual(0, record.Value<float>("float"), 0.000001);
+            Assert.That(record.Value<int>("int32"), Is.EqualTo(0));
+            Assert.That(record.Value<UInt16>("uint16"), Is.EqualTo(0));
+            Assert.That(record.Value<UInt32>("uint32"), Is.EqualTo(0));
+            Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(0));
+            Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger(0)));
+        }
+
         private void TestIPV6(MaxMindDbReader reader, string file)
         {
             TestAddresses(reader, 
