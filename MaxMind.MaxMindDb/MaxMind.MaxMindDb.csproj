@@ -93,6 +93,7 @@
     <Compile Include="BigInteger.cs" />
     <Compile Include="BigIntegerJsonConverter.cs" />
     <Compile Include="Decoder.cs" />
+    <Compile Include="InvalidDatabaseException.cs" />
     <Compile Include="MaxMindDbReader.cs" />
     <Compile Include="Metadata.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
