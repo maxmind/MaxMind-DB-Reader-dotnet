@@ -34,6 +34,8 @@ namespace MaxMind.MaxMindDb
 
         private int[] pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
 
+        internal bool pointerTestHack = false;
+
         #endregion
 
         public Decoder(Stream stream, long pointerBase)
@@ -61,6 +63,10 @@ namespace MaxMind.MaxMindDb
             if (type == ObjectType.Pointer)
             {
                 Result pointer = this.decodePointer(ctrlByte, offset);
+                if (pointerTestHack)
+                {
+                    return pointer;
+                }
                 Result result = this.Decode(Convert.ToInt32(pointer.Node.Value<int>()));
                 result.Offset = pointer.Offset;
                 return result;
