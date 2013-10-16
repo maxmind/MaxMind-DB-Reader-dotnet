@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace MaxMind.MaxMindDb
@@ -48,6 +49,10 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         public Result Decode(int offset)
         {
+            if(offset >= fs.Length)
+                throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
+                                                    + "pointer larger than the database.");
+
             int ctrlByte = 0xFF & ReadOne(offset);
             offset++;
 
@@ -203,7 +208,16 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeBoolean(int size)
         {
-            return new JValue(size != 0);
+            switch (size) 
+            {
+                case 0:
+                    return new JValue(false);
+                case 1:
+                    return new JValue(true);
+                default:
+                    throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
+                                                        + "invalid size of boolean.");
+            }
         }
 
         /// <summary>
@@ -213,6 +227,10 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeDouble(byte[] buffer)
         {
+            if (buffer.Length != 8)
+                throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
+                                                   + "invalid size of double.");
+
             Array.Reverse(buffer);
             return new JValue(BitConverter.ToDouble(buffer, 0));
         }
@@ -224,6 +242,9 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeFloat(byte[] buffer)
         {
+            if (buffer.Length != 4)
+                throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
+                                                    + "invalid size of float.");
             Array.Reverse(buffer);
             return new JValue(BitConverter.ToSingle(buffer, 0));
         }

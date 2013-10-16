@@ -127,6 +127,16 @@ namespace MaxMind.MaxMindDb.Test
             }
         }
 
+        [Test]
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data", MatchType = MessageMatch.Contains)]
+        public void TestBrokenDatabase()
+        {
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "GeoIP2-City-Test-Broken-Double-Format.mmdb"))
+            {
+                reader.Find("2001:220::");
+            }
+        }
+
         private void TestIPV6(MaxMindDbReader reader, string file)
         {
             TestAddresses(reader, 
@@ -165,7 +175,7 @@ namespace MaxMind.MaxMindDb.Test
                 new [] { "1.1.1.33", "255.254.253.123" });
         }
 
-        public void TestAddresses(MaxMindDbReader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
+        private void TestAddresses(MaxMindDbReader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
         {
             foreach (var address in singleAddresses)
             {
