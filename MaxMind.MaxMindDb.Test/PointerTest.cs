@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace MaxMind.MaxMindDb.Test
+﻿namespace MaxMind.MaxMindDb.Test
 {
     using System.IO;
-
-    using Newtonsoft.Json.Linq;
-
     using NUnit.Framework;
 
     [TestFixture]
