@@ -345,28 +345,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeInteger(byte[] buffer)
         {
-            int integer = 0;
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
-            return new JValue(integer);
-        }
-
-        /// <summary>
-        /// Decodes the integer.
-        /// </summary>
-        /// <param name="b">The attribute.</param>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns></returns>
-        private int decodeInteger(int b, byte[] buffer)
-        {
-            int integer = b;
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
-            return integer;
+            return new JValue(Decoder.DecodeInteger(buffer));
         }
 
         /// <summary>
@@ -425,7 +404,7 @@ namespace MaxMind.MaxMindDb
             int pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
             int b = pointerSize == 4 ? (byte)0 : (byte)(ctrlByte & 0x7);
             byte[] buffer = ReadMany(offset, pointerSize);
-            int packed = this.decodeInteger(b, buffer);
+            int packed = Decoder.DecodeInteger(b, buffer);
             long pointer = packed + this.pointerBase + this.pointerValueOffset[pointerSize];
             return new Result(new JValue(pointer), offset + pointerSize);
         }
