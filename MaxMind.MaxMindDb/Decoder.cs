@@ -7,23 +7,44 @@ using Newtonsoft.Json.Linq;
 
 namespace MaxMind.MaxMindDb
 {
+    /// <summary>
+    /// Enumeration representing the types of objects read from the database
+    /// </summary>
     public enum ObjectType
     {
         Extended, Pointer, Utf8String, Double, Bytes, Uint16, Uint32, Map, Int32, Uint64, Uint128, Array, Container, EndMarker, Boolean, Float
     }
 
+    /// <summary>
+    /// A data structure to store an object read from the database
+    /// </summary>
     public class Result
     {
+        /// <summary>
+        /// The object read from the database
+        /// </summary>
         public JToken Node { get; set; }
 
+        /// <summary>
+        /// The offset
+        /// </summary>
         public int Offset { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Result"/> class.
+        /// </summary>
+        /// <param name="node">The node.</param>
+        /// <param name="offset">The offset.</param>
         public Result(JToken node, int offset)
         {
             Node = node;
             Offset = offset;
         }
     }
+
+    /// <summary>
+    /// Given a stream, this class decodes the object graph at a particular location
+    /// </summary>
     public class Decoder
     {
         #region Private
@@ -38,6 +59,11 @@ namespace MaxMind.MaxMindDb
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Decoder"/> class.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="pointerBase">The base address in the stream.</param>
         public Decoder(Stream stream, long pointerBase)
         {
             this.pointerBase = pointerBase;
@@ -45,10 +71,10 @@ namespace MaxMind.MaxMindDb
         }
 
         /// <summary>
-        /// Decodes the specified offset.
+        /// Decodes the object at the specified offset.
         /// </summary>
         /// <param name="offset">The offset.</param>
-        /// <returns></returns>
+        /// <returns>An object containing the data read from the stream</returns>
         public Result Decode(int offset)
         {
             if(offset >= fs.Length)

@@ -9,12 +9,18 @@ namespace MaxMind.MaxMindDb
 {
     using Winterdom.IO.FileMap;
 
+    /// <summary>
+    /// An enumeration specifying the API to use to read the database
+    /// </summary>
     public enum FileAccessMode
     {
         MemoryMapped,
         Memory
     }
 
+    /// <summary>
+    /// Given a MaxMind DB file, this class will retrieve information about an IP address
+    /// </summary>
     public class MaxMindDbReader : IDisposable
     {
         /// <summary>
@@ -43,8 +49,17 @@ namespace MaxMind.MaxMindDb
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MaxMindDbReader"/> class.
+        /// </summary>
+        /// <param name="file">The file.</param>
         public MaxMindDbReader(string file) : this(file, FileAccessMode.MemoryMapped) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MaxMindDbReader"/> class.
+        /// </summary>
+        /// <param name="file">The MaxMind DB file.</param>
+        /// <param name="mode">The mode by which to access the DB file.</param>
         public MaxMindDbReader(string file, FileAccessMode mode)
         {
             this.FileName = file;
@@ -65,20 +80,20 @@ namespace MaxMind.MaxMindDb
         }
 
         /// <summary>
-        /// Finds the specified address.
+        /// Finds the data related to the specified address.
         /// </summary>
-        /// <param name="address">The address.</param>
-        /// <returns></returns>
+        /// <param name="address">The IP address.</param>
+        /// <returns>An object containing the IP related data</returns>
         public JToken Find(string address)
         {
             return Find(IPAddress.Parse(address));
         }
 
         /// <summary>
-        /// Finds the specified address.
+        /// Finds the data related to the specified address.
         /// </summary>
-        /// <param name="address">The address.</param>
-        /// <returns></returns>
+        /// <param name="address">The IP address.</param>
+        /// <returns>An object containing the IP related data</returns>
         public JToken Find(IPAddress address)
         {
             int pointer = this.FindAddressInTree(address);
@@ -90,22 +105,12 @@ namespace MaxMind.MaxMindDb
 
         #region Private
 
-        /// <summary>
-        /// Resolves the data pointer.
-        /// </summary>
-        /// <param name="pointer">The pointer.</param>
-        /// <returns></returns>
         private JToken ResolveDataPointer(int pointer)
         {
             int resolved = (int)((pointer - this.Metadata.NodeCount) + this.Metadata.SearchTreeSize);
             return this.Decoder.Decode(resolved).Node;
         }
 
-        /// <summary>
-        /// Finds the address information tree.
-        /// </summary>
-        /// <param name="address">The address.</param>
-        /// <returns></returns>
         private int FindAddressInTree(IPAddress address)
         {
             byte[] rawAddress = address.GetAddressBytes();
@@ -139,22 +144,12 @@ namespace MaxMind.MaxMindDb
             return 0;
         }
 
-        /// <summary>
-        /// Deserializes the specified value.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="value">The value.</param>
-        /// <returns></returns>
         private T Deserialize<T>(JToken value)
         {
             var serializer = new JsonSerializer();
             return serializer.Deserialize<T>(new JTokenReader(value));
         }
 
-        /// <summary>
-        /// Finds the metadata start.
-        /// </summary>
-        /// <returns></returns>
         private int FindMetadataStart()
         {
             this.FileSize = (int)fs.Length;
@@ -166,7 +161,7 @@ namespace MaxMind.MaxMindDb
                 long pos = fs.Position;
                 fs.Read(buffer, 0, buffer.Length);
 
-                if (!ByteArrayEqual(buffer, METADATA_START_MARKER))
+                if (!buffer.SequenceEqual(METADATA_START_MARKER))
                     continue;
 
                 return i + METADATA_START_MARKER.Length;
@@ -175,12 +170,6 @@ namespace MaxMind.MaxMindDb
             return -1;
         }
 
-        /// <summary>
-        /// Reads the node.
-        /// </summary>
-        /// <param name="nodeNumber">The node number.</param>
-        /// <param name="index">The index.</param>
-        /// <returns></returns>
         private int ReadNode(int nodeNumber, int index)
         {
             int baseOffset = (int)(nodeNumber * this.Metadata.NodeByteSize);
@@ -209,11 +198,6 @@ namespace MaxMind.MaxMindDb
             return 1;
         }
 
-        /// <summary>
-        /// Reads the one.
-        /// </summary>
-        /// <param name="position">The position.</param>
-        /// <returns></returns>
         private int ReadOne(int position)
         {
             lock (fs)
@@ -223,12 +207,6 @@ namespace MaxMind.MaxMindDb
             }
         }
 
-        /// <summary>
-        /// Reads the many.
-        /// </summary>
-        /// <param name="position">The position.</param>
-        /// <param name="size">The size.</param>
-        /// <returns></returns>
         private byte[] ReadMany(int position, int size)
         {
             lock (fs)
@@ -238,37 +216,6 @@ namespace MaxMind.MaxMindDb
                 fs.Read(buffer, 0, buffer.Length);
                 return buffer;
             }
-        }
-
-        /// <summary>
-        /// Bytes the array equal.
-        /// </summary>
-        /// <param name="a">The aggregate.</param>
-        /// <param name="b">The attribute.</param>
-        /// <returns></returns>
-        /// <exception cref="System.Exception">The lenght of both arrays should be equal</exception>
-        private bool ByteArrayEqual(byte[] a, byte[] b)
-        {
-            if (a.Length != b.Length)
-                throw new Exception("The lenght of both arrays should be equal");
-
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Bytes the array automatic string.
-        /// </summary>
-        /// <param name="a">The aggregate.</param>
-        /// <returns></returns>
-        private string ByteArrayToString(byte[] a)
-        {
-            return String.Join(",", a.Select(o => o.ToString()).ToArray());
         }
 
         #endregion

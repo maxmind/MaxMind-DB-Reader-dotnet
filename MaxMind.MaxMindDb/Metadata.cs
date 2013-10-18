@@ -7,6 +7,9 @@ using Newtonsoft.Json;
 
 namespace MaxMind.MaxMindDb
 {
+    /// <summary>
+    /// Data about the database file itself
+    /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     public class Metadata
     {
@@ -14,7 +17,7 @@ namespace MaxMind.MaxMindDb
         public int BinaryFormatMajorVersion { get; set; }
 
         [JsonProperty("binary_format_minor_version")]
-        public int binaryFormatMinorVersion { get; set; }
+        public int BinaryFormatMinorVersion { get; set; }
 
         [JsonProperty("build_epoch")]
         public long BuildEpoch { get; set; }

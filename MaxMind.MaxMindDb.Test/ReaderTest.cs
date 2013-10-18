@@ -198,7 +198,7 @@ namespace MaxMind.MaxMindDb.Test
             var metadata = reader.Metadata;
 
             Assert.That(metadata.BinaryFormatMajorVersion, Is.EqualTo(2));
-            Assert.That(metadata.binaryFormatMinorVersion, Is.EqualTo(0));
+            Assert.That(metadata.BinaryFormatMinorVersion, Is.EqualTo(0));
             Assert.That(metadata.IpVersion, Is.EqualTo(ipVersion));
             Assert.That(metadata.DatabaseType, Is.EqualTo("Test"));
             Assert.That(metadata.Languages[0], Is.EqualTo("en"));
