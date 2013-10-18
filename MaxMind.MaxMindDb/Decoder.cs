@@ -77,7 +77,7 @@ namespace MaxMind.MaxMindDb
         /// <returns>An object containing the data read from the stream</returns>
         public Result Decode(int offset)
         {
-            if(offset >= fs.Length)
+            if (offset >= fs.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                     + "pointer larger than the database.");
 
@@ -102,6 +102,11 @@ namespace MaxMind.MaxMindDb
             {
                 int nextByte = ReadOne(offset);
                 int typeNum = nextByte + 7;
+                if (typeNum < 8)
+                    throw new InvalidDatabaseException(
+                            "Something went horribly wrong in the decoder. An extended type "
+                                    + "resolved to a type number < 8 (" + typeNum
+                                    + ")");
                 type = (ObjectType)typeNum;
                 offset++;
             }
@@ -125,7 +130,7 @@ namespace MaxMind.MaxMindDb
             lock (fs)
             {
                 fs.Seek(position, SeekOrigin.Begin);
-                return (byte) fs.ReadByte();
+                return (byte)fs.ReadByte();
             }
         }
 
@@ -186,7 +191,7 @@ namespace MaxMind.MaxMindDb
                 case ObjectType.Uint128:
                     return new Result(decodeBigInteger(buffer), new_offset);
                 default:
-                    throw new InvalidDatabaseException("Unable to handle type!");
+                    throw new InvalidDatabaseException("Unable to handle type:" + type);
             }
         }
 
@@ -197,8 +202,8 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private ObjectType FromControlByte(byte b)
         {
-            int p =  b >> 5;
-            return (ObjectType) p;
+            int p = b >> 5;
+            return (ObjectType)p;
         }
 
         /// <summary>
@@ -212,11 +217,14 @@ namespace MaxMind.MaxMindDb
             int size = ctrlByte & 0x1f;
             int bytesToRead = size < 29 ? 0 : size - 28;
 
-            if (size == 29) {
+            if (size == 29)
+            {
                 byte[] buffer = ReadMany(offset, bytesToRead);
                 int i = this.decodeInteger(buffer).Value<int>();
                 size = 29 + i;
-            } else if (size == 30) {
+            }
+            else if (size == 30)
+            {
                 byte[] buffer = ReadMany(offset, bytesToRead);
                 int i = this.decodeInteger(buffer).Value<int>();
                 size = 285 + i;
@@ -240,7 +248,7 @@ namespace MaxMind.MaxMindDb
         /// <returns></returns>
         private JValue decodeBoolean(int size)
         {
-            switch (size) 
+            switch (size)
             {
                 case 0:
                     return new JValue(false);

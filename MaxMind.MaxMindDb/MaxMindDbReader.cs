@@ -203,7 +203,9 @@ namespace MaxMind.MaxMindDb
                 return i + METADATA_START_MARKER.Length;
             }
 
-            return -1;
+            throw new InvalidDatabaseException(
+                    "Could not find a MaxMind DB metadata marker in this file ("
+                            + this.FileName + "). Is this a valid MaxMind DB file?");
         }
 
         private int ReadNode(int nodeNumber, int index)
@@ -220,7 +222,7 @@ namespace MaxMind.MaxMindDb
             else if (size == 28)
             {
                 byte middle = ReadOne(baseOffset + 3);
-                middle = (index == 0) ? (byte) (middle >> 4) : (byte) (0x0F & middle);
+                middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
                 byte[] buffer = ReadMany(baseOffset + index * 4, 3);
                 return Decoder.DecodeInteger(middle, buffer);
@@ -240,7 +242,7 @@ namespace MaxMind.MaxMindDb
             lock (fs)
             {
                 fs.Seek(position, SeekOrigin.Begin);
-                return (byte) fs.ReadByte();
+                return (byte)fs.ReadByte();
             }
         }
 
@@ -261,12 +263,8 @@ namespace MaxMind.MaxMindDb
 
         public void Dispose()
         {
-            try
-            {
-                this.fs.Dispose();
-                memoryMappedFile.Dispose();
-            }
-            catch { }
+            this.fs.Dispose();
+            memoryMappedFile.Dispose();
         }
 
         ~MaxMindDbReader()
