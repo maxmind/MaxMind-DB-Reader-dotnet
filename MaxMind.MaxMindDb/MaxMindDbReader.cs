@@ -41,6 +41,24 @@ namespace MaxMind.MaxMindDb
 
         private int FileSize { get; set; }
 
+        private int _ipV4Start;
+        private int ipV4Start
+        {
+            get
+            {
+                if (_ipV4Start == 0 || this.Metadata.IpVersion == 4)
+                {
+                    int node = 0;
+                    for (int i = 0; i < 96 && node < this.Metadata.NodeCount; i++)
+                    {
+                        node = this.ReadNode(node, 0);
+                    }
+                    this._ipV4Start = node;
+                }
+                return _ipV4Start;
+            }
+        }
+
         private Stream fs { get; set; }
 
         private Decoder Decoder { get; set; }
@@ -68,7 +86,7 @@ namespace MaxMind.MaxMindDb
             else
             {
                 var fileLength = (int)new FileInfo(file).Length;
-                memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadWrite, fileLength);
+                memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadOnly, fileLength);
                 fs = memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
             }
 
@@ -115,32 +133,42 @@ namespace MaxMind.MaxMindDb
         {
             byte[] rawAddress = address.GetAddressBytes();
 
-            //if (BitConverter.IsLittleEndian)
-            //    Array.Reverse(rawAddress);
+            int bitLength = rawAddress.Length * 8;
+            int record = this.StartNode(bitLength);
 
-            bool isIp4AddressInIp6Db = rawAddress.Length == 4 && this.Metadata.IpVersion == 6;
-            int ipStartBit = isIp4AddressInIp6Db ? 96 : 0;
-
-            int nodeNum = 0;
-
-            for (int i = 0; i < rawAddress.Length * 8 + ipStartBit; i++)
+            for (int i = 0; i < bitLength; i++)
             {
-                int bit = 0;
-                if (i >= ipStartBit)
+                if (record >= this.Metadata.NodeCount)
                 {
-                    int b = 0xFF & rawAddress[(i - ipStartBit) / 8];
-                    bit = 1 & (b >> 7 - (i % 8));
+                    break;
                 }
-                int record = this.ReadNode(nodeNum, bit);
-
-                if (record == this.Metadata.NodeCount)
-                    return 0;
-                else if (record > this.Metadata.NodeCount)
-                    return record;
-
-                nodeNum = record;
+                int b = 0xFF & rawAddress[i / 8];
+                int bit = 1 & (b >> 7 - (i % 8));
+                record = this.ReadNode(record, bit);
             }
+            if (record == this.Metadata.NodeCount)
+            {
+                // record is empty
+                return 0;
+            }
+            else if (record > this.Metadata.NodeCount)
+            {
+                // record is a data pointer
+                return record;
+            }
+            throw new InvalidDatabaseException("Something bad happened");
+        }
 
+        private int StartNode(int bitLength)
+        {
+            // Check if we are looking up an IPv4 address in an IPv6 tree. If this
+            // is the case, we can skip over the first 96 nodes.
+            if (this.Metadata.IpVersion == 6 && bitLength == 32)
+            {
+                return this.ipV4Start;
+            }
+            // The first node of the tree is always node 0, at the beginning of the
+            // value
             return 0;
         }
 
@@ -195,7 +223,8 @@ namespace MaxMind.MaxMindDb
                 return Decoder.DecodeInteger(buffer);
             }
 
-            return 1;
+            throw new InvalidDatabaseException("Unknown record size: "
+                    + size);
         }
 
         private int ReadOne(int position)

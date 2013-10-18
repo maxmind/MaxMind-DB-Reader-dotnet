@@ -11,7 +11,7 @@ namespace MaxMind.MaxMindDb.Benchmark
         static void Main(string[] args)
         {
             var reader = new MaxMindDbReader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
-            var count = 1000000;
+            var count = 100000;
             var rand = new Random();
             var start = DateTime.Now;
             for (int i = 0; i < count; i++)
