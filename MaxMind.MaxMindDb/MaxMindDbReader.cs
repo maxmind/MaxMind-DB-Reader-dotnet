@@ -150,7 +150,7 @@ namespace MaxMind.MaxMindDb
                 {
                     break;
                 }
-                int b = 0xFF & rawAddress[i / 8];
+                byte b = rawAddress[i / 8];
                 int bit = 1 & (b >> 7 - (i % 8));
                 record = this.ReadNode(record, bit);
             }
@@ -219,8 +219,8 @@ namespace MaxMind.MaxMindDb
             }
             else if (size == 28)
             {
-                int middle = ReadOne(baseOffset + 3);
-                middle = (index == 0) ? (0xF0 & middle) >> 4 : 0x0F & middle;
+                byte middle = ReadOne(baseOffset + 3);
+                middle = (index == 0) ? (byte) (middle >> 4) : (byte) (0x0F & middle);
 
                 byte[] buffer = ReadMany(baseOffset + index * 4, 3);
                 return Decoder.DecodeInteger(middle, buffer);
@@ -235,12 +235,12 @@ namespace MaxMind.MaxMindDb
                     + size);
         }
 
-        private int ReadOne(int position)
+        private byte ReadOne(int position)
         {
             lock (fs)
             {
                 fs.Seek(position, SeekOrigin.Begin);
-                return fs.ReadByte();
+                return (byte) fs.ReadByte();
             }
         }
 

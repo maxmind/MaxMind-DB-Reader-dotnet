@@ -81,7 +81,7 @@ namespace MaxMind.MaxMindDb
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                     + "pointer larger than the database.");
 
-            int ctrlByte = 0xFF & ReadOne(offset);
+            byte ctrlByte = ReadOne(offset);
             offset++;
 
             ObjectType type = FromControlByte(ctrlByte);
@@ -120,12 +120,12 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="position">The position.</param>
         /// <returns></returns>
-        private int ReadOne(int position)
+        private byte ReadOne(int position)
         {
             lock (fs)
             {
                 fs.Seek(position, SeekOrigin.Begin);
-                return fs.ReadByte();
+                return (byte) fs.ReadByte();
             }
         }
 
@@ -186,7 +186,7 @@ namespace MaxMind.MaxMindDb
                 case ObjectType.Uint128:
                     return new Result(decodeBigInteger(buffer), new_offset);
                 default:
-                    throw new Exception("Unable to handle type!");
+                    throw new InvalidDatabaseException("Unable to handle type!");
             }
         }
 
@@ -195,9 +195,9 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="b">The attribute.</param>
         /// <returns></returns>
-        private ObjectType FromControlByte(int b)
+        private ObjectType FromControlByte(byte b)
         {
-            int p = ((0xFF & b) >> 5);
+            int p =  b >> 5;
             return (ObjectType) p;
         }
 
@@ -207,7 +207,7 @@ namespace MaxMind.MaxMindDb
         /// <param name="ctrlByte">The control byte.</param>
         /// <param name="offset">The offset.</param>
         /// <returns></returns>
-        private int[] SizeFromCtrlByte(int ctrlByte, int offset)
+        private int[] SizeFromCtrlByte(byte ctrlByte, int offset)
         {
             int size = ctrlByte & 0x1f;
             int bytesToRead = size < 29 ? 0 : size - 28;
@@ -300,18 +300,16 @@ namespace MaxMind.MaxMindDb
         private Result decodeMap(int size, int offset)
         {
             var obj = new JObject();
-            JToken key = null;
-            JToken value = null;
 
             for (int i = 0; i < size; i++)
             {
                 Result left = this.Decode(offset);
-                key = left.Node;
+                var key = left.Node;
                 offset = left.Offset;
                 Result right = this.Decode(offset);
-                value = right.Node;
+                var value = right.Node;
                 offset = right.Offset;
-                obj.Add((string)key, value);
+                obj.Add(key.Value<string>(), value);
             }
 
             return new Result(obj, offset);
@@ -327,7 +325,7 @@ namespace MaxMind.MaxMindDb
             long integer = 0;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return new JValue(integer);
         }
@@ -342,7 +340,7 @@ namespace MaxMind.MaxMindDb
             int integer = 0;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return new JValue(integer);
         }
@@ -358,7 +356,7 @@ namespace MaxMind.MaxMindDb
             int integer = b;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return integer;
         }
@@ -393,7 +391,7 @@ namespace MaxMind.MaxMindDb
             UInt64 integer = 0;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (UInt64)(buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return new JValue(integer);
         }
@@ -440,7 +438,7 @@ namespace MaxMind.MaxMindDb
             int integer = 0;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return integer;
         }
@@ -456,7 +454,7 @@ namespace MaxMind.MaxMindDb
             int integer = baseValue;
             for (int i = 0; i < buffer.Length; i++)
             {
-                integer = (integer << 8) | (buffer[i] & 0xFF);
+                integer = (integer << 8) | buffer[i];
             }
             return integer;
         }
