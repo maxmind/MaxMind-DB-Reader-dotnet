@@ -18,9 +18,9 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void Test()
         {
-            foreach (var recordSize in new long[]{24, 28, 32})
+            foreach (var recordSize in new long[] { 24, 28, 32 })
             {
-                foreach (var ipVersion in new int[]{4, 6})
+                foreach (var ipVersion in new int[] { 4, 6 })
                 {
                     var file = TEST_DATA_ROOT + "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
                     var reader = new MaxMindDbReader(file);
@@ -61,7 +61,7 @@ namespace MaxMind.MaxMindDb.Test
 
                 Assert.That(record.Value<bool>("boolean"), Is.True);
 
-                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] {0, 0, 0, (byte) 42}));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] { 0, 0, 0, (byte)42 }));
 
                 Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
@@ -137,10 +137,30 @@ namespace MaxMind.MaxMindDb.Test
             }
         }
 
+        [Test]
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt", MatchType = MessageMatch.Contains)]
+        public void TestBrokenSearchTreePointer()
+        {
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            { 
+                reader.Find("1.1.1.32");
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data", MatchType = MessageMatch.Contains)]
+        public void TestBrokenDataPointer()
+        {
+            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            {
+                reader.Find("1.1.1.16");
+            }
+        }
+
         private void TestIPV6(MaxMindDbReader reader, string file)
         {
-            TestAddresses(reader, 
-                file, 
+            TestAddresses(reader,
+                file,
                 new[] { "::1:ffff:ffff", "::2:0:0", "::2:0:40", "::2:0:50", "::2:0:58" },
                 new Dictionary<string, string>
                         {
@@ -153,16 +173,16 @@ namespace MaxMind.MaxMindDb.Test
                             {"::2:0:57", "::2:0:50"},
                             {"::2:0:59", "::2:0:58"}
                         },
-                new [] {"1.1.1.33", "255.254.253.123", "89fa::"}
+                new[] { "1.1.1.33", "255.254.253.123", "89fa::" }
                 );
 
         }
 
         private void TestIPV4(MaxMindDbReader reader, string file)
         {
-            TestAddresses(reader, 
-                file, 
-                Enumerable.Range(0,5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)), 
+            TestAddresses(reader,
+                file,
+                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
                 new Dictionary<string, string>(){
                             {"1.1.1.3", "1.1.1.2"},
                             {"1.1.1.5", "1.1.1.4"},
@@ -171,8 +191,8 @@ namespace MaxMind.MaxMindDb.Test
                             {"1.1.1.15", "1.1.1.8"},
                             {"1.1.1.17", "1.1.1.16"},
                             {"1.1.1.31", "1.1.1.16"}
-                        }, 
-                new [] { "1.1.1.33", "255.254.253.123" });
+                        },
+                new[] { "1.1.1.33", "255.254.253.123" });
         }
 
         private void TestAddresses(MaxMindDbReader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)

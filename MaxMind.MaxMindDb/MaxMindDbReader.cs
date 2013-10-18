@@ -126,6 +126,14 @@ namespace MaxMind.MaxMindDb
         private JToken ResolveDataPointer(int pointer)
         {
             int resolved = (int)((pointer - this.Metadata.NodeCount) + this.Metadata.SearchTreeSize);
+
+            if (resolved >= this.fs.Length)
+            {
+                throw new InvalidDatabaseException(
+                        "The MaxMind DB file's search tree is corrupt: "
+                                + "contains pointer larger than the database.");
+            }
+
             return this.Decoder.Decode(resolved).Node;
         }
 
