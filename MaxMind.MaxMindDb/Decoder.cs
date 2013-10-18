@@ -220,19 +220,19 @@ namespace MaxMind.MaxMindDb
             if (size == 29)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = this.decodeInteger(buffer).Value<int>();
+                int i = Decoder.DecodeInteger(buffer);
                 size = 29 + i;
             }
             else if (size == 30)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = this.decodeInteger(buffer).Value<int>();
+                int i = Decoder.DecodeInteger(buffer);
                 size = 285 + i;
             }
             else if (size > 30)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = this.decodeInteger(buffer).Value<int>() & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
+                int i = Decoder.DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
                 size = 65821 + i;
             }
 
