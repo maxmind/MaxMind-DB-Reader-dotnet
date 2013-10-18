@@ -441,14 +441,9 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        public static int DecodeInteger(byte[] buffer)
+        internal static int DecodeInteger(byte[] buffer)
         {
-            int integer = 0;
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
-            return integer;
+            return Decoder.DecodeInteger(0, buffer);
         }
 
         /// <summary>
@@ -457,7 +452,7 @@ namespace MaxMind.MaxMindDb
         /// <param name="baseValue">The base value.</param>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        public static int DecodeInteger(int baseValue, byte[] buffer)
+        internal static int DecodeInteger(int baseValue, byte[] buffer)
         {
             int integer = baseValue;
             for (int i = 0; i < buffer.Length; i++)
