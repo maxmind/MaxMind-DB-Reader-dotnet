@@ -44,13 +44,13 @@ namespace MaxMind.MaxMindDb
         public List<string> Languages { get; set; }
 
         [JsonProperty("node_count")]
-        public long NodeCount { get; set; }
+        public int NodeCount { get; set; }
 
         [JsonProperty("record_size")]
-        public long RecordSize { get; set; }
+        public int RecordSize { get; set; }
 
         [JsonIgnore]
-        public long NodeByteSize
+        public int NodeByteSize
         {
             get
             {
@@ -58,7 +58,7 @@ namespace MaxMind.MaxMindDb
             }
         }
 
-        public long SearchTreeSize
+        public int SearchTreeSize
         {
             get
             {
