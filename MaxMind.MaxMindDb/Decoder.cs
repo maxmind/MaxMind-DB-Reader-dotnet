@@ -10,7 +10,7 @@ namespace MaxMind.MaxMindDb
     /// <summary>
     /// Enumeration representing the types of objects read from the database
     /// </summary>
-    public enum ObjectType
+    internal enum ObjectType
     {
         Extended, Pointer, Utf8String, Double, Bytes, Uint16, Uint32, Map, Int32, Uint64, Uint128, Array, Container, EndMarker, Boolean, Float
     }
@@ -18,24 +18,24 @@ namespace MaxMind.MaxMindDb
     /// <summary>
     /// A data structure to store an object read from the database
     /// </summary>
-    public class Result
+    internal class Result
     {
         /// <summary>
         /// The object read from the database
         /// </summary>
-        public JToken Node { get; set; }
+        internal JToken Node { get; set; }
 
         /// <summary>
         /// The offset
         /// </summary>
-        public int Offset { get; set; }
+        internal int Offset { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Result"/> class.
         /// </summary>
         /// <param name="node">The node.</param>
         /// <param name="offset">The offset.</param>
-        public Result(JToken node, int offset)
+        internal Result(JToken node, int offset)
         {
             Node = node;
             Offset = offset;
@@ -45,7 +45,7 @@ namespace MaxMind.MaxMindDb
     /// <summary>
     /// Given a stream, this class decodes the object graph at a particular location
     /// </summary>
-    public class Decoder
+    internal class Decoder
     {
         #region Private
 
@@ -64,7 +64,7 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
-        public Decoder(Stream stream, long pointerBase)
+        internal Decoder(Stream stream, long pointerBase)
         {
             this.pointerBase = pointerBase;
             this.fs = stream;
@@ -75,7 +75,7 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="offset">The offset.</param>
         /// <returns>An object containing the data read from the stream</returns>
-        public Result Decode(int offset)
+        internal Result Decode(int offset)
         {
             if (offset >= fs.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
