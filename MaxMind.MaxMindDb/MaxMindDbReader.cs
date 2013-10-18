@@ -42,7 +42,7 @@ namespace MaxMind.MaxMindDb
         private int FileSize { get; set; }
 
         private int _ipV4Start;
-        private int ipV4Start
+        private int IpV4Start
         {
             get
             {
@@ -173,7 +173,7 @@ namespace MaxMind.MaxMindDb
             // is the case, we can skip over the first 96 nodes.
             if (this.Metadata.IpVersion == 6 && bitLength == 32)
             {
-                return this.ipV4Start;
+                return this.IpV4Start;
             }
             // The first node of the tree is always node 0, at the beginning of the
             // value
@@ -264,12 +264,8 @@ namespace MaxMind.MaxMindDb
         public void Dispose()
         {
             this.fs.Dispose();
-            memoryMappedFile.Dispose();
-        }
-
-        ~MaxMindDbReader()
-        {
-            Dispose();
+            if(memoryMappedFile != null)
+                memoryMappedFile.Dispose();
         }
 
         #endregion
