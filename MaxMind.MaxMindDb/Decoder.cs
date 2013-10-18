@@ -51,7 +51,7 @@ namespace MaxMind.MaxMindDb
 
         private Stream fs = null;
 
-        private long pointerBase = -1;
+        private int pointerBase = -1;
 
         private int[] pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
 
@@ -64,7 +64,7 @@ namespace MaxMind.MaxMindDb
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
-        internal Decoder(Stream stream, long pointerBase)
+        internal Decoder(Stream stream, int pointerBase)
         {
             this.pointerBase = pointerBase;
             this.fs = stream;
@@ -88,13 +88,13 @@ namespace MaxMind.MaxMindDb
 
             if (type == ObjectType.Pointer)
             {
-                Result pointer = this.decodePointer(ctrlByte, offset);
+                long pointer = this.decodePointer(ctrlByte, offset, out offset);
                 if (pointerTestHack)
                 {
-                    return pointer;
+                    return new Result(new JValue(pointer), offset);
                 }
-                Result result = this.Decode(Convert.ToInt32(pointer.Node.Value<int>()));
-                result.Offset = pointer.Offset;
+                Result result = this.Decode(Convert.ToInt32(pointer));
+                result.Offset = offset;
                 return result;
             }
 
@@ -399,14 +399,14 @@ namespace MaxMind.MaxMindDb
         /// <param name="ctrlByte">The control byte.</param>
         /// <param name="offset">The offset.</param>
         /// <returns></returns>
-        private Result decodePointer(int ctrlByte, int offset)
+        private int decodePointer(int ctrlByte, int offset, out int outOffset)
         {
             int pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
             int b = pointerSize == 4 ? (byte)0 : (byte)(ctrlByte & 0x7);
             byte[] buffer = ReadMany(offset, pointerSize);
             int packed = Decoder.DecodeInteger(b, buffer);
-            long pointer = packed + this.pointerBase + this.pointerValueOffset[pointerSize];
-            return new Result(new JValue(pointer), offset + pointerSize);
+            outOffset = offset + pointerSize;
+            return packed + this.pointerBase + this.pointerValueOffset[pointerSize];
         }
 
         #endregion
