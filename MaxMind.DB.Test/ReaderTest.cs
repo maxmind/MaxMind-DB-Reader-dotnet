@@ -14,16 +14,6 @@ namespace MaxMind.DB.Test
     {
         private const string TestDataRoot = "..\\..\\TestData\\MaxMind-DB\\test-data\\";
 
-        private MaxMindDbReader brokenPointersReader;
-        private MaxMindDbReader testDecoderReader;
-
-        public ReaderTest()
-        {
-            brokenPointersReader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb");
-            testDecoderReader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb");
-        }
-
-
         [Test]
         public void Test()
         {
