@@ -80,18 +80,27 @@ namespace MaxMind.DB
             _fileName = file;
             if (mode == FileAccessMode.MemoryMapped)
             {
-                memoryMappedFile = MemoryMappedFile.CreateFromFile(this.FileName, FileMode.Open);
+                var fileInfo = new FileInfo(file);
+                var mmfName = fileInfo.FullName.Replace("\\", "-");
+                try
+                {
+                    memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
+                }
+                catch (IOException ex)
+                {
+                    memoryMappedFile = MemoryMappedFile.CreateFromFile(this.FileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+                }
             }
 
-            fs = new ThreadLocal<Stream>(() =>
+            _stream = new ThreadLocal<Stream>(() =>
             {
                 Stream s;
             if (mode == FileAccessMode.Memory) this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
                 else
                 {
                     var fileLength = (int) new FileInfo(file).Length;
-                memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadOnly, fileLength);
-                fs = memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
+                	_memoryMappedFile = MemoryMappedFile.Create(_fileName, MapProtection.PageReadOnly, fileLength);
+                    s = _memoryMappedFile.CreateViewStream(0, fileLength);
                 }
 
                 return s;
