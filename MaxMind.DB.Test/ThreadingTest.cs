@@ -29,6 +29,7 @@ namespace MaxMind.DB.Test
             }
 
             var ips = ipsAndResults.Keys.ToArray();
+            var start = DateTime.Now;
             Parallel.For(0, ips.Length, i =>
             {
                 var ipAddress = ips[i];
@@ -38,6 +39,8 @@ namespace MaxMind.DB.Test
                 if(resultString != expectedString)
                     throw new Exception(string.Format("Non-matching result. Expected {0}, found {1}", expectedString, resultString));
             });
+            var stop = DateTime.Now;
+            Console.WriteLine("Requests per second: " + count/(stop - start).TotalSeconds);
         }
     }
 }

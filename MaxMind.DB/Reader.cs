@@ -1,14 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MaxMind.DB
 {
-    using Winterdom.IO.FileMap;
-
     /// <summary>
     /// An enumeration specifying the API to use to read the database
     /// </summary>
@@ -40,6 +40,8 @@ namespace MaxMind.DB
         private int _fileSize;
 
         private int _ipV4Start;
+        private MemoryMappedFile _memoryMappedFile;
+
         private int IPV4Start
         {
             get
@@ -57,11 +59,9 @@ namespace MaxMind.DB
             }
         }
 
-        private readonly Stream _stream;
+        private ThreadLocal<Stream> _stream { get; set; }
 
         private Decoder Decoder { get; set; }
-
-        private readonly MemoryMappedFile _memoryMappedFile;
 
 
         /// <summary>
@@ -78,14 +78,24 @@ namespace MaxMind.DB
         public Reader(string file, FileAccessMode mode)
         {
             _fileName = file;
-
-            if (mode == FileAccessMode.Memory) _stream = new MemoryStream(File.ReadAllBytes(_fileName));
-            else
+            if (mode == FileAccessMode.MemoryMapped)
             {
-                var fileLength = (int)new FileInfo(file).Length;
-                _memoryMappedFile = MemoryMappedFile.Create(_fileName, MapProtection.PageReadOnly, fileLength);
-                _stream = _memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
+                memoryMappedFile = MemoryMappedFile.CreateFromFile(this.FileName, FileMode.Open);
             }
+
+            fs = new ThreadLocal<Stream>(() =>
+            {
+                Stream s;
+            if (mode == FileAccessMode.Memory) this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
+                else
+                {
+                    var fileLength = (int) new FileInfo(file).Length;
+                memoryMappedFile = MemoryMappedFile.Create(this.FileName, MapProtection.PageReadOnly, fileLength);
+                fs = memoryMappedFile.MapView(MapAccess.FileMapRead, 0, fileLength);
+                }
+
+                return s;
+            });
 
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_stream, start);
@@ -119,7 +129,7 @@ namespace MaxMind.DB
         {
             var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
 
-            if (resolved >= _stream.Length)
+            if (resolved >= _stream.Value.Length)
             {
                 throw new InvalidDatabaseException(
                         "The MaxMind DB file's search tree is corrupt: "
@@ -180,13 +190,13 @@ namespace MaxMind.DB
 
         private int FindMetadataStart()
         {
-            _fileSize = (int)_stream.Length;
+            _fileSize = (int)_stream.Value.Length;
             var buffer = new byte[_metadataStartMarker.Length];
 
             for (int i = (_fileSize - _metadataStartMarker.Length); i > 0; i--)
             {
-                _stream.Seek(i, SeekOrigin.Begin);
-                _stream.Read(buffer, 0, buffer.Length);
+                _stream.Value.Seek(i, SeekOrigin.Begin);
+                _stream.Value.Read(buffer, 0, buffer.Length);
 
                 if (!buffer.SequenceEqual(_metadataStartMarker))
                     continue;
@@ -230,20 +240,15 @@ namespace MaxMind.DB
 
         private byte ReadOne(int position)
         {
-            lock (_stream)
-            {
-                _stream.Seek(position, SeekOrigin.Begin);
-                return (byte)_stream.ReadByte();
-            }
+            _stream.Value.Seek(position, SeekOrigin.Begin);
+            return (byte)_stream.Value.ReadByte();
         }
 
         private byte[] ReadMany(int position, int size)
-        {
-            lock (_stream)
-            {
+        {            
                 var buffer = new byte[size];
-                _stream.Seek(position, SeekOrigin.Begin);
-                _stream.Read(buffer, 0, buffer.Length);
+                _stream.Value.Seek(position, SeekOrigin.Begin);
+                _stream.Value.Read(buffer, 0, buffer.Length);
                 return buffer;
             }
         }

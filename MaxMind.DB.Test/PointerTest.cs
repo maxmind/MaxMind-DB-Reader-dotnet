@@ -1,4 +1,6 @@
-﻿namespace MaxMind.DB.Test
+﻿using System.Threading;
+
+namespace MaxMind.DB.Test
 {
     using System.IO;
     using NUnit.Framework;
@@ -9,7 +11,7 @@
         [Test]
         public void TestWithPointers()
         {
-            var stream = new MemoryStream(File.ReadAllBytes("..\\..\\TestData\\MaxMind-DB\\test-data\\maps-with-pointers.raw"));
+            var stream = new ThreadLocal<Stream>(() => new MemoryStream(File.ReadAllBytes("..\\..\\TestData\\MaxMind-DB\\test-data\\maps-with-pointers.raw")));
             using (stream)
             {
                 var decoder = new Decoder(stream, 0);

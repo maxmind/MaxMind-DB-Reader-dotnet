@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace MaxMind.DB
@@ -45,7 +46,8 @@ namespace MaxMind.DB
     /// </summary>
     internal class Decoder
     {
-        private readonly Stream _stream;
+
+        private readonly ThreadLocal<Stream> _stream;
 
         private readonly int _pointerBase = -1;
 
@@ -58,7 +60,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
-        internal Decoder(Stream stream, int pointerBase)
+        internal Decoder(ThreadLocal<Stream> stream, int pointerBase)
         {
             _pointerBase = pointerBase;
             _stream = stream;
@@ -71,7 +73,7 @@ namespace MaxMind.DB
         /// <returns>An object containing the data read from the stream</returns>
         internal Result Decode(int offset)
         {
-            if (offset >= _stream.Length)
+            if (offset >= _stream.Value.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                     + "pointer larger than the database.");
 
@@ -118,12 +120,9 @@ namespace MaxMind.DB
         /// <param name="position">The position.</param>
         /// <returns></returns>
         private byte ReadOne(int position)
-        {
-            lock (_stream)
-            {
-                _stream.Seek(position, SeekOrigin.Begin);
-                return (byte)_stream.ReadByte();
-            }
+        {            
+                _stream.Value.Seek(position, SeekOrigin.Begin);
+                return (byte)_stream.Value.ReadByte();
         }
 
         /// <summary>
@@ -134,13 +133,10 @@ namespace MaxMind.DB
         /// <returns></returns>
         private byte[] ReadMany(int position, int size)
         {
-            lock (_stream)
-            {
                 var buffer = new byte[size];
-                _stream.Seek(position, SeekOrigin.Begin);
-                _stream.Read(buffer, 0, buffer.Length);
-                return buffer;
-            }
+                _stream.Value.Seek(position, SeekOrigin.Begin);
+                _stream.Value.Read(buffer, 0, buffer.Length);
+            return buffer;
         }
 
         /// <summary>

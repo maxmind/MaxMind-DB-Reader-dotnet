@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
@@ -352,7 +353,7 @@ namespace MaxMind.DB.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using (var stream = new MemoryStream(input))
+                using (var stream = new ThreadLocal<Stream>(() => new MemoryStream(input)))
                 {
                     var decoder = new Decoder(stream, 0);
                     decoder.PointerTestHack = true;
