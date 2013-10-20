@@ -45,8 +45,6 @@ namespace MaxMind.DB
     /// </summary>
     internal class Decoder
     {
-        #region Private
-
         private readonly Stream _stream;
 
         private readonly int _pointerBase = -1;
@@ -54,8 +52,6 @@ namespace MaxMind.DB
         private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
 
         internal bool PointerTestHack { get; set; }
-
-        #endregion
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Decoder"/> class.
@@ -169,7 +165,7 @@ namespace MaxMind.DB
                 case ObjectType.Boolean:
                     return new Result(DecodeBoolean(size), offset);
                 case ObjectType.Utf8String:
-                    return new Result(decodeString(buffer), newOffset);
+                    return new Result(DecodeString(buffer), newOffset);
                 case ObjectType.Double:
                     return new Result(DecodeDouble(buffer), newOffset);
                 case ObjectType.Float:
@@ -288,7 +284,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeString(byte[] buffer)
+        private JValue DecodeString(byte[] buffer)
         {
             return new JValue(Encoding.UTF8.GetString(buffer));
         }
