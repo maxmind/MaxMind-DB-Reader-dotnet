@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Newtonsoft.Json;
 
 namespace MaxMind.DB
@@ -27,7 +25,7 @@ namespace MaxMind.DB
         {
             get
             {
-                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(this.BuildEpoch);
+                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch);
             }
         }
 
@@ -54,7 +52,7 @@ namespace MaxMind.DB
         {
             get
             {
-                return this.RecordSize / 4;
+                return RecordSize / 4;
             }
         }
 
@@ -62,7 +60,7 @@ namespace MaxMind.DB
         {
             get
             {
-                return this.NodeCount * this.NodeByteSize;
+                return NodeCount * this.NodeByteSize;
             }
         }
     }
