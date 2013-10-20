@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB", "MaxMind.MaxMindDb\MaxMind.DB.csproj", "{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Benchmark", "MaxMind.MaxMindDb.Benchmark\MaxMind.DB.Benchmark.csproj", "{B9B6E140-C381-4C8B-A41E-117FDAA14F35}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{724F40B1-2913-4685-BE6E-2F698B1E6232}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Test", "MaxMind.MaxMindDb.Test\MaxMind.DB.Test.csproj", "{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Debug|x86.ActiveCfg = Debug|x86
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Debug|x86.Build.0 = Debug|x86
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Release|x86.ActiveCfg = Release|x86
+		{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}.Release|x86.Build.0 = Release|x86
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Debug|x86.ActiveCfg = Debug|x86
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Debug|x86.Build.0 = Debug|x86
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Release|x86.ActiveCfg = Release|x86
+		{B9B6E140-C381-4C8B-A41E-117FDAA14F35}.Release|x86.Build.0 = Release|x86
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}.Release|x86.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
+EndGlobal

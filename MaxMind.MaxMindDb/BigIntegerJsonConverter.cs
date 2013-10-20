@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace MaxMind.MaxMindDb
+namespace MaxMind.DB
 {
     public class BigIntegerJsonConverter : JsonConverter
     {

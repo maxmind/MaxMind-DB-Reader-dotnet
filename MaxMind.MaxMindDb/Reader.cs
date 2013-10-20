@@ -5,7 +5,7 @@ using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace MaxMind.MaxMindDb
+namespace MaxMind.DB
 {
     using Winterdom.IO.FileMap;
 

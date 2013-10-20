@@ -1,4 +1,4 @@
-﻿namespace MaxMind.MaxMindDb.Test
+﻿namespace MaxMind.DB.Test
 {
     using System.IO;
     using NUnit.Framework;

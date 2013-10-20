@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace MaxMind.MaxMindDb
+namespace MaxMind.DB
 {
     /// <summary>
     /// Data about the database file itself

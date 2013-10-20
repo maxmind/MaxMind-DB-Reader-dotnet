@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace MaxMind.MaxMindDb.Test
+namespace MaxMind.DB.Test
 {
     using System.Linq;
 
