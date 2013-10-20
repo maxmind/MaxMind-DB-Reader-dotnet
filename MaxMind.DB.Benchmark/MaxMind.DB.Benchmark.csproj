@@ -76,7 +76,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MaxMind.MaxMindDb\MaxMind.DB.csproj">
+    <ProjectReference Include="..\MaxMind.DB\MaxMind.DB.csproj">
       <Project>{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}</Project>
       <Name>MaxMind.DB</Name>
     </ProjectReference>

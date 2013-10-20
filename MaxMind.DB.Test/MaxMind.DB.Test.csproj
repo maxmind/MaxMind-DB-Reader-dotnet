@@ -58,7 +58,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MaxMind.MaxMindDb\MaxMind.DB.csproj">
+    <ProjectReference Include="..\MaxMind.DB\MaxMind.DB.csproj">
       <Project>{7600f6bc-de08-4253-b0b0-35c80ed72cf2}</Project>
       <Name>MaxMind.DB</Name>
     </ProjectReference>

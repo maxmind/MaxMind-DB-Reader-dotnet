@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB", "MaxMind.MaxMindDb\MaxMind.DB.csproj", "{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB", "MaxMind.DB\MaxMind.DB.csproj", "{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Benchmark", "MaxMind.MaxMindDb.Benchmark\MaxMind.DB.Benchmark.csproj", "{B9B6E140-C381-4C8B-A41E-117FDAA14F35}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Benchmark", "MaxMind.DB.Benchmark\MaxMind.DB.Benchmark.csproj", "{B9B6E140-C381-4C8B-A41E-117FDAA14F35}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{724F40B1-2913-4685-BE6E-2F698B1E6232}"
 	ProjectSection(SolutionItems) = preProject
@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{724F40
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Test", "MaxMind.MaxMindDb.Test\MaxMind.DB.Test.csproj", "{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.DB.Test", "MaxMind.DB.Test\MaxMind.DB.Test.csproj", "{9EAC0AC7-1F72-4F43-9EAF-7DA00CBD4159}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
