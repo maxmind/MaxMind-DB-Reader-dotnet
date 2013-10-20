@@ -23,7 +23,7 @@ namespace MaxMind.MaxMindDb.Test
                 foreach (var ipVersion in new int[] { 4, 6 })
                 {
                     var file = TEST_DATA_ROOT + "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
-                    var reader = new MaxMindDbReader(file);
+                    var reader = new Reader(file);
                     using (reader)
                     {
                         TestMetadata(reader, ipVersion);
@@ -44,7 +44,7 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void NoIPV4SearchTree()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb"))
             {
                 Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
                 Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
@@ -54,7 +54,7 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void TestDecodingTypes()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
             {
 
                 var record = reader.Find("::1.1.1.0");
@@ -101,7 +101,7 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void TestZeros()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
             {
                 var record = reader.Find("::");
 
@@ -131,7 +131,7 @@ namespace MaxMind.MaxMindDb.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "GeoIP2-City-Test-Broken-Double-Format.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "GeoIP2-City-Test-Broken-Double-Format.mmdb"))
             {
                 reader.Find("2001:220::");
             }
@@ -141,7 +141,7 @@ namespace MaxMind.MaxMindDb.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt", MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
             { 
                 reader.Find("1.1.1.32");
             }
@@ -151,13 +151,13 @@ namespace MaxMind.MaxMindDb.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
-            using (var reader = new MaxMindDbReader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
             {
                 reader.Find("1.1.1.16");
             }
         }
 
-        private void TestIPV6(MaxMindDbReader reader, string file)
+        private void TestIPV6(Reader reader, string file)
         {
             TestAddresses(reader,
                 file,
@@ -178,7 +178,7 @@ namespace MaxMind.MaxMindDb.Test
 
         }
 
-        private void TestIPV4(MaxMindDbReader reader, string file)
+        private void TestIPV4(Reader reader, string file)
         {
             TestAddresses(reader,
                 file,
@@ -195,7 +195,7 @@ namespace MaxMind.MaxMindDb.Test
                 new[] { "1.1.1.33", "255.254.253.123" });
         }
 
-        private void TestAddresses(MaxMindDbReader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
+        private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
         {
             foreach (var address in singleAddresses)
             {
@@ -213,7 +213,7 @@ namespace MaxMind.MaxMindDb.Test
             }
         }
 
-        private void TestMetadata(MaxMindDbReader reader, int ipVersion)
+        private void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;
 

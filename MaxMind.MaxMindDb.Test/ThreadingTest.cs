@@ -13,7 +13,7 @@ namespace MaxMind.MaxMindDb.Test
         [Test]
         public void TestParallelFor()
         {
-            var reader = new MaxMindDbReader("..\\..\\TestData\\GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
+            var reader = new Reader("..\\..\\TestData\\GeoLite2-City.mmdb", FileAccessMode.MemoryMapped);
             var count = 0;
             var ipsAndResults = new Dictionary<IPAddress, string>();
             var rand = new Random();
