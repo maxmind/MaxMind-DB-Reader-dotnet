@@ -39,9 +39,9 @@ namespace MaxMind.DB
 
         private int _fileSize;
 
-        private int _ipV4Start;
-        private MemoryMappedFile _memoryMappedFile;
+        private readonly MemoryMappedFile _memoryMappedFile;
 
+        private int _ipV4Start;
         private int IPV4Start
         {
             get
@@ -59,7 +59,7 @@ namespace MaxMind.DB
             }
         }
 
-        private ThreadLocal<Stream> _stream { get; set; }
+        private readonly ThreadLocal<Stream> _stream;
 
         private Decoder Decoder { get; set; }
 
@@ -84,23 +84,22 @@ namespace MaxMind.DB
                 var mmfName = fileInfo.FullName.Replace("\\", "-");
                 try
                 {
-                    memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
+                    _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
                 }
-                catch (IOException ex)
+                catch (IOException)
                 {
-                    memoryMappedFile = MemoryMappedFile.CreateFromFile(this.FileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
                 }
             }
 
             _stream = new ThreadLocal<Stream>(() =>
             {
                 Stream s;
-            if (mode == FileAccessMode.Memory) this.fs = new MemoryStream(File.ReadAllBytes(this.FileName));
+                if (mode == FileAccessMode.Memory) s = new MemoryStream(File.ReadAllBytes(_fileName));
                 else
                 {
                     var fileLength = (int) new FileInfo(file).Length;
-                	_memoryMappedFile = MemoryMappedFile.Create(_fileName, MapProtection.PageReadOnly, fileLength);
-                    s = _memoryMappedFile.CreateViewStream(0, fileLength);
+                    s = _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
                 }
 
                 return s;
@@ -255,11 +254,10 @@ namespace MaxMind.DB
 
         private byte[] ReadMany(int position, int size)
         {            
-                var buffer = new byte[size];
-                _stream.Value.Seek(position, SeekOrigin.Begin);
-                _stream.Value.Read(buffer, 0, buffer.Length);
-                return buffer;
-            }
+            var buffer = new byte[size];
+            _stream.Value.Seek(position, SeekOrigin.Begin);
+            _stream.Value.Read(buffer, 0, buffer.Length);
+            return buffer;
         }
 
         public void Dispose()
