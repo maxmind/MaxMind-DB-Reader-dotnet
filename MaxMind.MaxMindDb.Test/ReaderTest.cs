@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace MaxMind.DB.Test
 {
@@ -13,16 +12,16 @@ namespace MaxMind.DB.Test
     [TestFixture]
     public class ReaderTest
     {
-        private const string TEST_DATA_ROOT = "..\\..\\TestData\\MaxMind-DB\\test-data\\";
+        private const string TestDataRoot = "..\\..\\TestData\\MaxMind-DB\\test-data\\";
 
         [Test]
         public void Test()
         {
             foreach (var recordSize in new long[] { 24, 28, 32 })
             {
-                foreach (var ipVersion in new int[] { 4, 6 })
+                foreach (var ipVersion in new[] { 4, 6 })
                 {
-                    var file = TEST_DATA_ROOT + "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
+                    var file = TestDataRoot + "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb";
                     var reader = new Reader(file);
                     using (reader)
                     {
@@ -44,7 +43,7 @@ namespace MaxMind.DB.Test
         [Test]
         public void NoIPV4SearchTree()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-no-ipv4-search-tree.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "MaxMind-DB-no-ipv4-search-tree.mmdb"))
             {
                 Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
                 Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
@@ -54,14 +53,14 @@ namespace MaxMind.DB.Test
         [Test]
         public void TestDecodingTypes()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "MaxMind-DB-test-decoder.mmdb"))
             {
 
                 var record = reader.Find("::1.1.1.0");
 
                 Assert.That(record.Value<bool>("boolean"), Is.True);
 
-                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] { 0, 0, 0, (byte)42 }));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
 
                 Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
@@ -101,7 +100,7 @@ namespace MaxMind.DB.Test
         [Test]
         public void TestZeros()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-decoder.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "MaxMind-DB-test-decoder.mmdb"))
             {
                 var record = reader.Find("::");
 
@@ -131,7 +130,7 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "GeoIP2-City-Test-Broken-Double-Format.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "GeoIP2-City-Test-Broken-Double-Format.mmdb"))
             {
                 reader.Find("2001:220::");
             }
@@ -141,7 +140,7 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt", MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "MaxMind-DB-test-broken-pointers-24.mmdb"))
             { 
                 reader.Find("1.1.1.32");
             }
@@ -151,7 +150,7 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
-            using (var reader = new Reader(TEST_DATA_ROOT + "MaxMind-DB-test-broken-pointers-24.mmdb"))
+            using (var reader = new Reader(TestDataRoot + "MaxMind-DB-test-broken-pointers-24.mmdb"))
             {
                 reader.Find("1.1.1.16");
             }
@@ -183,7 +182,8 @@ namespace MaxMind.DB.Test
             TestAddresses(reader,
                 file,
                 Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
-                new Dictionary<string, string>(){
+                new Dictionary<string, string>
+                {
                             {"1.1.1.3", "1.1.1.2"},
                             {"1.1.1.5", "1.1.1.4"},
                             {"1.1.1.7", "1.1.1.4"},

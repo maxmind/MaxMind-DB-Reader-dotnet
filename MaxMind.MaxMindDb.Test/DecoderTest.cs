@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -205,24 +204,24 @@ namespace MaxMind.DB.Test
         {
             var strings = new Dictionary<string, byte[]>();
 
-            DecoderTest.AddTestString(strings, (byte) 0x40, "");
-            DecoderTest.AddTestString(strings, (byte) 0x41, "1");
-            DecoderTest.AddTestString(strings, (byte) 0x43, "人");
-            DecoderTest.AddTestString(strings, (byte) 0x43, "123");
-            DecoderTest.AddTestString(strings, (byte) 0x5b, "123456789012345678901234567");
-            DecoderTest.AddTestString(strings, (byte) 0x5c, "1234567890123456789012345678");
-            DecoderTest.AddTestString(strings, new byte[] {0x5d, 0x0}, "12345678901234567890123456789");
-            DecoderTest.AddTestString(strings, new byte[] {0x5d, 0x1}, "123456789012345678901234567890");
+            AddTestString(strings, (byte) 0x40, "");
+            AddTestString(strings, (byte) 0x41, "1");
+            AddTestString(strings, (byte) 0x43, "人");
+            AddTestString(strings, (byte) 0x43, "123");
+            AddTestString(strings, (byte) 0x5b, "123456789012345678901234567");
+            AddTestString(strings, (byte) 0x5c, "1234567890123456789012345678");
+            AddTestString(strings, new byte[] {0x5d, 0x0}, "12345678901234567890123456789");
+            AddTestString(strings, new byte[] {0x5d, 0x1}, "123456789012345678901234567890");
 
-            DecoderTest.AddTestString(strings, new byte[] {0x5e, 0x0, (byte) 0xd7}, new string('x', 500));
-            DecoderTest.AddTestString(strings, new byte[] {0x5e, 0x6, (byte) 0xb3}, new string('x', 2000));
-            DecoderTest.AddTestString(strings, new byte[] {0x5f, 0x0, 0x10, 0x53,}, new string('x', 70000));
+            AddTestString(strings, new byte[] {0x5e, 0x0, (byte) 0xd7}, new string('x', 500));
+            AddTestString(strings, new byte[] {0x5e, 0x6, (byte) 0xb3}, new string('x', 2000));
+            AddTestString(strings, new byte[] {0x5f, 0x0, 0x10, 0x53,}, new string('x', 70000));
             return strings;
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte ctrl, string str) 
         {
-            DecoderTest.AddTestString(tests, new byte[] { ctrl }, str);
+            AddTestString(tests, new byte[] { ctrl }, str);
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte[] ctrl, string str) 
@@ -251,7 +250,7 @@ namespace MaxMind.DB.Test
         {
             var bytes = new Dictionary<byte[], byte[]>();
 
-            var strings = DecoderTest.Strings();
+            var strings = Strings();
 
             foreach (string s in strings.Keys) 
             {
