@@ -29,7 +29,7 @@ namespace MaxMind.DB.Test
             }
 
             var ips = ipsAndResults.Keys.ToArray();
-            Parallel.For(0, ips.Length, (i) =>
+            Parallel.For(0, ips.Length, i =>
             {
                 var ipAddress = ips[i];
                 var result = reader.Find(ipAddress);
