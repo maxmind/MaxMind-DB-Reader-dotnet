@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading;
 using Newtonsoft.Json.Linq;
 
 namespace MaxMind.DB
@@ -49,13 +47,13 @@ namespace MaxMind.DB
     {
         #region Private
 
-        private Stream fs = null;
+        private readonly Stream _stream;
 
-        private int pointerBase = -1;
+        private readonly int _pointerBase = -1;
 
-        private int[] pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
+        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
 
-        internal bool pointerTestHack = false;
+        internal bool PointerTestHack { get; set; }
 
         #endregion
 
@@ -66,8 +64,8 @@ namespace MaxMind.DB
         /// <param name="pointerBase">The base address in the stream.</param>
         internal Decoder(Stream stream, int pointerBase)
         {
-            this.pointerBase = pointerBase;
-            this.fs = stream;
+            _pointerBase = pointerBase;
+            _stream = stream;
         }
 
         /// <summary>
@@ -77,7 +75,7 @@ namespace MaxMind.DB
         /// <returns>An object containing the data read from the stream</returns>
         internal Result Decode(int offset)
         {
-            if (offset >= fs.Length)
+            if (offset >= _stream.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                     + "pointer larger than the database.");
 
@@ -88,12 +86,12 @@ namespace MaxMind.DB
 
             if (type == ObjectType.Pointer)
             {
-                long pointer = this.decodePointer(ctrlByte, offset, out offset);
-                if (pointerTestHack)
+                long pointer = DecodePointer(ctrlByte, offset, out offset);
+                if (PointerTestHack)
                 {
                     return new Result(new JValue(pointer), offset);
                 }
-                Result result = this.Decode(Convert.ToInt32(pointer));
+                Result result = Decode(Convert.ToInt32(pointer));
                 result.Offset = offset;
                 return result;
             }
@@ -111,14 +109,12 @@ namespace MaxMind.DB
                 offset++;
             }
 
-            int[] sizeArray = this.SizeFromCtrlByte(ctrlByte, offset);
+            int[] sizeArray = SizeFromCtrlByte(ctrlByte, offset);
             int size = sizeArray[0];
             offset = sizeArray[1];
 
             return DecodeByType(type, offset, size);
         }
-
-        #region Private
 
         /// <summary>
         /// Reads the one.
@@ -127,10 +123,10 @@ namespace MaxMind.DB
         /// <returns></returns>
         private byte ReadOne(int position)
         {
-            lock (fs)
+            lock (_stream)
             {
-                fs.Seek(position, SeekOrigin.Begin);
-                return (byte)fs.ReadByte();
+                _stream.Seek(position, SeekOrigin.Begin);
+                return (byte)_stream.ReadByte();
             }
         }
 
@@ -142,11 +138,11 @@ namespace MaxMind.DB
         /// <returns></returns>
         private byte[] ReadMany(int position, int size)
         {
-            lock (fs)
+            lock (_stream)
             {
-                byte[] buffer = new byte[size];
-                fs.Seek(position, SeekOrigin.Begin);
-                fs.Read(buffer, 0, buffer.Length);
+                var buffer = new byte[size];
+                _stream.Seek(position, SeekOrigin.Begin);
+                _stream.Read(buffer, 0, buffer.Length);
                 return buffer;
             }
         }
@@ -161,35 +157,35 @@ namespace MaxMind.DB
         /// <exception cref="System.Exception">Unable to handle type!</exception>
         private Result DecodeByType(ObjectType type, int offset, int size)
         {
-            int new_offset = offset + size;
+            int newOffset = offset + size;
             byte[] buffer = ReadMany(offset, size);
 
             switch (type)
             {
                 case ObjectType.Map:
-                    return decodeMap(size, offset);
+                    return DecodeMap(size, offset);
                 case ObjectType.Array:
-                    return decodeArray(size, offset);
+                    return DecodeArray(size, offset);
                 case ObjectType.Boolean:
-                    return new Result(decodeBoolean(size), offset);
+                    return new Result(DecodeBoolean(size), offset);
                 case ObjectType.Utf8String:
-                    return new Result(decodeString(buffer), new_offset);
+                    return new Result(decodeString(buffer), newOffset);
                 case ObjectType.Double:
-                    return new Result(decodeDouble(buffer), new_offset);
+                    return new Result(DecodeDouble(buffer), newOffset);
                 case ObjectType.Float:
-                    return new Result(decodeFloat(buffer), new_offset);
+                    return new Result(DecodeFloat(buffer), newOffset);
                 case ObjectType.Bytes:
-                    return new Result(new JValue(buffer), new_offset);
+                    return new Result(new JValue(buffer), newOffset);
                 case ObjectType.Uint16:
-                    return new Result(decodeInteger(buffer), new_offset);
+                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
                 case ObjectType.Uint32:
-                    return new Result(decodeLong(buffer), new_offset);
+                    return new Result(DecodeLong(buffer), newOffset);
                 case ObjectType.Int32:
-                    return new Result(decodeInteger(buffer), new_offset);
+                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
                 case ObjectType.Uint64:
-                    return new Result(decodeUint64(buffer), new_offset);
+                    return new Result(DecodeUInt64(buffer), newOffset);
                 case ObjectType.Uint128:
-                    return new Result(decodeBigInteger(buffer), new_offset);
+                    return new Result(DecodeBigInteger(buffer), newOffset);
                 default:
                     throw new InvalidDatabaseException("Unable to handle type:" + type);
             }
@@ -220,33 +216,31 @@ namespace MaxMind.DB
             if (size == 29)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = Decoder.DecodeInteger(buffer);
+                int i = DecodeInteger(buffer);
                 size = 29 + i;
             }
             else if (size == 30)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = Decoder.DecodeInteger(buffer);
+                int i = DecodeInteger(buffer);
                 size = 285 + i;
             }
             else if (size > 30)
             {
                 byte[] buffer = ReadMany(offset, bytesToRead);
-                int i = Decoder.DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
+                int i = DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
                 size = 65821 + i;
             }
 
-            return new int[] { size, offset + bytesToRead };
+            return new[] { size, offset + bytesToRead };
         }
-
-        #region Convert
 
         /// <summary>
         /// Decodes the boolean.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
+        /// <param name="size">The size of the structure.</param>
         /// <returns></returns>
-        private JValue decodeBoolean(int size)
+        private JValue DecodeBoolean(int size)
         {
             switch (size)
             {
@@ -265,7 +259,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeDouble(byte[] buffer)
+        private JValue DecodeDouble(byte[] buffer)
         {
             if (buffer.Length != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -280,7 +274,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeFloat(byte[] buffer)
+        private JValue DecodeFloat(byte[] buffer)
         {
             if (buffer.Length != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -305,16 +299,16 @@ namespace MaxMind.DB
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
         /// <returns></returns>
-        private Result decodeMap(int size, int offset)
+        private Result DecodeMap(int size, int offset)
         {
             var obj = new JObject();
 
             for (int i = 0; i < size; i++)
             {
-                Result left = this.Decode(offset);
+                Result left = Decode(offset);
                 var key = left.Node;
                 offset = left.Offset;
-                Result right = this.Decode(offset);
+                Result right = Decode(offset);
                 var value = right.Node;
                 offset = right.Offset;
                 obj.Add(key.Value<string>(), value);
@@ -328,7 +322,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeLong(byte[] buffer)
+        private JValue DecodeLong(byte[] buffer)
         {
             long integer = 0;
             for (int i = 0; i < buffer.Length; i++)
@@ -343,9 +337,9 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeInteger(byte[] buffer)
+        private JValue DecodeIntegerToJValue(byte[] buffer)
         {
-            return new JValue(Decoder.DecodeInteger(buffer));
+            return new JValue(DecodeInteger(buffer));
         }
 
         /// <summary>
@@ -354,13 +348,13 @@ namespace MaxMind.DB
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
         /// <returns></returns>
-        private Result decodeArray(int size, int offset)
+        private Result DecodeArray(int size, int offset)
         {
             var array = new JArray();
 
             for (int i = 0; i < size; i++)
             {
-                Result r = this.Decode(offset);
+                Result r = Decode(offset);
                 offset = r.Offset;
                 array.Add(r.Node);
             }
@@ -373,7 +367,7 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue decodeUint64(byte[] buffer)
+        private JValue DecodeUInt64(byte[] buffer)
         {
             UInt64 integer = 0;
             for (int i = 0; i < buffer.Length; i++)
@@ -388,9 +382,9 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JToken decodeBigInteger(byte[] buffer)
+        private JToken DecodeBigInteger(byte[] buffer)
         {
-            return JValue.FromObject(new BigInteger(buffer));
+            return JToken.FromObject(new BigInteger(buffer));
         }
 
         /// <summary>
@@ -398,22 +392,17 @@ namespace MaxMind.DB
         /// </summary>
         /// <param name="ctrlByte">The control byte.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The resulting offset</param>
         /// <returns></returns>
-        private int decodePointer(int ctrlByte, int offset, out int outOffset)
+        private int DecodePointer(int ctrlByte, int offset, out int outOffset)
         {
             int pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
-            int b = pointerSize == 4 ? (byte)0 : (byte)(ctrlByte & 0x7);
+            int b = pointerSize == 4 ? 0 : (byte)(ctrlByte & 0x7);
             byte[] buffer = ReadMany(offset, pointerSize);
-            int packed = Decoder.DecodeInteger(b, buffer);
+            int packed = DecodeInteger(b, buffer);
             outOffset = offset + pointerSize;
-            return packed + this.pointerBase + this.pointerValueOffset[pointerSize];
+            return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }
-
-        #endregion
-
-        #endregion
-
-        #region static
 
         /// <summary>
         /// Decodes the integer.
@@ -422,7 +411,7 @@ namespace MaxMind.DB
         /// <returns></returns>
         internal static int DecodeInteger(byte[] buffer)
         {
-            return Decoder.DecodeInteger(0, buffer);
+            return DecodeInteger(0, buffer);
         }
 
         /// <summary>
@@ -440,7 +429,5 @@ namespace MaxMind.DB
             }
             return integer;
         }
-
-        #endregion
     }
 }
