@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Threading;
 
-namespace MaxMind.MaxMindDb.Benchmark
+namespace MaxMind.DB.Benchmark
 {
     class Program
     {

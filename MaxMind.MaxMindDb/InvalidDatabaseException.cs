@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MaxMind.MaxMindDb
+namespace MaxMind.DB
 {
     /// <summary>
     /// Thrown when the MaxMind database file is incorrectly formatted

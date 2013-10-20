@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace MaxMind.MaxMindDb
+namespace MaxMind.DB
 {
     using DType = System.UInt32; // This could be UInt32, UInt16 or Byte; not UInt64.
 

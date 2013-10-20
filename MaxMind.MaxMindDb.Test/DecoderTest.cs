@@ -6,7 +6,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
-namespace MaxMind.MaxMindDb.Test
+namespace MaxMind.DB.Test
 {
     [TestFixture]
     public class DecoderTest

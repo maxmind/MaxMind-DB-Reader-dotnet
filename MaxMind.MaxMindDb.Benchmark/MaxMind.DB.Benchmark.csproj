@@ -8,8 +8,8 @@
     <ProjectGuid>{B9B6E140-C381-4C8B-A41E-117FDAA14F35}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MaxMind.MaxMindDb.Benchmark</RootNamespace>
-    <AssemblyName>MaxMind.MaxMindDb.Benchmark</AssemblyName>
+    <RootNamespace>MaxMind.DB.Benchmark</RootNamespace>
+    <AssemblyName>MaxMind.DB.Benchmark</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <FileUpgradeFlags>
@@ -76,9 +76,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MaxMind.MaxMindDb\MaxMind.MaxMindDb.csproj">
+    <ProjectReference Include="..\MaxMind.MaxMindDb\MaxMind.DB.csproj">
       <Project>{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}</Project>
-      <Name>MaxMind.MaxMindDb</Name>
+      <Name>MaxMind.DB</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
