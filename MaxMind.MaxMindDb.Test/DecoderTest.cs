@@ -356,7 +356,7 @@ namespace MaxMind.DB.Test
                 using (var stream = new MemoryStream(input))
                 {
                     var decoder = new Decoder(stream, 0);
-                    decoder.pointerTestHack = true;
+                    decoder.PointerTestHack = true;
                     var jToken = decoder.Decode(0).Node;
 
                     if (jToken is JRaw)
