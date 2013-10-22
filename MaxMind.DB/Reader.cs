@@ -81,14 +81,17 @@ namespace MaxMind.DB
             if (mode == FileAccessMode.MemoryMapped)
             {
                 var fileInfo = new FileInfo(file);
-                var mmfName = fileInfo.FullName.Replace("\\", "-");
+                var mmfName = fileInfo.FullName.Replace("\\", "/");
                 try
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
                 }
-                catch (IOException)
+                catch (Exception ex)
                 {
-                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+                    if(ex is IOException || ex is NotImplementedException)
+						_memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+					else
+						throw;
                 }
             }
 

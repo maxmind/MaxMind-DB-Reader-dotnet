@@ -10,7 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MaxMind.DB.Benchmark</RootNamespace>
     <AssemblyName>MaxMind.DB.Benchmark</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <RootNamespace>MaxMind.DB.Benchmark</RootNamespace>
     <AssemblyName>MaxMind.DB.Benchmark</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
