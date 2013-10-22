@@ -81,7 +81,7 @@ namespace MaxMind.DB
             if (mode == FileAccessMode.MemoryMapped)
             {
                 var fileInfo = new FileInfo(file);
-                var mmfName = fileInfo.FullName.Replace("\\", "/");
+                var mmfName = fileInfo.FullName.Replace("\\", "-");
                 try
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
