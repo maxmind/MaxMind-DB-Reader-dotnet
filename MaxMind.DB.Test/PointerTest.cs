@@ -11,7 +11,8 @@ namespace MaxMind.DB.Test
         [Test]
         public void TestWithPointers()
         {
-            var stream = new ThreadLocal<Stream>(() => new MemoryStream(File.ReadAllBytes("..\\..\\TestData\\MaxMind-DB\\test-data\\maps-with-pointers.raw")));
+			var path = Path.Combine(new []{"..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw"});
+            var stream = new ThreadLocal<Stream>(() => new MemoryStream(File.ReadAllBytes(path)));
             using (stream)
             {
                 var decoder = new Decoder(stream, 0);
