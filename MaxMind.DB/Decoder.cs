@@ -389,7 +389,7 @@ namespace MaxMind.DB
         private int DecodePointer(int ctrlByte, int offset, out int outOffset)
         {
             int pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
-            int b = pointerSize == 4 ? 0 : (byte)(ctrlByte & 0x7);
+            int b = pointerSize == 4 ? 0 : ctrlByte & 0x7;
             byte[] buffer = ReadMany(offset, pointerSize);
             int packed = DecodeInteger(b, buffer);
             outOffset = offset + pointerSize;
