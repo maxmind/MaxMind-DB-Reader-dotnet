@@ -1,0 +1,20 @@
+language: c
+
+before_install:
+  - git submodule update --init --recursive
+
+install:
+  - sudo apt-get install mono-devel mono-gmcs nunit-console
+  - mozroots --import --sync
+  - export EnableNuGetPackageRestore="true"
+
+script:
+  - xbuild
+  - nunit-console -framework=4.0.30319.1 ./MaxMind.DB.Test/bin/Debug/MaxMind.DB.Test.dll
+
+notifications:
+  email:
+    recipients:
+      - dev@maxmind.com
+    on_success: change
+    on_failure: always
