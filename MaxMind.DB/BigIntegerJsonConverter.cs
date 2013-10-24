@@ -27,7 +27,7 @@ namespace MaxMind.DB
 
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof (BigInteger);
+            return objectType == typeof(BigInteger);
         }
     }
 }

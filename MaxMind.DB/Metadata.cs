@@ -9,19 +9,19 @@ namespace MaxMind.DB
     /// Data about the database file itself
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public class Metadata
+    internal class Metadata
     {
         [JsonProperty("binary_format_major_version")]
-        public int BinaryFormatMajorVersion { get; set; }
+        internal int BinaryFormatMajorVersion { get; set; }
 
         [JsonProperty("binary_format_minor_version")]
-        public int BinaryFormatMinorVersion { get; set; }
+        internal int BinaryFormatMinorVersion { get; set; }
 
         [JsonProperty("build_epoch")]
-        public long BuildEpoch { get; set; }
+        internal long BuildEpoch { get; set; }
 
         [JsonIgnore]
-        public DateTime Build
+        internal DateTime Build
         {
             get
             {
@@ -30,25 +30,25 @@ namespace MaxMind.DB
         }
 
         [JsonProperty("database_type")]
-        public string DatabaseType { get; set; }
+        internal string DatabaseType { get; set; }
 
         [JsonProperty("description")]
-        public Hashtable Description { get; set; }
+        internal Hashtable Description { get; set; }
 
         [JsonProperty("ip_version")]
-        public int IpVersion { get; set; }
+        internal int IpVersion { get; set; }
 
         [JsonProperty("languages")]
-        public List<string> Languages { get; set; }
+        internal List<string> Languages { get; set; }
 
         [JsonProperty("node_count")]
-        public int NodeCount { get; set; }
+        internal int NodeCount { get; set; }
 
         [JsonProperty("record_size")]
-        public int RecordSize { get; set; }
+        internal int RecordSize { get; set; }
 
         [JsonIgnore]
-        public int NodeByteSize
+        internal int NodeByteSize
         {
             get
             {
@@ -56,7 +56,7 @@ namespace MaxMind.DB
             }
         }
 
-        public int SearchTreeSize
+        internal int SearchTreeSize
         {
             get
             {

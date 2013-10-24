@@ -29,7 +29,7 @@ namespace MaxMind.DB
         /// <value>
         /// The metadata.
         /// </value>
-        public Metadata Metadata { get; private set; }
+        internal Metadata Metadata { get; private set; }
 
         private const int DataSectionSeparatorSize = 16;
 
