@@ -120,9 +120,9 @@ namespace MaxMind.DB
         /// <param name="position">The position.</param>
         /// <returns></returns>
         private byte ReadOne(int position)
-        {            
-                _stream.Value.Seek(position, SeekOrigin.Begin);
-                return (byte)_stream.Value.ReadByte();
+        {
+            _stream.Value.Seek(position, SeekOrigin.Begin);
+            return (byte)_stream.Value.ReadByte();
         }
 
         /// <summary>
@@ -133,9 +133,9 @@ namespace MaxMind.DB
         /// <returns></returns>
         private byte[] ReadMany(int position, int size)
         {
-                var buffer = new byte[size];
-                _stream.Value.Seek(position, SeekOrigin.Begin);
-                _stream.Value.Read(buffer, 0, buffer.Length);
+            var buffer = new byte[size];
+            _stream.Value.Seek(position, SeekOrigin.Begin);
+            _stream.Value.Read(buffer, 0, buffer.Length);
             return buffer;
         }
 

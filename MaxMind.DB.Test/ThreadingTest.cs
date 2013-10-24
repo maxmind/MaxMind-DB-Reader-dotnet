@@ -18,7 +18,7 @@ namespace MaxMind.DB.Test
             var count = 0;
             var ipsAndResults = new Dictionary<IPAddress, string>();
             var rand = new Random();
-            while(count < 10000)
+            while (count < 10000)
             {
                 var ip = new IPAddress(rand.Next(int.MaxValue));
                 var resp = reader.Find(ip);
@@ -37,11 +37,11 @@ namespace MaxMind.DB.Test
                 var result = reader.Find(ipAddress);
                 var resultString = result.ToString();
                 var expectedString = ipsAndResults[ipAddress];
-                if(resultString != expectedString)
+                if (resultString != expectedString)
                     throw new Exception(string.Format("Non-matching result. Expected {0}, found {1}", expectedString, resultString));
             });
             var stop = DateTime.Now;
-            Console.WriteLine("Requests per second: " + count/(stop - start).TotalSeconds);
+            Console.WriteLine("Requests per second: " + count / (stop - start).TotalSeconds);
         }
     }
 }
