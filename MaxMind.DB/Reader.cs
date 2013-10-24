@@ -88,10 +88,10 @@ namespace MaxMind.DB
                 }
                 catch (Exception ex)
                 {
-                    if(ex is IOException || ex is NotImplementedException)
-						_memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
-					else
-						throw;
+                    if (ex is IOException || ex is NotImplementedException)
+                        _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open, mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+                    else
+                        throw;
                 }
             }
 
@@ -101,7 +101,7 @@ namespace MaxMind.DB
                 if (mode == FileAccessMode.Memory) s = new MemoryStream(File.ReadAllBytes(_fileName));
                 else
                 {
-                    var fileLength = (int) new FileInfo(file).Length;
+                    var fileLength = (int)new FileInfo(file).Length;
                     s = _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
                 }
 
@@ -256,7 +256,7 @@ namespace MaxMind.DB
         }
 
         private byte[] ReadMany(int position, int size)
-        {            
+        {
             var buffer = new byte[size];
             _stream.Value.Seek(position, SeekOrigin.Begin);
             _stream.Value.Read(buffer, 0, buffer.Length);
@@ -266,7 +266,7 @@ namespace MaxMind.DB
         public void Dispose()
         {
             _stream.Dispose();
-            if(_memoryMappedFile != null)
+            if (_memoryMappedFile != null)
                 _memoryMappedFile.Dispose();
         }
     }

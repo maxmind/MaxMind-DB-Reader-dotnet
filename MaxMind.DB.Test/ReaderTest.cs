@@ -54,7 +54,7 @@ namespace MaxMind.DB.Test
         [Test]
         public void TestDecodingTypes()
         {
-			using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
 
                 var record = reader.Find("::1.1.1.0");
@@ -101,7 +101,7 @@ namespace MaxMind.DB.Test
         [Test]
         public void TestZeros()
         {
-			using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find("::");
 
@@ -131,7 +131,7 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
-			using (var reader = new Reader(Path.Combine(TestDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
+            using (var reader = new Reader(Path.Combine(TestDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
                 reader.Find("2001:220::");
             }
@@ -141,8 +141,8 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt", MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
-			using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
-            { 
+            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
+            {
                 reader.Find("1.1.1.32");
             }
         }
@@ -151,7 +151,7 @@ namespace MaxMind.DB.Test
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data", MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
-			using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
+            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
                 reader.Find("1.1.1.16");
             }
