@@ -79,6 +79,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -89,8 +90,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BigInteger.cs" />
-    <Compile Include="BigIntegerJsonConverter.cs" />
     <Compile Include="Decoder.cs" />
     <Compile Include="InvalidDatabaseException.cs" />
     <Compile Include="Reader.cs" />

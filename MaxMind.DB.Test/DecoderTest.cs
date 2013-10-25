@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
@@ -112,7 +113,7 @@ namespace MaxMind.DB.Test
 
             for (int power = 1; power <= 16; power++)
             {
-                var key = BigIntegerPow(new BigInteger(2), 8 * power) - 1;
+                var key = BigInteger.Pow(new BigInteger(2), 8 * power) - 1;
                 var value = new byte[2 + power];
 
                 value[0] = (byte)power;

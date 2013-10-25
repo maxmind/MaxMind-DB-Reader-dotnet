@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 
 namespace MaxMind.DB.Test
 {
@@ -94,7 +95,7 @@ namespace MaxMind.DB.Test
                 Assert.That(record.Value<int>("uint32"), Is.EqualTo(268435456));
                 Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(1152921504606846976));
                 Assert.That(record["uint128"].ToObject<BigInteger>(),
-                    Is.EqualTo(new BigInteger("1329227995784915872903807060280344576")));
+                    Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
             }
         }
 
