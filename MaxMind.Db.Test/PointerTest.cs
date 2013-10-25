@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace MaxMind.DB.Test
+namespace MaxMind.Db.Test
 {
     using System.IO;
     using NUnit.Framework;

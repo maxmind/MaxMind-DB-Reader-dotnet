@@ -7,7 +7,7 @@ using System.Threading;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
-namespace MaxMind.DB.Test
+namespace MaxMind.Db.Test
 {
     [TestFixture]
     public class DecoderTest

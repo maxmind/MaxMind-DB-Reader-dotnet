@@ -22,7 +22,7 @@ We recommend installing this library with NuGet. To do this, type the
 following into the Visual Studio Package Manager Console:
 
 ```
-install-package MaxMind.DB
+install-package MaxMind.Db
 ```
 
 ## Usage ##

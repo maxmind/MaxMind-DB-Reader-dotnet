@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 
-namespace MaxMind.DB.Test
+namespace MaxMind.Db.Test
 {
     using System.Linq;
 

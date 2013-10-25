@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace MaxMind.DB
+namespace MaxMind.Db
 {
     /// <summary>
     /// Enumeration representing the types of objects read from the database
