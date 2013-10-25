@@ -129,21 +129,6 @@ namespace MaxMind.DB.Test
             TestTypeDecoding(bigInts);
         }
 
-        static BigInteger BigIntegerPow(BigInteger x, int pow)
-        {
-            var ret = new BigInteger(1);
-            while (pow != 0)
-            {
-                if ((pow & 1) == 1)
-                    ret *= x;
-
-                x *= x;
-                pow >>= 1;
-            }
-
-            return ret;
-        }
-
         [Test]
         public void TestDoubles()
         {
