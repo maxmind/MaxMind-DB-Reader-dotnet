@@ -379,7 +379,7 @@ namespace MaxMind.DB
         {
             Array.Reverse(buffer);
 
-            //Pad with a 0 in case we're on a power of 2 boundary
+            //Pad with a 0 in case we're on a byte boundary
             Array.Resize(ref buffer, buffer.Length+1);
             buffer[buffer.Length - 1] = 0x0;
 
