@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
@@ -376,7 +377,13 @@ namespace MaxMind.DB
         /// <returns></returns>
         private JToken DecodeBigInteger(byte[] buffer)
         {
-            return JToken.FromObject(new BigInteger(buffer));
+            Array.Reverse(buffer);
+
+            //Pad with a 0 in case we're on a power of 2 boundary
+            Array.Resize(ref buffer, buffer.Length+1);
+            buffer[buffer.Length - 1] = 0x0;
+
+            return new JValue(new BigInteger(buffer));
         }
 
         /// <summary>
