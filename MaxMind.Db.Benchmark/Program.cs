@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace MaxMind.DB.Benchmark
+namespace MaxMind.Db.Benchmark
 {
     class Program
     {

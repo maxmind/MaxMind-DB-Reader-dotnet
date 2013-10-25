@@ -7,7 +7,7 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace MaxMind.DB
+namespace MaxMind.Db
 {
     /// <summary>
     /// An enumeration specifying the API to use to read the database
@@ -118,21 +118,21 @@ namespace MaxMind.DB
         /// <summary>
         /// Finds the data related to the specified address.
         /// </summary>
-        /// <param name="address">The IP address.</param>
+        /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public JToken Find(string address)
+        public JToken Find(string ipAddress)
         {
-            return Find(IPAddress.Parse(address));
+            return Find(IPAddress.Parse(ipAddress));
         }
 
         /// <summary>
         /// Finds the data related to the specified address.
         /// </summary>
-        /// <param name="address">The IP address.</param>
+        /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public JToken Find(IPAddress address)
+        public JToken Find(IPAddress ipAddress)
         {
-            var pointer = FindAddressInTree(address);
+            var pointer = FindAddressInTree(ipAddress);
             return pointer == 0 ? null : ResolveDataPointer(pointer);
         }
 
@@ -143,7 +143,7 @@ namespace MaxMind.DB
             if (resolved >= _stream.Value.Length)
             {
                 throw new InvalidDatabaseException(
-                        "The MaxMind DB file's search tree is corrupt: "
+                        "The MaxMind Db file's search tree is corrupt: "
                                 + "contains pointer larger than the database.");
             }
 
@@ -216,8 +216,8 @@ namespace MaxMind.DB
             }
 
             throw new InvalidDatabaseException(
-                    "Could not find a MaxMind DB metadata marker in this file ("
-                            + _fileName + "). Is this a valid MaxMind DB file?");
+                    "Could not find a MaxMind Db metadata marker in this file ("
+                            + _fileName + "). Is this a valid MaxMind Db file?");
         }
 
         private int ReadNode(int nodeNumber, int index)

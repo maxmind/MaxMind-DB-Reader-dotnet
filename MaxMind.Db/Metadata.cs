@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace MaxMind.DB
+namespace MaxMind.Db
 {
     /// <summary>
     /// Data about the database file itself

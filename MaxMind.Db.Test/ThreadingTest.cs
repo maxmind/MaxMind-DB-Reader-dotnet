@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using System.IO;
 
-namespace MaxMind.DB.Test
+namespace MaxMind.Db.Test
 {
     [TestFixture]
     public class ThreadingTest

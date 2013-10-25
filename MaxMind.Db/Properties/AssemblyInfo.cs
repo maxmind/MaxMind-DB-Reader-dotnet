@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MaxMind.DB")]
+[assembly: AssemblyTitle("MaxMind.Db")]
 [assembly: AssemblyDescription(".NET reader for the MaxMind DB file format")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MaxMind, Inc.")]
-[assembly: AssemblyProduct("MaxMind.DB")]
+[assembly: AssemblyProduct("MaxMind.Db")]
 [assembly: AssemblyCopyright("Copyright © 2013 MaxMind, Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -34,4 +34,4 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.1.0")]
 [assembly: AssemblyFileVersion("0.1.0")]
-[assembly: InternalsVisibleTo("MaxMind.DB.Test")]
+[assembly: InternalsVisibleTo("MaxMind.Db.Test")]
