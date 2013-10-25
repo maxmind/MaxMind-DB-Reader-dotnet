@@ -14,7 +14,13 @@ namespace MaxMind.Db
     /// </summary>
     public enum FileAccessMode
     {
+        /// <summary>
+        /// Open the file in memory mapped mode. Does not load into real memory.
+        /// </summary>
         MemoryMapped,
+        /// <summary>
+        /// Load the file into memory.
+        /// </summary>
         Memory
     }
 
@@ -263,6 +269,9 @@ namespace MaxMind.Db
             return buffer;
         }
 
+        /// <summary>
+        /// Release resources back to the system.
+        /// </summary>
         public void Dispose()
         {
             _stream.Dispose();
