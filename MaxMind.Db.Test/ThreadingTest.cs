@@ -43,5 +43,14 @@ namespace MaxMind.Db.Test
             var stop = DateTime.Now;
             Console.WriteLine("Requests per second: " + count / (stop - start).TotalSeconds);
         }
+
+        [Test]
+        public void TestManyOpens()
+        {
+            Parallel.For(0, 1000, i =>
+            {
+                var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), FileAccessMode.MemoryMapped);
+            });
+        }
     }
 }
