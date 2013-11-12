@@ -45,6 +45,7 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
+        [Category("BreaksMono")]
         public void TestManyOpens()
         {
             Parallel.For(0, 1000, i =>
