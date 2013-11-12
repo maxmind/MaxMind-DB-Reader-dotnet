@@ -65,6 +65,7 @@ namespace MaxMind.Db
             }
         }
 
+        private static Mutex _mutex = new Mutex();
         private readonly ThreadLocal<Stream> _stream;
 
         private Decoder Decoder { get; set; }
@@ -88,6 +89,7 @@ namespace MaxMind.Db
             {
                 var fileInfo = new FileInfo(file);
                 var mmfName = fileInfo.FullName.Replace("\\", "-");
+                _mutex.WaitOne();
                 try
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
@@ -98,19 +100,16 @@ namespace MaxMind.Db
                     {
                         using (var fileStream = File.Open(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            try
-                            {
-                                _memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, mmfName, fileInfo.Length,
-                                    MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
-                            }
-                            catch (IOException)
-                            {
-                                _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
-                            }
+                            _memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, mmfName, fileInfo.Length,
+                                MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
                         }
                     }
                     else
                         throw;
+                }
+                finally
+                {
+                    _mutex.ReleaseMutex();
                 }
             }
 
