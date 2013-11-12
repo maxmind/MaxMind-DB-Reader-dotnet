@@ -9,7 +9,7 @@ before_install:
 
 script:
   - xbuild
-  - mono --runtime=v4.0 packages/NUnit.Runners.2.6.1/tools/nunit-console.exe ./MaxMind.Db.Test/bin/Debug/MaxMind.Db.Test.dll
+  - mono --runtime=v4.0 packages/NUnit.Runners.2.6.1/tools/nunit-console.exe /exclude:BreaksMono ./MaxMind.Db.Test/bin/Debug/MaxMind.Db.Test.dll
 
 notifications:
   email:
