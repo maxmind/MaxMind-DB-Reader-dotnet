@@ -98,11 +98,8 @@ namespace MaxMind.Db
                 {
                     if (ex is IOException || ex is NotImplementedException)
                     {
-                        using (var fileStream = File.Open(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        {
-                            _memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream, mmfName, fileInfo.Length,
-                                MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
-                        }
+                        _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open,
+                            mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
                     }
                     else
                         throw;
