@@ -65,7 +65,7 @@ namespace MaxMind.Db
             }
         }
 
-        private static Object _mmapLocker = new Object();
+        private static readonly Object _mmapLocker = new Object();
 
         private readonly ThreadLocal<Stream> _stream;
 
