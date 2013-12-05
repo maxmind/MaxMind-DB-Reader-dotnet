@@ -43,6 +43,10 @@ To look up an IP address, pass a `string` representing the IP address to the
 `Newtonsoft.Json.Linq.JToken`. `JToken` objects are used as they provide a
 convenient representation of multi-type data structures.
 
+We recommend reusing the `Reader` object rather than creating a new one for
+each lookup. The creation of this object is relatively expensive as it must
+read in metadata for the file.
+
 ## Example ##
 
 ```csharp
@@ -56,6 +60,12 @@ Console.WriteLine(response.ToString());
 reader.close();
 
 ```
+
+## Multi-Threaded Use ##
+
+This API fully supports use in multi-threaded applications. In such
+applications, we suggest creating one `Reader` object and sharing that among
+threads.
 
 ## Format ##
 
