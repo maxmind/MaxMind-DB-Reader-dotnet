@@ -111,11 +111,7 @@ namespace MaxMind.Db
 
             if (mode == FileAccessMode.Memory)
             {
-                byte[] fileBytes;
-                lock (_fileLocker)
-                {
-                    fileBytes = File.ReadAllBytes(_fileName);
-                }
+                byte[] fileBytes = File.ReadAllBytes(_fileName);
                 _stream = new ThreadLocal<Stream>(() =>
                 {
                     return new MemoryStream(fileBytes, false);
