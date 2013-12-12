@@ -118,7 +118,7 @@ namespace MaxMind.Db
                 }
                 _stream = new ThreadLocal<Stream>(() =>
                 {
-                    return new MemoryStream(fileBytes);
+                    return new MemoryStream(fileBytes, false);
                 });
             }
             else
