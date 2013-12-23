@@ -12,9 +12,11 @@ namespace MaxMind.Db.Test
     public class ThreadingTest
     {
         [Test]
-        public void TestParallelFor()
+        [TestCase(FileAccessMode.MemoryMapped)]
+        [TestCase(FileAccessMode.Memory)]
+        public void TestParallelFor(FileAccessMode mode)
         {
-            var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), FileAccessMode.MemoryMapped);
+            var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode);
             var count = 0;
             var ipsAndResults = new Dictionary<IPAddress, string>();
             var rand = new Random();
@@ -45,12 +47,14 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
+        [TestCase(FileAccessMode.MemoryMapped)]
+        [TestCase(FileAccessMode.Memory)]
         [Category("BreaksMono")]
-        public void TestManyOpens()
+        public void TestManyOpens(FileAccessMode mode)
         {
             Parallel.For(0, 1000, i =>
             {
-                var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), FileAccessMode.MemoryMapped);
+                var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode);
             });
         }
     }
