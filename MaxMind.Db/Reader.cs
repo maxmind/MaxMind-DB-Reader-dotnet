@@ -65,7 +65,7 @@ namespace MaxMind.Db
             }
         }
 
-        private static readonly Object _mmapLocker = new Object();
+        private static readonly Object _fileLocker = new Object();
 
         private readonly ThreadLocal<Stream> _stream;
 
@@ -90,7 +90,7 @@ namespace MaxMind.Db
             {
                 var fileInfo = new FileInfo(file);
                 var mmfName = fileInfo.FullName.Replace("\\", "-");
-                lock (_mmapLocker)
+                lock (_fileLocker)
                 {
                     try
                     {
@@ -109,18 +109,23 @@ namespace MaxMind.Db
                 }
             }
 
-            _stream = new ThreadLocal<Stream>(() =>
+            if (mode == FileAccessMode.Memory)
             {
-                Stream s;
-                if (mode == FileAccessMode.Memory) s = new MemoryStream(File.ReadAllBytes(_fileName));
-                else
+                byte[] fileBytes = File.ReadAllBytes(_fileName);
+                _stream = new ThreadLocal<Stream>(() =>
                 {
-                    var fileLength = (int)new FileInfo(file).Length;
-                    s = _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
-                }
+                    return new MemoryStream(fileBytes, false);
+                });
+            }
+            else
+            {
+                _stream = new ThreadLocal<Stream>(() =>
+                {
 
-                return s;
-            });
+                    var fileLength = (int)new FileInfo(file).Length;
+                    return _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
+                });
+            }
 
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_stream, start);
