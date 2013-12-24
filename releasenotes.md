@@ -1,5 +1,12 @@
 # Release Nodes #
 
+## 0.2.2 (2013-12-24) ##
+
+* Fixed a bug that occurred when using the memory-mode in a multi-threaded
+  application. When using a single `Reader` from multiple threads in memory-
+  mode, the internal state of the object could become corrupt if you replaced
+  the MaxMind database file on disk with another database file.
+
 ## 0.2.1 (2013-11-15) ##
 
 * Fixed bug that caused an exception to be thrown when two threads created a
