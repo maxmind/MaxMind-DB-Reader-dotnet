@@ -121,7 +121,6 @@ namespace MaxMind.Db
             {
                 _stream = new ThreadLocal<Stream>(() =>
                 {
-
                     var fileLength = (int)new FileInfo(file).Length;
                     return _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
                 });
@@ -144,10 +143,15 @@ namespace MaxMind.Db
 				fileBytes = memoryStream.ToArray();
 			}
 
-			_stream = new ThreadLocal<Stream>(() =>
-				{
-					return new MemoryStream(fileBytes, false);
-				});
+			if (fileBytes != null && fileBytes.Length > 0)
+			{
+				_stream = new ThreadLocal<Stream>(() =>
+					{
+						return new MemoryStream(fileBytes, false);
+					});
+			}
+			else
+				throw new NullReferenceException();
 
 			InitMetaData();
 		}
