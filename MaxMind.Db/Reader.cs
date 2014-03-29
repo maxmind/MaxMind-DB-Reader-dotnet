@@ -121,12 +121,43 @@ namespace MaxMind.Db
             {
                 _stream = new ThreadLocal<Stream>(() =>
                 {
-
                     var fileLength = (int)new FileInfo(file).Length;
                     return _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
                 });
             }
 
+            InitMetaData();
+        }
+
+        /// <summary>
+        /// Initialize with Stream
+        /// </summary>
+        /// <param name="stream"></param>
+        public Reader(Stream stream)
+        {
+            byte[] fileBytes = null;
+
+            using (var memoryStream = new MemoryStream())
+            {
+                stream.CopyTo(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+
+            if (fileBytes != null && fileBytes.Length > 0)
+            {
+                _stream = new ThreadLocal<Stream>(() =>
+                    {
+                        return new MemoryStream(fileBytes, false);
+                    });
+            }
+            else
+                throw new NullReferenceException();
+
+            InitMetaData();
+        }
+
+        private void InitMetaData()
+        {
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_stream, start);
             var result = metaDecode.Decode(start);

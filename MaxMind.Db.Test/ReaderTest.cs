@@ -6,9 +6,7 @@ using System.Numerics;
 namespace MaxMind.Db.Test
 {
     using System.Linq;
-
     using Newtonsoft.Json.Linq;
-
     using NUnit.Framework;
 
     [TestFixture]
@@ -36,6 +34,34 @@ namespace MaxMind.Db.Test
                         else
                         {
                             TestIPV6(reader, file);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void TestStream()
+        {
+            foreach (var recordSize in new long[] { 24, 28, 32 })
+            {
+                foreach (var ipVersion in new[] { 4, 6 })
+                {
+                    var file = Path.Combine(TestDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    using (StreamReader streamReader = new StreamReader(file))
+                    {
+                        using (var reader = new Reader(streamReader.BaseStream))
+                        {
+                            TestMetadata(reader, ipVersion);
+
+                            if (ipVersion == 4)
+                            {
+                                TestIPV4(reader, file);
+                            }
+                            else
+                            {
+                                TestIPV6(reader, file);
+                            }
                         }
                     }
                 }
@@ -227,7 +253,6 @@ namespace MaxMind.Db.Test
             Assert.That(metadata.Languages[1], Is.EqualTo("zh"));
             Assert.That(metadata.Description["en"], Is.EqualTo("Test Database"));
             Assert.That(metadata.Description["zh"], Is.EqualTo("Test Database Chinese"));
-
         }
     }
 }
