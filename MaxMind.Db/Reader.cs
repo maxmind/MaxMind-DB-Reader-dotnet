@@ -126,44 +126,44 @@ namespace MaxMind.Db
                 });
             }
 
-			InitMetaData();
+            InitMetaData();
         }
 
-		/// <summary>
-		/// Initialize with Stream
-		/// </summary>
-		/// <param name="stream"></param>
-		public Reader(Stream stream)
-		{
-			byte[] fileBytes = null;
+        /// <summary>
+        /// Initialize with Stream
+        /// </summary>
+        /// <param name="stream"></param>
+        public Reader(Stream stream)
+        {
+            byte[] fileBytes = null;
 
-			using (var memoryStream = new MemoryStream())
-			{
-				stream.CopyTo(memoryStream);
-				fileBytes = memoryStream.ToArray();
-			}
+            using (var memoryStream = new MemoryStream())
+            {
+                stream.CopyTo(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
 
-			if (fileBytes != null && fileBytes.Length > 0)
-			{
-				_stream = new ThreadLocal<Stream>(() =>
-					{
-						return new MemoryStream(fileBytes, false);
-					});
-			}
-			else
-				throw new NullReferenceException();
+            if (fileBytes != null && fileBytes.Length > 0)
+            {
+                _stream = new ThreadLocal<Stream>(() =>
+                    {
+                        return new MemoryStream(fileBytes, false);
+                    });
+            }
+            else
+                throw new NullReferenceException();
 
-			InitMetaData();
-		}
+            InitMetaData();
+        }
 
-		private void InitMetaData()
-		{
-			var start = FindMetadataStart();
-			var metaDecode = new Decoder(_stream, start);
-			var result = metaDecode.Decode(start);
-			Metadata = Deserialize<Metadata>(result.Node);
-			Decoder = new Decoder(_stream, Metadata.SearchTreeSize + DataSectionSeparatorSize);
-		}
+        private void InitMetaData()
+        {
+            var start = FindMetadataStart();
+            var metaDecode = new Decoder(_stream, start);
+            var result = metaDecode.Decode(start);
+            Metadata = Deserialize<Metadata>(result.Node);
+            Decoder = new Decoder(_stream, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+        }
 
         /// <summary>
         /// Finds the data related to the specified address.
