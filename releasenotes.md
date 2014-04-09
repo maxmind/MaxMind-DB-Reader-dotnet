@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 0.2.3 (2014-04-09) ##
+
+* The database is now loadable from a `Stream`.
+
 ## 0.2.2 (2013-12-24) ##
 
 * Fixed a bug that occurred when using the memory-mode in a multi-threaded
