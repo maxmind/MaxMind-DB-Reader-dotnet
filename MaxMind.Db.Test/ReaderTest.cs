@@ -73,8 +73,8 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
             {
-                Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
-                Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::/64"));
+                Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::0/64"));
+                Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::0/64"));
             }
         }
 
