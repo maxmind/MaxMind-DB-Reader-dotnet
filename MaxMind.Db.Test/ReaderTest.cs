@@ -247,7 +247,7 @@ namespace MaxMind.Db.Test
 
             Assert.That(metadata.BinaryFormatMajorVersion, Is.EqualTo(2));
             Assert.That(metadata.BinaryFormatMinorVersion, Is.EqualTo(0));
-            Assert.That(metadata.IpVersion, Is.EqualTo(ipVersion));
+            Assert.That(metadata.IPVersion, Is.EqualTo(ipVersion));
             Assert.That(metadata.DatabaseType, Is.EqualTo("Test"));
             Assert.That(metadata.Languages[0], Is.EqualTo("en"));
             Assert.That(metadata.Languages[1], Is.EqualTo("zh"));
