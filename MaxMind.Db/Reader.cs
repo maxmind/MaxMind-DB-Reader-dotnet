@@ -30,12 +30,12 @@ namespace MaxMind.Db
     public class Reader : IDisposable
     {
         /// <summary>
-        /// Gets the metadata.
+        /// The metadata for the open database.
         /// </summary>
         /// <value>
         /// The metadata.
         /// </value>
-        internal Metadata Metadata { get; private set; }
+        public Metadata Metadata { get; private set; }
 
         private const int DataSectionSeparatorSize = 16;
 
@@ -52,7 +52,7 @@ namespace MaxMind.Db
         {
             get
             {
-                if (_ipV4Start == 0 || Metadata.IpVersion == 4)
+                if (_ipV4Start == 0 || Metadata.IPVersion == 4)
                 {
                     int node = 0;
                     for (int i = 0; i < 96 && node < Metadata.NodeCount; i++)
@@ -234,7 +234,7 @@ namespace MaxMind.Db
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
             // is the case, we can skip over the first 96 nodes.
-            if (Metadata.IpVersion == 6 && bitLength == 32)
+            if (Metadata.IPVersion == 6 && bitLength == 32)
             {
                 return IPV4Start;
             }

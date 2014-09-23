@@ -9,19 +9,28 @@ namespace MaxMind.Db
     /// Data about the database file itself
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class Metadata
+    public class Metadata
     {
+        /// <summary>
+        /// The major version number for the MaxMind DB binary format used by the database.
+        /// </summary>
         [JsonProperty("binary_format_major_version")]
-        internal int BinaryFormatMajorVersion { get; set; }
+        public int BinaryFormatMajorVersion { get; private set; }
 
+        /// <summary>
+        /// The minor version number for the MaxMind DB binary format used by the database.
+        /// </summary>
         [JsonProperty("binary_format_minor_version")]
-        internal int BinaryFormatMinorVersion { get; set; }
+        public int BinaryFormatMinorVersion { get; private set; }
 
         [JsonProperty("build_epoch")]
-        internal long BuildEpoch { get; set; }
+        internal long BuildEpoch { get; private set; }
 
+        /// <summary>
+        /// The date-time of the database build.
+        /// </summary>
         [JsonIgnore]
-        internal DateTime Build
+        public DateTime BuildDate
         {
             get
             {
@@ -29,17 +38,29 @@ namespace MaxMind.Db
             }
         }
 
+        /// <summary>
+        /// The MaxMind DB database type.
+        /// </summary>
         [JsonProperty("database_type")]
-        internal string DatabaseType { get; set; }
+        public string DatabaseType { get; private set; }
 
+        /// <summary>
+        /// A map from locale codes to the database description in that language.
+        /// </summary>
         [JsonProperty("description")]
-        internal Hashtable Description { get; set; }
+        public Hashtable Description { get; private set; }
 
+        /// <summary>
+        /// The IP version that the database supports. This will be 4 or 6.
+        /// </summary>
         [JsonProperty("ip_version")]
-        internal int IpVersion { get; set; }
+        public int IPVersion { get; private set; }
 
+        /// <summary>
+        /// A list of locale codes for languages that the database supports.
+        /// </summary>
         [JsonProperty("languages")]
-        internal List<string> Languages { get; set; }
+        public List<string> Languages { get; private set; }
 
         [JsonProperty("node_count")]
         internal int NodeCount { get; set; }
