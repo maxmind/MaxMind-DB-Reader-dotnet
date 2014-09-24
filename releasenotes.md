@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 0.3.0 (2014-09-24) ##
+
+* Added public `Metadata` property on `Reader`.
+
 ## 0.2.3 (2014-04-09) ##
 
 * The database is now loadable from a `Stream`.

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MaxMind, Inc.")]
 [assembly: AssemblyProduct("MaxMind.Db")]
-[assembly: AssemblyCopyright("Copyright © 2013 MaxMind, Inc.")]
+[assembly: AssemblyCopyright("Copyright © 2014 MaxMind, Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,6 +32,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.2.3")]
-[assembly: AssemblyFileVersion("0.2.3")]
+[assembly: AssemblyVersion("0.3.0")]
+[assembly: AssemblyFileVersion("0.3.0")]
 [assembly: InternalsVisibleTo("MaxMind.Db.Test")]
