@@ -10,8 +10,7 @@
     <projectUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>Initial release.</releaseNotes>
-    <copyright>Copyright 2013</copyright>
-    <tags>MaxMind GeoIP IP database geolocation</tags>
+    <copyright>Copyright 2014</copyright>
+    <tags>MaxMind GeoIP2 GeoIP IP database geolocation</tags>
   </metadata>
 </package>
