@@ -1,8 +1,5 @@
 # MaxMind DB Reader #
 
-**NOTE**: This is a beta release, and the API may change before the final
-production release.
-
 ## Description ##
 
 This is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file
@@ -95,6 +92,6 @@ The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2013 by MaxMind, Inc.
+This software is Copyright (c) 2014 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.

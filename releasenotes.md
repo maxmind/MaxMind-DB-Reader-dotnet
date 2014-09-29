@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 1.0.0 (2014-09-29) ##
+
+* First production release.
+
 ## 0.3.0 (2014-09-24) ##
 
 * Added public `Metadata` property on `Reader`.
