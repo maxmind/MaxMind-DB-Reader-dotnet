@@ -44,7 +44,6 @@ namespace MaxMind.Db.Test
                         throw new Exception(string.Format("Non-matching result. Expected {0}, found {1}", expectedString, resultString));
                 });
                 var stop = DateTime.Now;
-                Console.WriteLine("Requests per second: " + count / (stop - start).TotalSeconds);
             }
         }
 
