@@ -81,7 +81,7 @@ namespace MaxMind.Db
             byte ctrlByte = ReadOne(offset);
             offset++;
 
-            ObjectType type = FromControlByte(ctrlByte);
+            var type = FromControlByte(ctrlByte);
 
             if (type == ObjectType.Pointer)
             {
@@ -90,7 +90,7 @@ namespace MaxMind.Db
                 {
                     return new Result(new JValue(pointer), offset);
                 }
-                Result result = Decode(Convert.ToInt32(pointer));
+                var result = Decode(Convert.ToInt32(pointer));
                 result.Offset = offset;
                 return result;
             }
@@ -347,7 +347,7 @@ namespace MaxMind.Db
 
             for (int i = 0; i < size; i++)
             {
-                Result r = Decode(offset);
+                var r = Decode(offset);
                 offset = r.Offset;
                 array.Add(r.Node);
             }
