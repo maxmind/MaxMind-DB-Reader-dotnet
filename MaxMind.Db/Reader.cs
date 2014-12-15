@@ -47,25 +47,26 @@ namespace MaxMind.Db
 
         private readonly MemoryMappedFile _memoryMappedFile;
 
-        private int _ipV4Start;
-        private int IPV4Start
+        private int _ipV4Start = 0;
+        private int IPv4Start
         {
             get
             {
-                if (_ipV4Start == 0 || Metadata.IPVersion == 4)
+                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
                 {
-                    int node = 0;
-                    for (int i = 0; i < 96 && node < Metadata.NodeCount; i++)
-                    {
-                        node = ReadNode(node, 0);
-                    }
-                    _ipV4Start = node;
+                    return _ipV4Start;
                 }
-                return _ipV4Start;
+                int node = 0;
+                for (int i = 0; i < 96 && node < Metadata.NodeCount; i++)
+                {
+                    node = ReadNode(node, 0);
+                }
+                _ipV4Start = node;
+                return node;
             }
         }
 
-        private static readonly Object _fileLocker = new Object();
+        private static readonly Object FileLocker = new Object();
 
         private readonly ThreadLocal<Stream> _stream;
 
@@ -90,7 +91,7 @@ namespace MaxMind.Db
             {
                 var fileInfo = new FileInfo(file);
                 var mmfName = fileInfo.FullName.Replace("\\", "-");
-                lock (_fileLocker)
+                lock (FileLocker)
                 {
                     try
                     {
@@ -112,10 +113,7 @@ namespace MaxMind.Db
             if (mode == FileAccessMode.Memory)
             {
                 byte[] fileBytes = File.ReadAllBytes(_fileName);
-                _stream = new ThreadLocal<Stream>(() =>
-                {
-                    return new MemoryStream(fileBytes, false);
-                });
+                _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
             }
             else
             {
@@ -130,9 +128,9 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Initialize with Stream
+        /// Initialize with Stream.
         /// </summary>
-        /// <param name="stream"></param>
+        /// <param name="stream">The stream to use. It will be used from its current position. </param>
         public Reader(Stream stream)
         {
             byte[] fileBytes = null;
@@ -143,16 +141,12 @@ namespace MaxMind.Db
                 fileBytes = memoryStream.ToArray();
             }
 
-            if (fileBytes != null && fileBytes.Length > 0)
+            if (fileBytes.Length == 0)
             {
-                _stream = new ThreadLocal<Stream>(() =>
-                    {
-                        return new MemoryStream(fileBytes, false);
-                    });
+                throw new InvalidDatabaseException("There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
-            else
-                throw new NullReferenceException();
 
+            _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
             InitMetaData();
         }
 
@@ -236,7 +230,7 @@ namespace MaxMind.Db
             // is the case, we can skip over the first 96 nodes.
             if (Metadata.IPVersion == 6 && bitLength == 32)
             {
-                return IPV4Start;
+                return IPv4Start;
             }
             // The first node of the tree is always node 0, at the beginning of the
             // value
@@ -276,23 +270,26 @@ namespace MaxMind.Db
 
             var size = Metadata.RecordSize;
 
-            if (size == 24)
+            switch (size)
             {
-                byte[] buffer = ReadMany(baseOffset + index * 3, 3);
-                return Decoder.DecodeInteger(buffer);
-            }
-            else if (size == 28)
-            {
-                byte middle = ReadOne(baseOffset + 3);
-                middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
+                case 24:
+                {
+                    byte[] buffer = ReadMany(baseOffset + index * 3, 3);
+                    return Decoder.DecodeInteger(buffer);
+                }
+                case 28:
+                {
+                    byte middle = ReadOne(baseOffset + 3);
+                    middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
-                byte[] buffer = ReadMany(baseOffset + index * 4, 3);
-                return Decoder.DecodeInteger(middle, buffer);
-            }
-            else if (size == 32)
-            {
-                byte[] buffer = ReadMany(baseOffset + index * 4, 4);
-                return Decoder.DecodeInteger(buffer);
+                    byte[] buffer = ReadMany(baseOffset + index * 4, 3);
+                    return Decoder.DecodeInteger(middle, buffer);
+                }
+                case 32:
+                {
+                    byte[] buffer = ReadMany(baseOffset + index * 4, 4);
+                    return Decoder.DecodeInteger(buffer);
+                }
             }
 
             throw new InvalidDatabaseException("Unknown record size: "

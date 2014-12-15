@@ -53,7 +53,7 @@ namespace MaxMind.Db.Test
         [Category("BreaksMono")]
         public void TestManyOpens(FileAccessMode mode)
         {
-            Parallel.For(0, 1000, i =>
+            Parallel.For(0, 50, i =>
             {
                 using (var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode))
                 {
