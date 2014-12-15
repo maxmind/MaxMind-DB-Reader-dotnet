@@ -69,6 +69,16 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream", MatchType = MessageMatch.Contains)]
+        public void TestEmptyStream()
+        {
+            using (var stream = new MemoryStream())
+            {
+                new Reader(stream);
+            }
+        }
+
+        [Test]
         public void NoIPV4SearchTree()
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
