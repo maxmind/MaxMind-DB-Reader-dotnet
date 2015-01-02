@@ -67,10 +67,9 @@ threads.
 ## Format ##
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to
-records. The [specification]
-(https://github.com/maxmind/MaxMind-DB-perl/blob/master/docs/MaxMind-IPDB-spec.md)
-is available as part of our [Perl writer]
-(https://github.com/maxmind/MaxMind-DB-perl) for the format.
+records. See [the specification]
+(https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
+for more information on the format.
 
 ## Bug Tracker ##
 
