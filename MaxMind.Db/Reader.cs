@@ -159,6 +159,16 @@ namespace MaxMind.Db
             Decoder = new Decoder(_stream, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
+        private IPAddress GetNetworkAddress(IPAddress address, int networkBits)
+        {
+            byte[] bytes = address.GetAddressBytes();
+            for (int i = networkBits; i < bytes.Length * 8; ++i)
+            {
+                bytes[i / 8] &= (byte) ~(0x80 >> (i % 8));
+            }
+            return new IPAddress(bytes);
+        }
+
         /// <summary>
         /// Finds the data related to the specified address.
         /// </summary>
@@ -176,8 +186,24 @@ namespace MaxMind.Db
         /// <returns>An object containing the IP related data</returns>
         public JToken Find(IPAddress ipAddress)
         {
-            var pointer = FindAddressInTree(ipAddress);
-            return pointer == 0 ? null : ResolveDataPointer(pointer);
+            int networkBitLength;
+            var pointer = FindAddressInTree(ipAddress, out networkBitLength);
+            if (pointer == 0)
+            {
+                return null;
+            }
+
+            JToken token = ResolveDataPointer(pointer);
+            if (token == null)
+            {
+                return null;
+            }
+
+            IPAddress networkAddress = GetNetworkAddress(ipAddress, networkBitLength);
+            string network = string.Format("{0}/{1}", networkAddress, networkBitLength);
+            token["network"] = network;
+
+            return token;
         }
 
         private JToken ResolveDataPointer(int pointer)
@@ -194,10 +220,11 @@ namespace MaxMind.Db
             return Decoder.Decode(resolved).Node;
         }
 
-        private int FindAddressInTree(IPAddress address)
+        private int FindAddressInTree(IPAddress address, out int networkBitLength)
         {
             byte[] rawAddress = address.GetAddressBytes();
 
+            networkBitLength = 0;
             int bitLength = rawAddress.Length * 8;
             int record = StartNode(bitLength);
 
@@ -210,6 +237,7 @@ namespace MaxMind.Db
                 byte b = rawAddress[i / 8];
                 int bit = 1 & (b >> 7 - (i % 8));
                 record = ReadNode(record, bit);
+                ++networkBitLength;
             }
             if (record == Metadata.NodeCount)
             {
