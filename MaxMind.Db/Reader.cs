@@ -199,9 +199,12 @@ namespace MaxMind.Db
                 return null;
             }
 
-            IPAddress networkAddress = GetNetworkAddress(ipAddress, networkBitLength);
-            string network = string.Format("{0}/{1}", networkAddress, networkBitLength);
-            token["network"] = network;
+            if (token is JObject)
+            {
+                IPAddress networkAddress = GetNetworkAddress(ipAddress, networkBitLength);
+                string network = string.Format("{0}/{1}", networkAddress, networkBitLength);
+                ((JObject)token).Add("network", network);
+            }
 
             return token;
         }
