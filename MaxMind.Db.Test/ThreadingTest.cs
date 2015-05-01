@@ -25,7 +25,7 @@ namespace MaxMind.Db.Test
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
                     var resp = reader.Find(ip);
-                    if (resp != null)
+                    if (resp != null && !ipsAndResults.ContainsKey(ip))
                     {
                         ipsAndResults.Add(ip, resp.ToString());
                         count++;
