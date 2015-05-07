@@ -1,10 +1,14 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using System.IO;
+
+#endregion
 
 namespace MaxMind.Db.Test
 {
@@ -41,7 +45,8 @@ namespace MaxMind.Db.Test
                     var resultString = result.ToString();
                     var expectedString = ipsAndResults[ipAddress];
                     if (resultString != expectedString)
-                        throw new Exception(string.Format("Non-matching result. Expected {0}, found {1}", expectedString, resultString));
+                        throw new Exception(string.Format("Non-matching result. Expected {0}, found {1}", expectedString,
+                            resultString));
                 });
                 var stop = DateTime.Now;
             }

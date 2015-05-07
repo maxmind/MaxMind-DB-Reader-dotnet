@@ -1,24 +1,28 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
+#endregion
+
 namespace MaxMind.Db
 {
     /// <summary>
-    /// Data about the database file itself
+    ///     Data about the database file itself
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     public class Metadata
     {
         /// <summary>
-        /// The major version number for the MaxMind DB binary format used by the database.
+        ///     The major version number for the MaxMind DB binary format used by the database.
         /// </summary>
         [JsonProperty("binary_format_major_version")]
         public int BinaryFormatMajorVersion { get; private set; }
 
         /// <summary>
-        /// The minor version number for the MaxMind DB binary format used by the database.
+        ///     The minor version number for the MaxMind DB binary format used by the database.
         /// </summary>
         [JsonProperty("binary_format_minor_version")]
         public int BinaryFormatMinorVersion { get; private set; }
@@ -27,37 +31,34 @@ namespace MaxMind.Db
         internal long BuildEpoch { get; private set; }
 
         /// <summary>
-        /// The date-time of the database build.
+        ///     The date-time of the database build.
         /// </summary>
         [JsonIgnore]
         public DateTime BuildDate
         {
-            get
-            {
-                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch);
-            }
+            get { return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch); }
         }
 
         /// <summary>
-        /// The MaxMind DB database type.
+        ///     The MaxMind DB database type.
         /// </summary>
         [JsonProperty("database_type")]
         public string DatabaseType { get; private set; }
 
         /// <summary>
-        /// A map from locale codes to the database description in that language.
+        ///     A map from locale codes to the database description in that language.
         /// </summary>
         [JsonProperty("description")]
         public Hashtable Description { get; private set; }
 
         /// <summary>
-        /// The IP version that the database supports. This will be 4 or 6.
+        ///     The IP version that the database supports. This will be 4 or 6.
         /// </summary>
         [JsonProperty("ip_version")]
         public int IPVersion { get; private set; }
 
         /// <summary>
-        /// A list of locale codes for languages that the database supports.
+        ///     A list of locale codes for languages that the database supports.
         /// </summary>
         [JsonProperty("languages")]
         public List<string> Languages { get; private set; }
@@ -71,18 +72,12 @@ namespace MaxMind.Db
         [JsonIgnore]
         internal int NodeByteSize
         {
-            get
-            {
-                return RecordSize / 4;
-            }
+            get { return RecordSize/4; }
         }
 
         internal int SearchTreeSize
         {
-            get
-            {
-                return NodeCount * this.NodeByteSize;
-            }
+            get { return NodeCount*NodeByteSize; }
         }
     }
 }
