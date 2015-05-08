@@ -145,7 +145,7 @@ namespace MaxMind.Db
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
         public Reader(Stream stream)
         {
-            byte[] fileBytes = null;
+            byte[] fileBytes;
 
             using (var memoryStream = new MemoryStream())
             {
