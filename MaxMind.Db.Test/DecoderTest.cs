@@ -19,13 +19,15 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestUInt16()
         {
-            var uint16s = new Dictionary<int, byte[]>();
+            var uint16s = new Dictionary<int, byte[]>
+            {
+                {0, new byte[] {0xa0}},
+                {(1 << 8) - 1, new[] {(byte) 0xa1, (byte) 0xff}},
+                {500, new byte[] {0xa2, 0x1, 0xf4}},
+                {10872, new byte[] {0xa2, 0x2a, 0x78}},
+                {ushort.MaxValue, new[] {(byte) 0xa2, (byte) 0xff, (byte) 0xff}}
+            };
 
-            uint16s.Add(0, new[] {0xa0});
-            uint16s.Add((1 << 8) - 1, new[] {(byte) 0xa1, (byte) 0xff});
-            uint16s.Add(500, new byte[] {0xa2, 0x1, 0xf4});
-            uint16s.Add(10872, new byte[] {0xa2, 0x2a, 0x78});
-            uint16s.Add(ushort.MaxValue, new[] {(byte) 0xa2, (byte) 0xff, (byte) 0xff});
 
             TestTypeDecoding(uint16s);
         }
@@ -33,15 +35,17 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestUInt32()
         {
-            var uint32s = new Dictionary<long, byte[]>();
+            var uint32s = new Dictionary<long, byte[]>
+            {
+                {0, new[] {(byte) 0xc0}},
+                {(1 << 8) - 1, new[] {(byte) 0xc1, (byte) 0xff}},
+                {500, new byte[] {0xc2, 0x1, 0xf4}},
+                {10872, new byte[] {0xc2, 0x2a, 0x78}},
+                {(1 << 16) - 1, new[] {(byte) 0xc2, (byte) 0xff, (byte) 0xff}},
+                {(1 << 24) - 1, new[] {(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff}},
+                {uint.MaxValue, new[] {(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}}
+            };
 
-            uint32s.Add(0, new[] {(byte) 0xc0});
-            uint32s.Add((1 << 8) - 1, new[] {(byte) 0xc1, (byte) 0xff});
-            uint32s.Add(500, new byte[] {0xc2, 0x1, 0xf4});
-            uint32s.Add(10872, new byte[] {0xc2, 0x2a, 0x78});
-            uint32s.Add((1 << 16) - 1, new[] {(byte) 0xc2, (byte) 0xff, (byte) 0xff});
-            uint32s.Add((1 << 24) - 1, new[] {(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff});
-            uint32s.Add(uint.MaxValue, new[] {(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff});
 
             TestTypeDecoding(uint32s);
         }
@@ -49,20 +53,22 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestInt32s()
         {
-            var int32s = new Dictionary<int, byte[]>();
+            var int32s = new Dictionary<int, byte[]>
+            {
+                {0, new byte[] {0x0, 0x1}},
+                {-1, new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0xff}},
+                {(2 << 7) - 1, new byte[] {0x1, 0x1, 0xff}},
+                {1 - (2 << 7), new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0x1}},
+                {500, new byte[] {0x2, 0x1, 0x1, 0xf4}},
+                {-500, new byte[] {0x4, 0x1, 0xff, 0xff, 0xfe, 0xc}},
+                {(2 << 15) - 1, new byte[] {0x2, 0x1, 0xff, 0xff}},
+                {1 - (2 << 15), new byte[] {0x4, 0x1, 0xff, 0xff, 0x0, 0x1}},
+                {(2 << 23) - 1, new byte[] {0x3, 0x1, 0xff, 0xff, 0xff}},
+                {1 - (2 << 23), new byte[] {0x4, 0x1, 0xff, 0x0, 0x0, 0x1}},
+                {int.MaxValue, new byte[] {0x4, 0x1, 0x7f, 0xff, 0xff, 0xff}},
+                {-int.MaxValue, new byte[] {0x4, 0x1, 0x80, 0x0, 0x0, 0x1}}
+            };
 
-            int32s.Add(0, new byte[] {0x0, 0x1});
-            int32s.Add(-1, new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0xff});
-            int32s.Add((2 << 7) - 1, new byte[] {0x1, 0x1, 0xff});
-            int32s.Add(1 - (2 << 7), new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0x1});
-            int32s.Add(500, new byte[] {0x2, 0x1, 0x1, 0xf4});
-            int32s.Add(-500, new byte[] {0x4, 0x1, 0xff, 0xff, 0xfe, 0xc});
-            int32s.Add((2 << 15) - 1, new byte[] {0x2, 0x1, 0xff, 0xff});
-            int32s.Add(1 - (2 << 15), new byte[] {0x4, 0x1, 0xff, 0xff, 0x0, 0x1});
-            int32s.Add((2 << 23) - 1, new byte[] {0x3, 0x1, 0xff, 0xff, 0xff});
-            int32s.Add(1 - (2 << 23), new byte[] {0x4, 0x1, 0xff, 0x0, 0x0, 0x1});
-            int32s.Add(int.MaxValue, new byte[] {0x4, 0x1, 0x7f, 0xff, 0xff, 0xff});
-            int32s.Add(-int.MaxValue, new byte[] {0x4, 0x1, 0x80, 0x0, 0x0, 0x1});
 
             TestTypeDecoding(int32s);
         }
@@ -70,11 +76,13 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestInt64s()
         {
-            var int64s = new Dictionary<long, byte[]>();
+            var int64s = new Dictionary<long, byte[]>
+            {
+                {0L, new byte[] {0x0, 0x2}},
+                {500L, new byte[] {0x2, 0x2, 0x1, 0xf4}},
+                {10872, new byte[] {0x2, 0x2, 0x2a, 0x78}}
+            };
 
-            int64s.Add(0L, new byte[] {0x0, 0x2});
-            int64s.Add(500L, new byte[] {0x2, 0x2, 0x1, 0xf4});
-            int64s.Add(10872, new byte[] {0x2, 0x2, 0x2a, 0x78});
 
             for (var power = 1; power < 8; power++)
             {
@@ -110,10 +118,12 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBigIntegers()
         {
-            var bigInts = new Dictionary<BigInteger, byte[]>();
-            bigInts.Add(new BigInteger(0), new byte[] {0x0, 0x3});
-            bigInts.Add(new BigInteger(500), new byte[] {0x2, 0x3, 0x1, 0xf4});
-            bigInts.Add(new BigInteger(10872), new byte[] {0x2, 0x3, 0x2a, 0x78});
+            var bigInts = new Dictionary<BigInteger, byte[]>
+            {
+                {new BigInteger(0), new byte[] {0x0, 0x3}},
+                {new BigInteger(500), new byte[] {0x2, 0x3, 0x1, 0xf4}},
+                {new BigInteger(10872), new byte[] {0x2, 0x3, 0x2a, 0x78}}
+            };
 
             for (var power = 1; power <= 16; power++)
             {
@@ -136,15 +146,17 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestDoubles()
         {
-            var doubles = new Dictionary<double, byte[]>();
-            doubles.Add(0.0, new byte[] {0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0});
-            doubles.Add(0.5, new byte[] {0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0});
-            doubles.Add(3.14159265359, new byte[] {0x68, 0x40, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA});
-            doubles.Add(123.0, new byte[] {0x68, 0x40, 0x5E, 0xC0, 0x0, 0x0, 0x0, 0x0, 0x0});
-            doubles.Add(1073741824.12457, new byte[] {0x68, 0x41, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4});
-            doubles.Add(-0.5, new byte[] {0x68, 0xBF, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0});
-            doubles.Add(-3.14159265359, new byte[] {0x68, 0xC0, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA});
-            doubles.Add(-1073741824.12457, new byte[] {0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4});
+            var doubles = new Dictionary<double, byte[]>
+            {
+                {0.0, new byte[] {0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
+                {0.5, new byte[] {0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
+                {3.14159265359, new byte[] {0x68, 0x40, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA}},
+                {123.0, new byte[] {0x68, 0x40, 0x5E, 0xC0, 0x0, 0x0, 0x0, 0x0, 0x0}},
+                {1073741824.12457, new byte[] {0x68, 0x41, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4}},
+                {-0.5, new byte[] {0x68, 0xBF, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
+                {-3.14159265359, new byte[] {0x68, 0xC0, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA}},
+                {-1073741824.12457, new byte[] {0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4}}
+            };
 
             TestTypeDecoding(doubles);
         }
@@ -152,16 +164,18 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestFloats()
         {
-            var floats = new Dictionary<float, byte[]>();
-            floats.Add((float) 0.0, new byte[] {0x4, 0x8, 0x0, 0x0, 0x0, 0x0});
-            floats.Add((float) 1.0, new byte[] {0x4, 0x8, 0x3F, 0x80, 0x0, 0x0});
-            floats.Add((float) 1.1, new byte[] {0x4, 0x8, 0x3F, 0x8C, 0xCC, 0xCD});
-            floats.Add((float) 3.14, new byte[] {0x4, 0x8, 0x40, 0x48, 0xF5, 0xC3});
-            floats.Add((float) 9999.99, new byte[] {0x4, 0x8, 0x46, 0x1C, 0x3F, 0xF6});
-            floats.Add((float) -1.0, new byte[] {0x4, 0x8, 0xBF, 0x80, 0x0, 0x0});
-            floats.Add((float) -1.1, new byte[] {0x4, 0x8, 0xBF, 0x8C, 0xCC, 0xCD});
-            floats.Add((float) -3.14, new byte[] {0x4, 0x8, 0xC0, 0x48, 0xF5, 0xC3});
-            floats.Add((float) -9999.99, new byte[] {0x4, 0x8, 0xC6, 0x1C, 0x3F, 0xF6});
+            var floats = new Dictionary<float, byte[]>
+            {
+                {(float) 0.0, new byte[] {0x4, 0x8, 0x0, 0x0, 0x0, 0x0}},
+                {(float) 1.0, new byte[] {0x4, 0x8, 0x3F, 0x80, 0x0, 0x0}},
+                {(float) 1.1, new byte[] {0x4, 0x8, 0x3F, 0x8C, 0xCC, 0xCD}},
+                {(float) 3.14, new byte[] {0x4, 0x8, 0x40, 0x48, 0xF5, 0xC3}},
+                {(float) 9999.99, new byte[] {0x4, 0x8, 0x46, 0x1C, 0x3F, 0xF6}},
+                {(float) -1.0, new byte[] {0x4, 0x8, 0xBF, 0x80, 0x0, 0x0}},
+                {(float) -1.1, new byte[] {0x4, 0x8, 0xBF, 0x8C, 0xCC, 0xCD}},
+                {(float) -3.14, new byte[] {0x4, 0x8, 0xC0, 0x48, 0xF5, 0xC3}},
+                {(float) -9999.99, new byte[] {0x4, 0x8, 0xC6, 0x1C, 0x3F, 0xF6}}
+            };
 
             TestTypeDecoding(floats);
         }
@@ -169,18 +183,20 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestPointers()
         {
-            var pointers = new Dictionary<long, byte[]>();
+            var pointers = new Dictionary<long, byte[]>
+            {
+                {0, new byte[] {0x20, 0x0}},
+                {5, new byte[] {0x20, 0x5}},
+                {10, new byte[] {0x20, 0xa}},
+                {(1 << 10) - 1, new byte[] {0x23, 0xff}},
+                {3017, new byte[] {0x28, 0x3, 0xc9}},
+                {(1 << 19) - 5, new byte[] {0x2f, 0xf7, 0xfb}},
+                {(1 << 19) + (1 << 11) - 1, new byte[] {0x2f, 0xff, 0xff}},
+                {(1 << 27) - 2, new byte[] {0x37, 0xf7, 0xf7, 0xfe}},
+                {(((long) 1) << 27) + (1 << 19) + (1 << 11) - 1, new byte[] {0x37, 0xff, 0xff, 0xff}},
+                {(((long) 1) << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
+            };
 
-            pointers.Add(0, new byte[] {0x20, 0x0});
-            pointers.Add(5, new byte[] {0x20, 0x5});
-            pointers.Add(10, new byte[] {0x20, 0xa});
-            pointers.Add((1 << 10) - 1, new byte[] {0x23, 0xff});
-            pointers.Add(3017, new byte[] {0x28, 0x3, 0xc9});
-            pointers.Add((1 << 19) - 5, new byte[] {0x2f, 0xf7, 0xfb});
-            pointers.Add((1 << 19) + (1 << 11) - 1, new byte[] {0x2f, 0xff, 0xff});
-            pointers.Add((1 << 27) - 2, new byte[] {0x37, 0xf7, 0xf7, 0xfe});
-            pointers.Add((((long) 1) << 27) + (1 << 19) + (1 << 11) - 1, new byte[] {0x37, 0xff, 0xff, 0xff});
-            pointers.Add((((long) 1) << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff});
 
             TestTypeDecoding(pointers);
         }
@@ -228,10 +244,8 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBooleans()
         {
-            var booleans = new Dictionary<bool, byte[]>();
+            var booleans = new Dictionary<bool, byte[]> {{false, new byte[] {0x0, 0x7}}, {true, new byte[] {0x1, 0x7}}};
 
-            booleans.Add(false, new byte[] {0x0, 0x7});
-            booleans.Add(true, new byte[] {0x1, 0x7});
 
             TestTypeDecoding(booleans);
         }
@@ -262,8 +276,7 @@ namespace MaxMind.Db.Test
             var empty = new JObject();
             maps.Add(empty, new[] {(byte) 0xe0});
 
-            var one = new JObject();
-            one.Add("en", "Foo");
+            var one = new JObject {{"en", "Foo"}};
             maps.Add(one, new byte[]
             {
                 0xe1, /* en */0x42, 0x65, 0x6e,
@@ -286,8 +299,7 @@ namespace MaxMind.Db.Test
                 0x43, 0xe4, 0xba, 0xba
             });
 
-            var nested = new JObject();
-            nested.Add("name", two);
+            var nested = new JObject {{"name", two}};
 
             maps.Add(nested, new byte[]
             {
@@ -303,9 +315,7 @@ namespace MaxMind.Db.Test
             });
 
             var guess = new JObject();
-            var languages = new JArray();
-            languages.Add("en");
-            languages.Add("zh");
+            var languages = new JArray {"en", "zh"};
             guess.Add("languages", languages);
             maps.Add(guess, new byte[]
             {
@@ -327,8 +337,7 @@ namespace MaxMind.Db.Test
         {
             var arrays = new Dictionary<JArray, byte[]>();
 
-            var f1 = new JArray();
-            f1.Add("Foo");
+            var f1 = new JArray {"Foo"};
             arrays.Add(f1, new byte[]
             {
                 0x1, 0x4,
@@ -336,9 +345,7 @@ namespace MaxMind.Db.Test
                 0x43, 0x46, 0x6f, 0x6f
             });
 
-            var f2 = new JArray();
-            f2.Add("Foo");
-            f2.Add("人");
+            var f2 = new JArray {"Foo", "人"};
             arrays.Add(f2, new byte[]
             {
                 0x2, 0x4,
@@ -363,8 +370,7 @@ namespace MaxMind.Db.Test
 
                 using (var stream = new ThreadLocal<Stream>(() => new MemoryStream(input)))
                 {
-                    var decoder = new Decoder(stream, 0);
-                    decoder.PointerTestHack = true;
+                    var decoder = new Decoder(stream, 0) {PointerTestHack = true};
                     var jToken = decoder.Decode(0).Node;
 
                     if (jToken is JRaw)

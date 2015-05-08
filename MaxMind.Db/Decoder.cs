@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading;
@@ -68,7 +69,7 @@ namespace MaxMind.Db
     {
         private readonly ThreadLocal<Stream> _stream;
 
-        private readonly int _pointerBase = -1;
+        private readonly int _pointerBase;
 
         private readonly int[] _pointerValueOffset = {0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0};
 
@@ -335,11 +336,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private JValue DecodeLong(byte[] buffer)
         {
-            long integer = 0;
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
+            long integer = buffer.Aggregate<byte, long>(0, (current, t) => (current << 8) | t);
             return new JValue(integer);
         }
 
@@ -380,11 +377,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private JValue DecodeUInt64(byte[] buffer)
         {
-            ulong integer = 0;
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
+            ulong integer = buffer.Aggregate<byte, ulong>(0, (current, t) => (current << 8) | t);
             return new JValue(integer);
         }
 
@@ -439,12 +432,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         internal static int DecodeInteger(int baseValue, byte[] buffer)
         {
-            var integer = baseValue;
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                integer = (integer << 8) | buffer[i];
-            }
-            return integer;
+            return buffer.Aggregate(baseValue, (current, t) => (current << 8) | t);
         }
     }
 }
