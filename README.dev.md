@@ -6,3 +6,5 @@ To publish the to NuGet:
 4. From the MaxMind.Db directory:
    1. nuget pack MaxMind.Db.csproj
    2. nuget push MaxMind.Db.<version>.nupkg
+5. Create tag of the form "v<version>".
+6. Update GitHub Release page for the release.
