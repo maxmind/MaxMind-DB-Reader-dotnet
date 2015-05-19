@@ -1,28 +1,32 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Net;
+
+#endregion
 
 namespace MaxMind.Db.Benchmark
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             using (var reader = new Reader("GeoLite2-City.mmdb", FileAccessMode.MemoryMapped))
             {
                 var count = 100000;
                 var rand = new Random();
                 var start = DateTime.Now;
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
-                    if (i % 50000 == 0)
+                    if (i%50000 == 0)
                         Console.WriteLine(i + " " + ip);
 
                     var resp = reader.Find(ip);
                 }
 
                 var stop = DateTime.Now;
-                Console.WriteLine("Requests per second: " + count / (stop - start).TotalSeconds);
+                Console.WriteLine("Requests per second: " + count/(stop - start).TotalSeconds);
             }
         }
     }

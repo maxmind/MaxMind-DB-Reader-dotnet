@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -7,39 +9,46 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+#endregion
+
 namespace MaxMind.Db
 {
     /// <summary>
-    /// An enumeration specifying the API to use to read the database
+    ///     An enumeration specifying the API to use to read the database
     /// </summary>
     public enum FileAccessMode
     {
         /// <summary>
-        /// Open the file in memory mapped mode. Does not load into real memory.
+        ///     Open the file in memory mapped mode. Does not load into real memory.
         /// </summary>
         MemoryMapped,
+
         /// <summary>
-        /// Load the file into memory.
+        ///     Load the file into memory.
         /// </summary>
         Memory
     }
 
     /// <summary>
-    /// Given a MaxMind DB file, this class will retrieve information about an IP address
+    ///     Given a MaxMind DB file, this class will retrieve information about an IP address
     /// </summary>
     public class Reader : IDisposable
     {
         /// <summary>
-        /// The metadata for the open database.
+        ///     The metadata for the open database.
         /// </summary>
         /// <value>
-        /// The metadata.
+        ///     The metadata.
         /// </value>
         public Metadata Metadata { get; private set; }
 
         private const int DataSectionSeparatorSize = 16;
 
-        private readonly byte[] _metadataStartMarker = { 0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111, 109 };
+        private readonly byte[] _metadataStartMarker =
+        {
+            0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
+            109
+        };
 
         private readonly string _fileName;
 
@@ -47,7 +56,8 @@ namespace MaxMind.Db
 
         private readonly MemoryMappedFile _memoryMappedFile;
 
-        private int _ipV4Start = 0;
+        private int _ipV4Start;
+
         private int IPv4Start
         {
             get
@@ -56,8 +66,8 @@ namespace MaxMind.Db
                 {
                     return _ipV4Start;
                 }
-                int node = 0;
-                for (int i = 0; i < 96 && node < Metadata.NodeCount; i++)
+                var node = 0;
+                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
                 {
                     node = ReadNode(node, 0);
                 }
@@ -66,7 +76,7 @@ namespace MaxMind.Db
             }
         }
 
-        private static readonly Object FileLocker = new Object();
+        private static readonly object FileLocker = new object();
 
         private readonly ThreadLocal<Stream> _stream;
 
@@ -74,13 +84,15 @@ namespace MaxMind.Db
 
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Reader"/> class.
+        ///     Initializes a new instance of the <see cref="Reader" /> class.
         /// </summary>
         /// <param name="file">The file.</param>
-        public Reader(string file) : this(file, FileAccessMode.MemoryMapped) { }
+        public Reader(string file) : this(file, FileAccessMode.MemoryMapped)
+        {
+        }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Reader"/> class.
+        ///     Initializes a new instance of the <see cref="Reader" /> class.
         /// </summary>
         /// <param name="file">The MaxMind DB file.</param>
         /// <param name="mode">The mode by which to access the DB file.</param>
@@ -112,14 +124,14 @@ namespace MaxMind.Db
 
             if (mode == FileAccessMode.Memory)
             {
-                byte[] fileBytes = File.ReadAllBytes(_fileName);
+                var fileBytes = File.ReadAllBytes(_fileName);
                 _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
             }
             else
             {
                 _stream = new ThreadLocal<Stream>(() =>
                 {
-                    var fileLength = (int)new FileInfo(file).Length;
+                    var fileLength = (int) new FileInfo(file).Length;
                     return _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
                 });
             }
@@ -128,12 +140,12 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Initialize with Stream.
+        ///     Initialize with Stream.
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
         public Reader(Stream stream)
         {
-            byte[] fileBytes = null;
+            byte[] fileBytes;
 
             using (var memoryStream = new MemoryStream())
             {
@@ -143,7 +155,8 @@ namespace MaxMind.Db
 
             if (fileBytes.Length == 0)
             {
-                throw new InvalidDatabaseException("There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
+                throw new InvalidDatabaseException(
+                    "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
 
             _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
@@ -160,7 +173,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Finds the data related to the specified address.
+        ///     Finds the data related to the specified address.
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
@@ -170,7 +183,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Finds the data related to the specified address.
+        ///     Finds the data related to the specified address.
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
@@ -187,8 +200,8 @@ namespace MaxMind.Db
             if (resolved >= _stream.Value.Length)
             {
                 throw new InvalidDatabaseException(
-                        "The MaxMind Db file's search tree is corrupt: "
-                                + "contains pointer larger than the database.");
+                    "The MaxMind Db file's search tree is corrupt: "
+                    + "contains pointer larger than the database.");
             }
 
             return Decoder.Decode(resolved).Node;
@@ -196,19 +209,19 @@ namespace MaxMind.Db
 
         private int FindAddressInTree(IPAddress address)
         {
-            byte[] rawAddress = address.GetAddressBytes();
+            var rawAddress = address.GetAddressBytes();
 
-            int bitLength = rawAddress.Length * 8;
-            int record = StartNode(bitLength);
+            var bitLength = rawAddress.Length*8;
+            var record = StartNode(bitLength);
 
-            for (int i = 0; i < bitLength; i++)
+            for (var i = 0; i < bitLength; i++)
             {
                 if (record >= Metadata.NodeCount)
                 {
                     break;
                 }
-                byte b = rawAddress[i / 8];
-                int bit = 1 & (b >> 7 - (i % 8));
+                var b = rawAddress[i/8];
+                var bit = 1 & (b >> 7 - (i%8));
                 record = ReadNode(record, bit);
             }
             if (record == Metadata.NodeCount)
@@ -216,7 +229,7 @@ namespace MaxMind.Db
                 // record is empty
                 return 0;
             }
-            else if (record > Metadata.NodeCount)
+            if (record > Metadata.NodeCount)
             {
                 // record is a data pointer
                 return record;
@@ -245,10 +258,10 @@ namespace MaxMind.Db
 
         private int FindMetadataStart()
         {
-            _fileSize = (int)_stream.Value.Length;
+            _fileSize = (int) _stream.Value.Length;
             var buffer = new byte[_metadataStartMarker.Length];
 
-            for (int i = (_fileSize - _metadataStartMarker.Length); i > 0; i--)
+            for (var i = (_fileSize - _metadataStartMarker.Length); i > 0; i--)
             {
                 _stream.Value.Seek(i, SeekOrigin.Begin);
                 _stream.Value.Read(buffer, 0, buffer.Length);
@@ -260,13 +273,13 @@ namespace MaxMind.Db
             }
 
             throw new InvalidDatabaseException(
-                    "Could not find a MaxMind Db metadata marker in this file ("
-                            + _fileName + "). Is this a valid MaxMind Db file?");
+                "Could not find a MaxMind Db metadata marker in this file ("
+                + _fileName + "). Is this a valid MaxMind Db file?");
         }
 
         private int ReadNode(int nodeNumber, int index)
         {
-            var baseOffset = nodeNumber * Metadata.NodeByteSize;
+            var baseOffset = nodeNumber*Metadata.NodeByteSize;
 
             var size = Metadata.RecordSize;
 
@@ -274,32 +287,32 @@ namespace MaxMind.Db
             {
                 case 24:
                 {
-                    byte[] buffer = ReadMany(baseOffset + index * 3, 3);
+                    var buffer = ReadMany(baseOffset + index*3, 3);
                     return Decoder.DecodeInteger(buffer);
                 }
                 case 28:
                 {
-                    byte middle = ReadOne(baseOffset + 3);
-                    middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
+                    var middle = ReadOne(baseOffset + 3);
+                    middle = (index == 0) ? (byte) (middle >> 4) : (byte) (0x0F & middle);
 
-                    byte[] buffer = ReadMany(baseOffset + index * 4, 3);
+                    var buffer = ReadMany(baseOffset + index*4, 3);
                     return Decoder.DecodeInteger(middle, buffer);
                 }
                 case 32:
                 {
-                    byte[] buffer = ReadMany(baseOffset + index * 4, 4);
+                    var buffer = ReadMany(baseOffset + index*4, 4);
                     return Decoder.DecodeInteger(buffer);
                 }
             }
 
             throw new InvalidDatabaseException("Unknown record size: "
-                    + size);
+                                               + size);
         }
 
         private byte ReadOne(int position)
         {
             _stream.Value.Seek(position, SeekOrigin.Begin);
-            return (byte)_stream.Value.ReadByte();
+            return (byte) _stream.Value.ReadByte();
         }
 
         private byte[] ReadMany(int position, int size)
@@ -311,7 +324,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Release resources back to the system.
+        ///     Release resources back to the system.
         /// </summary>
         public void Dispose()
         {

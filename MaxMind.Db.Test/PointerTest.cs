@@ -1,17 +1,20 @@
-﻿using System.Threading;
+﻿#region
+
+using System.IO;
+using System.Threading;
+using NUnit.Framework;
+
+#endregion
 
 namespace MaxMind.Db.Test
 {
-    using System.IO;
-    using NUnit.Framework;
-
     [TestFixture]
     public class PointerTest
     {
         [Test]
         public void TestWithPointers()
         {
-            var path = Path.Combine(new[] { "..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw" });
+            var path = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
             var stream = new ThreadLocal<Stream>(() => new MemoryStream(File.ReadAllBytes(path)));
             using (stream)
             {

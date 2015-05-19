@@ -1,14 +1,17 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
+
+#endregion
 
 namespace MaxMind.Db.Test
 {
-    using System.Linq;
-    using Newtonsoft.Json.Linq;
-    using NUnit.Framework;
-
     [TestFixture]
     public class ReaderTest
     {
@@ -17,9 +20,9 @@ namespace MaxMind.Db.Test
         [Test]
         public void Test()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new long[] {24, 28, 32})
             {
-                foreach (var ipVersion in new[] { 4, 6 })
+                foreach (var ipVersion in new[] {4, 6})
                 {
                     var file = Path.Combine(TestDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     var reader = new Reader(file);
@@ -43,12 +46,12 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestStream()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new long[] {24, 28, 32})
             {
-                foreach (var ipVersion in new[] { 4, 6 })
+                foreach (var ipVersion in new[] {4, 6})
                 {
                     var file = Path.Combine(TestDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    using (StreamReader streamReader = new StreamReader(file))
+                    using (var streamReader = new StreamReader(file))
                     {
                         using (var reader = new Reader(streamReader.BaseStream))
                         {
@@ -69,7 +72,8 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream", MatchType = MessageMatch.Contains)]
+        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream",
+            MatchType = MessageMatch.Contains)]
         public void TestEmptyStream()
         {
             using (var stream = new MemoryStream())
@@ -93,12 +97,11 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-
                 var record = reader.Find("::1.1.1.0");
 
                 Assert.That(record.Value<bool>("boolean"), Is.True);
 
-                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] {0, 0, 0, 42}));
 
                 Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
@@ -129,7 +132,7 @@ namespace MaxMind.Db.Test
                 Assert.That(record.Value<int>("int32"), Is.EqualTo(-268435456));
                 Assert.That(record.Value<int>("uint16"), Is.EqualTo(100));
                 Assert.That(record.Value<int>("uint32"), Is.EqualTo(268435456));
-                Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(1152921504606846976));
+                Assert.That(record.Value<ulong>("uint64"), Is.EqualTo(1152921504606846976));
                 Assert.That(record["uint128"].ToObject<BigInteger>(),
                     Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
             }
@@ -157,15 +160,16 @@ namespace MaxMind.Db.Test
                 Assert.AreEqual(0, record.Value<double>("double"), 0.000000001);
                 Assert.AreEqual(0, record.Value<float>("float"), 0.000001);
                 Assert.That(record.Value<int>("int32"), Is.EqualTo(0));
-                Assert.That(record.Value<UInt16>("uint16"), Is.EqualTo(0));
-                Assert.That(record.Value<UInt32>("uint32"), Is.EqualTo(0));
-                Assert.That(record.Value<UInt64>("uint64"), Is.EqualTo(0));
+                Assert.That(record.Value<ushort>("uint16"), Is.EqualTo(0));
+                Assert.That(record.Value<uint>("uint32"), Is.EqualTo(0));
+                Assert.That(record.Value<ulong>("uint64"), Is.EqualTo(0));
                 Assert.That(record["uint128"].ToObject<BigInteger>(), Is.EqualTo(new BigInteger(0)));
             }
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data", MatchType = MessageMatch.Contains)]
+        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "contains bad data",
+            MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
@@ -175,7 +179,8 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt", MatchType = MessageMatch.Contains)]
+        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "search tree is corrupt",
+            MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
@@ -185,7 +190,8 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data", MatchType = MessageMatch.Contains)]
+        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "data section contains bad data",
+            MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
             using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
@@ -198,56 +204,59 @@ namespace MaxMind.Db.Test
         {
             TestAddresses(reader,
                 file,
-                new[] { "::1:ffff:ffff", "::2:0:0", "::2:0:40", "::2:0:50", "::2:0:58" },
+                new[] {"::1:ffff:ffff", "::2:0:0", "::2:0:40", "::2:0:50", "::2:0:58"},
                 new Dictionary<string, string>
-                        {
-                            {"::2:0:1", "::2:0:0"},
-                            {"::2:0:33", "::2:0:0"},
-                            {"::2:0:39", "::2:0:0"},
-                            {"::2:0:41", "::2:0:40"},
-                            {"::2:0:49", "::2:0:40"},
-                            {"::2:0:52", "::2:0:50"},
-                            {"::2:0:57", "::2:0:50"},
-                            {"::2:0:59", "::2:0:58"}
-                        },
-                new[] { "1.1.1.33", "255.254.253.123", "89fa::" }
+                {
+                    {"::2:0:1", "::2:0:0"},
+                    {"::2:0:33", "::2:0:0"},
+                    {"::2:0:39", "::2:0:0"},
+                    {"::2:0:41", "::2:0:40"},
+                    {"::2:0:49", "::2:0:40"},
+                    {"::2:0:52", "::2:0:50"},
+                    {"::2:0:57", "::2:0:50"},
+                    {"::2:0:59", "::2:0:58"}
+                },
+                new[] {"1.1.1.33", "255.254.253.123", "89fa::"}
                 );
-
         }
 
         private void TestIPV4(Reader reader, string file)
         {
             TestAddresses(reader,
                 file,
-                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
+                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int) Math.Pow(2, 1)),
                 new Dictionary<string, string>
                 {
-                            {"1.1.1.3", "1.1.1.2"},
-                            {"1.1.1.5", "1.1.1.4"},
-                            {"1.1.1.7", "1.1.1.4"},
-                            {"1.1.1.9", "1.1.1.8"},
-                            {"1.1.1.15", "1.1.1.8"},
-                            {"1.1.1.17", "1.1.1.16"},
-                            {"1.1.1.31", "1.1.1.16"}
-                        },
-                new[] { "1.1.1.33", "255.254.253.123" });
+                    {"1.1.1.3", "1.1.1.2"},
+                    {"1.1.1.5", "1.1.1.4"},
+                    {"1.1.1.7", "1.1.1.4"},
+                    {"1.1.1.9", "1.1.1.8"},
+                    {"1.1.1.15", "1.1.1.8"},
+                    {"1.1.1.17", "1.1.1.16"},
+                    {"1.1.1.31", "1.1.1.16"}
+                },
+                new[] {"1.1.1.33", "255.254.253.123"});
         }
 
-        private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses, Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
+        private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,
+            Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
         {
             foreach (var address in singleAddresses)
             {
-                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address), string.Format("Did not find expected data record for {0} in {1}", address, file));
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address),
+                    string.Format("Did not find expected data record for {0} in {1}", address, file));
             }
 
             foreach (var address in pairs.Keys)
             {
-                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]), string.Format("Did not find expected data record for {0} in {1}", address, file));
+                Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]),
+                    string.Format("Did not find expected data record for {0} in {1}", address, file));
             }
 
             foreach (var address in nullAddresses)
             {
-                Assert.That(reader.Find(address), Is.Null, string.Format("Did not find expected data record for {0} in {1}", address, file));
+                Assert.That(reader.Find(address), Is.Null,
+                    string.Format("Did not find expected data record for {0} in {1}", address, file));
             }
         }
 

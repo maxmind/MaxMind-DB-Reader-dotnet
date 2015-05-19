@@ -1,5 +1,12 @@
 # Release Nodes #
 
+## 1.0.1 (2015-05-08) ##
+
+* Improved the exception thrown when the constructor for `Reader` is called
+  with an empty stream.
+* Updated Newtonsoft.Json dependency to 6.0.8.
+* Minor code cleanup.
+
 ## 1.0.0 (2014-09-29) ##
 
 * First production release.
