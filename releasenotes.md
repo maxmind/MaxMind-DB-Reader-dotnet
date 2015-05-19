@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 1.0.1 (2015-05-08) ##
+## 1.0.1 (2015-05-19) ##
 
 * Improved the exception thrown when the constructor for `Reader` is called
   with an empty stream.
