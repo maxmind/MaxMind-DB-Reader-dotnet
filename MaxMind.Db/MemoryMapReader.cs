@@ -52,9 +52,10 @@ namespace MaxMind.Db
 
         public void Copy(int offset, byte[] bytes)
         {
-            // Doing an unsafe read improves performance by 10%. Probably
-            // not worth the increased support overhead from people asking
-            // why we use unsafe.
+            // Although not explicitly marked as thread safe, from
+            // reviewing the source code, these operations appear to
+            // be thread safe as long as only read operations are
+            // being done.
             _view.ReadArray(offset, bytes, 0, bytes.Length);
         }
 
