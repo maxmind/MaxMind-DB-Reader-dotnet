@@ -1,12 +1,9 @@
 ﻿#region
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -35,15 +32,9 @@ namespace MaxMind.Db
     /// </summary>
     public class Reader : IDisposable
     {
-        /// <summary>
-        ///     The metadata for the open database.
-        /// </summary>
-        /// <value>
-        ///     The metadata.
-        /// </value>
-        public Metadata Metadata { get; private set; }
-
         private const int DataSectionSeparatorSize = 16;
+        private readonly IByteReader _database;
+        private readonly string _fileName;
 
         private readonly byte[] _metadataStartMarker =
         {
@@ -52,29 +43,6 @@ namespace MaxMind.Db
         };
 
         private int _ipV4Start;
-
-        private int IPv4Start
-        {
-            get
-            {
-                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
-                {
-                    return _ipV4Start;
-                }
-                var node = 0;
-                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
-                {
-                    node = ReadNode(node, 0);
-                }
-                _ipV4Start = node;
-                return node;
-            }
-        }
-
-        private readonly IByteReader _database;
-        private readonly string _fileName;
-
-        private Decoder Decoder { get; set; }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Reader" /> class.
@@ -103,7 +71,7 @@ namespace MaxMind.Db
                     break;
                 default:
                     throw new ArgumentException("Unknown file access mode");
-            }  
+            }
 
             InitMetaData();
         }
@@ -130,6 +98,42 @@ namespace MaxMind.Db
 
             _database = new ArrayReader(fileBytes);
             InitMetaData();
+        }
+
+        /// <summary>
+        ///     The metadata for the open database.
+        /// </summary>
+        /// <value>
+        ///     The metadata.
+        /// </value>
+        public Metadata Metadata { get; private set; }
+
+        private int IPv4Start
+        {
+            get
+            {
+                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
+                {
+                    return _ipV4Start;
+                }
+                var node = 0;
+                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
+                {
+                    node = ReadNode(node, 0);
+                }
+                _ipV4Start = node;
+                return node;
+            }
+        }
+
+        private Decoder Decoder { get; set; }
+
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
+        public void Dispose()
+        {
+            _database.Dispose();
         }
 
         private void InitMetaData()
@@ -274,16 +278,6 @@ namespace MaxMind.Db
 
             throw new InvalidDatabaseException("Unknown record size: "
                                                + size);
-        }
-
-
-
-        /// <summary>
-        ///     Release resources back to the system.
-        /// </summary>
-        public void Dispose()
-        {
-            _database.Dispose();
         }
     }
 }

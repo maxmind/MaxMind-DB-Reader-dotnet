@@ -1,11 +1,9 @@
 ﻿#region
 
 using System;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using System.Threading;
 using Newtonsoft.Json.Linq;
 
 #endregion
@@ -41,16 +39,6 @@ namespace MaxMind.Db
     internal class Result
     {
         /// <summary>
-        ///     The object read from the database
-        /// </summary>
-        internal JToken Node { get; set; }
-
-        /// <summary>
-        ///     The offset
-        /// </summary>
-        internal int Offset { get; set; }
-
-        /// <summary>
         ///     Initializes a new instance of the <see cref="Result" /> class.
         /// </summary>
         /// <param name="node">The node.</param>
@@ -60,6 +48,16 @@ namespace MaxMind.Db
             Node = node;
             Offset = offset;
         }
+
+        /// <summary>
+        ///     The object read from the database
+        /// </summary>
+        internal JToken Node { get; set; }
+
+        /// <summary>
+        ///     The offset
+        /// </summary>
+        internal int Offset { get; set; }
     }
 
     /// <summary>
@@ -68,23 +66,21 @@ namespace MaxMind.Db
     internal class Decoder
     {
         private readonly IByteReader _database;
-
         private readonly int _pointerBase;
-
         private readonly int[] _pointerValueOffset = {0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0};
-
-        internal bool PointerTestHack { get; set; }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.
         /// </summary>
-        /// <param name="stream">The stream.</param>
+        /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
         internal Decoder(IByteReader database, int pointerBase)
         {
             _pointerBase = pointerBase;
             _database = database;
         }
+
+        internal bool PointerTestHack { get; set; }
 
         /// <summary>
         ///     Decodes the object at the specified offset.
@@ -311,7 +307,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private JValue DecodeLong(byte[] buffer)
         {
-            long integer = buffer.Aggregate<byte, long>(0, (current, t) => (current << 8) | t);
+            var integer = buffer.Aggregate<byte, long>(0, (current, t) => (current << 8) | t);
             return new JValue(integer);
         }
 
@@ -352,7 +348,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private JValue DecodeUInt64(byte[] buffer)
         {
-            ulong integer = buffer.Aggregate<byte, ulong>(0, (current, t) => (current << 8) | t);
+            var integer = buffer.Aggregate<byte, ulong>(0, (current, t) => (current << 8) | t);
             return new JValue(integer);
         }
 

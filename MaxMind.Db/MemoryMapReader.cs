@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 
 namespace MaxMind.Db
 {
@@ -11,8 +9,6 @@ namespace MaxMind.Db
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
-
-        public int Length { get; }
 
         public MemoryMapReader(string file)
         {
@@ -41,6 +37,8 @@ namespace MaxMind.Db
 
             _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
         }
+
+        public int Length { get; }
 
         public byte[] Read(int offset, int count)
         {
