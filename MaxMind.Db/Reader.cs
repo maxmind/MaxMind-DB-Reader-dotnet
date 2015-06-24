@@ -283,10 +283,7 @@ namespace MaxMind.Db
         /// </summary>
         public void Dispose()
         {
-            // XXXXXXXXXXXX- todo
-//            _stream.Dispose();
-//            if (_memoryMappedFile != null)
-//                _memoryMappedFile.Dispose();
+            _database.Dispose();
         }
     }
 }
