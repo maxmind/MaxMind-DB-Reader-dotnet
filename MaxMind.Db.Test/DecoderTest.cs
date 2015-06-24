@@ -2,10 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
 using System.Text;
-using System.Threading;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
@@ -283,9 +281,7 @@ namespace MaxMind.Db.Test
                 /* Foo */0x43, 0x46, 0x6f, 0x6f
             });
 
-            var two = new JObject();
-            two.Add("en", "Foo");
-            two.Add("zh", "人");
+            var two = new JObject {{"en", "Foo"}, {"zh", "人"}};
             maps.Add(two, new byte[]
             {
                 0xe2,

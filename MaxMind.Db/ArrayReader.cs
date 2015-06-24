@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace MaxMind.Db
 {
     internal class ArrayReader : IByteReader
     {
         private readonly byte[] _fileBytes;
-
-        public int Length => _fileBytes.Length;
 
         public ArrayReader(string file)
         {
@@ -21,6 +16,8 @@ namespace MaxMind.Db
         {
             _fileBytes = array;
         }
+
+        public int Length => _fileBytes.Length;
 
         public byte[] Read(int offset, int count)
         {
@@ -44,7 +41,6 @@ namespace MaxMind.Db
 
         public void Dispose()
         {
-            /// ??
         }
     }
 }

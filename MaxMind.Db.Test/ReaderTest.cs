@@ -15,7 +15,7 @@ namespace MaxMind.Db.Test
     [TestFixture]
     public class ReaderTest
     {
-        private readonly string TestDataRoot = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data");
+        private readonly string _testDataRoot = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data");
 
         [Test]
         public void Test()
@@ -24,7 +24,7 @@ namespace MaxMind.Db.Test
             {
                 foreach (var ipVersion in new[] {4, 6})
                 {
-                    var file = Path.Combine(TestDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    var file = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     var reader = new Reader(file);
                     using (reader)
                     {
@@ -50,7 +50,7 @@ namespace MaxMind.Db.Test
             {
                 foreach (var ipVersion in new[] {4, 6})
                 {
-                    var file = Path.Combine(TestDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    var file = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     using (var streamReader = new StreamReader(file))
                     {
                         using (var reader = new Reader(streamReader.BaseStream))
@@ -85,7 +85,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void NoIPV4SearchTree()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
             {
                 Assert.That(reader.Find("1.1.1.1").ToObject<string>(), Is.EqualTo("::0/64"));
                 Assert.That(reader.Find("192.1.1.1").ToObject<string>(), Is.EqualTo("::0/64"));
@@ -95,7 +95,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestDecodingTypes()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find("::1.1.1.0");
 
@@ -141,7 +141,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestZeros()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find("::");
 
@@ -172,7 +172,7 @@ namespace MaxMind.Db.Test
             MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
                 reader.Find("2001:220::");
             }
@@ -183,7 +183,7 @@ namespace MaxMind.Db.Test
             MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
                 reader.Find("1.1.1.32");
             }
@@ -194,7 +194,7 @@ namespace MaxMind.Db.Test
             MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
-            using (var reader = new Reader(Path.Combine(TestDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
                 reader.Find("1.1.1.16");
             }
@@ -244,19 +244,19 @@ namespace MaxMind.Db.Test
             foreach (var address in singleAddresses)
             {
                 Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(address),
-                    string.Format("Did not find expected data record for {0} in {1}", address, file));
+                    $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in pairs.Keys)
             {
                 Assert.That(reader.Find(address).Value<string>("ip"), Is.EqualTo(pairs[address]),
-                    string.Format("Did not find expected data record for {0} in {1}", address, file));
+                    $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in nullAddresses)
             {
                 Assert.That(reader.Find(address), Is.Null,
-                    string.Format("Did not find expected data record for {0} in {1}", address, file));
+                    $"Did not find expected data record for {address} in {file}");
             }
         }
 

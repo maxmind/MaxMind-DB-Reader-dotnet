@@ -1,7 +1,6 @@
 ﻿#region
 
 using System.IO;
-using System.Threading;
 using NUnit.Framework;
 
 #endregion
