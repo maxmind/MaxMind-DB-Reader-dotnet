@@ -54,6 +54,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\MaxMind.Db.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>

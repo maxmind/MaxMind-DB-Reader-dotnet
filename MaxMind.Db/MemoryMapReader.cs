@@ -9,6 +9,7 @@ namespace MaxMind.Db
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
+        private bool _disposed;
 
         public MemoryMapReader(string file)
         {
@@ -57,10 +58,31 @@ namespace MaxMind.Db
             _view.ReadArray(offset, bytes, 0, bytes.Length);
         }
 
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
         public void Dispose()
         {
-            _view.Dispose();
-            _memoryMappedFile.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                _view.Dispose();
+                _memoryMappedFile.Dispose();
+            }
+
+            _disposed = true;
         }
     }
 }
