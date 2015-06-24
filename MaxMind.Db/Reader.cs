@@ -42,6 +42,7 @@ namespace MaxMind.Db
             109
         };
 
+        private bool _disposed;
         private int _ipV4Start;
 
         /// <summary>
@@ -133,7 +134,25 @@ namespace MaxMind.Db
         /// </summary>
         public void Dispose()
         {
-            _database.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                _database.Dispose();
+            }
+
+            _disposed = true;
         }
 
         private void InitMetaData()
