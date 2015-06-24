@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
-MinimumVisualStudioVersion = 10.0.40219.1
+VisualStudioVersion = 14.0.22823.1
+MinimumVisualStudioVersion = 14.0.22823.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db", "MaxMind.Db\MaxMind.Db.csproj", "{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db.Benchmark", "MaxMind.Db.Benchmark\MaxMind.Db.Benchmark.csproj", "{B9B6E140-C381-4C8B-A41E-117FDAA14F35}"
