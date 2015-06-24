@@ -15,10 +15,9 @@ namespace MaxMind.Db.Test
         public void TestWithPointers()
         {
             var path = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
-            var stream = new ThreadLocal<Stream>(() => new MemoryStream(File.ReadAllBytes(path)));
-            using (stream)
+            using (var database = new ArrayReader(path))
             {
-                var decoder = new Decoder(stream, 0);
+                var decoder = new Decoder(database, 0);
 
                 var node = decoder.Decode(0).Node;
                 Assert.That(node.Value<string>("long_key"), Is.EqualTo("long_value1"));

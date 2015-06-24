@@ -368,9 +368,9 @@ namespace MaxMind.Db.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using (var stream = new ThreadLocal<Stream>(() => new MemoryStream(input)))
+                using (var database = new ArrayReader(input))
                 {
-                    var decoder = new Decoder(stream, 0) {PointerTestHack = true};
+                    var decoder = new Decoder(database, 0) {PointerTestHack = true};
                     var jToken = decoder.Decode(0).Node;
 
                     if (jToken is JRaw)
