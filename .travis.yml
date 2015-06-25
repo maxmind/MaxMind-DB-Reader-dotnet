@@ -10,6 +10,8 @@ script:
   - xbuild MaxMind.Db.sln
   - mono --runtime=v4.0 packages/NUnit.Runners.2.6.3/tools/nunit-console.exe -exclude=BreaksMono ./MaxMind.Db.Test/bin/Debug/MaxMind.Db.Test.dll
 
+sudo: false
+
 notifications:
   email:
     recipients:
