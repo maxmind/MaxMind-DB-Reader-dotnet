@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
+# Visual Studio 2015
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 14.0.22823.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db", "MaxMind.Db\MaxMind.Db.csproj", "{7600F6BC-DE08-4253-B0B0-35C80ED72CF2}"
