@@ -24,15 +24,10 @@ namespace MaxMind.Db
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
                 {
-                    if (ex is IOException || ex is NotImplementedException)
-                    {
-                        _memoryMappedFile = MemoryMappedFile.CreateFromFile(file, FileMode.Open,
+                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(file, FileMode.Open,
                             mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
-                    }
-                    else
-                        throw;
                 }
             }
 
