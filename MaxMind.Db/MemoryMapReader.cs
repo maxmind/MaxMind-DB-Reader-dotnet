@@ -17,17 +17,25 @@ namespace MaxMind.Db
 
             Length = (int) fileInfo.Length;
 
-            var mmfName = fileInfo.FullName.Replace("\\", "-");
+            // Ideally we would use the file ID in the mapName, but it is not
+            // easily available from C#.
+            var mapName = $"{fileInfo.FullName.Replace("\\", "-")}-{Length}";
             lock (FileLocker)
             {
                 try
                 {
-                    _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
+                    _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
                 {
-                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(file, FileMode.Open,
-                            mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
+                    using (
+                        var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
+                            FileShare.Delete | FileShare.Read))
+                    {
+
+                        _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
+                            MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
+                    }
                 }
             }
 
