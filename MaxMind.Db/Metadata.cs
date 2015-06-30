@@ -34,10 +34,7 @@ namespace MaxMind.Db
         ///     The date-time of the database build.
         /// </summary>
         [JsonIgnore]
-        public DateTime BuildDate
-        {
-            get { return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch); }
-        }
+        public DateTime BuildDate => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch);
 
         /// <summary>
         ///     The MaxMind DB database type.
@@ -70,14 +67,8 @@ namespace MaxMind.Db
         internal int RecordSize { get; set; }
 
         [JsonIgnore]
-        internal int NodeByteSize
-        {
-            get { return RecordSize/4; }
-        }
+        internal int NodeByteSize => RecordSize/4;
 
-        internal int SearchTreeSize
-        {
-            get { return NodeCount*NodeByteSize; }
-        }
+        internal int SearchTreeSize => NodeCount*NodeByteSize;
     }
 }

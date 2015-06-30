@@ -2,10 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
 using System.Text;
-using System.Threading;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
@@ -283,9 +281,7 @@ namespace MaxMind.Db.Test
                 /* Foo */0x43, 0x46, 0x6f, 0x6f
             });
 
-            var two = new JObject();
-            two.Add("en", "Foo");
-            two.Add("zh", "人");
+            var two = new JObject {{"en", "Foo"}, {"zh", "人"}};
             maps.Add(two, new byte[]
             {
                 0xe2,
@@ -368,9 +364,9 @@ namespace MaxMind.Db.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using (var stream = new ThreadLocal<Stream>(() => new MemoryStream(input)))
+                using (var database = new ArrayReader(input))
                 {
-                    var decoder = new Decoder(stream, 0) {PointerTestHack = true};
+                    var decoder = new Decoder(database, 0) {PointerTestHack = true};
                     var jToken = decoder.Decode(0).Node;
 
                     if (jToken is JRaw)
