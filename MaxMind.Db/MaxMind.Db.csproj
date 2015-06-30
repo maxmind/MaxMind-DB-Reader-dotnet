@@ -53,6 +53,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\MaxMind.Db.xml</DocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -92,7 +94,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Decoder.cs" />
+    <Compile Include="ArrayReader.cs" />
+    <Compile Include="IByteReader.cs" />
     <Compile Include="InvalidDatabaseException.cs" />
+    <Compile Include="MemoryMapReader.cs" />
     <Compile Include="Reader.cs" />
     <Compile Include="Metadata.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

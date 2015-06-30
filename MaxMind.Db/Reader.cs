@@ -2,10 +2,8 @@
 
 using System;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -34,15 +32,9 @@ namespace MaxMind.Db
     /// </summary>
     public class Reader : IDisposable
     {
-        /// <summary>
-        ///     The metadata for the open database.
-        /// </summary>
-        /// <value>
-        ///     The metadata.
-        /// </value>
-        public Metadata Metadata { get; private set; }
-
         private const int DataSectionSeparatorSize = 16;
+        private readonly IByteReader _database;
+        private readonly string _fileName;
 
         private readonly byte[] _metadataStartMarker =
         {
@@ -50,38 +42,8 @@ namespace MaxMind.Db
             109
         };
 
-        private readonly string _fileName;
-
-        private int _fileSize;
-
-        private readonly MemoryMappedFile _memoryMappedFile;
-
+        private bool _disposed;
         private int _ipV4Start;
-
-        private int IPv4Start
-        {
-            get
-            {
-                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
-                {
-                    return _ipV4Start;
-                }
-                var node = 0;
-                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
-                {
-                    node = ReadNode(node, 0);
-                }
-                _ipV4Start = node;
-                return node;
-            }
-        }
-
-        private static readonly object FileLocker = new object();
-
-        private readonly ThreadLocal<Stream> _stream;
-
-        private Decoder Decoder { get; set; }
-
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Reader" /> class.
@@ -99,41 +61,17 @@ namespace MaxMind.Db
         public Reader(string file, FileAccessMode mode)
         {
             _fileName = file;
-            if (mode == FileAccessMode.MemoryMapped)
-            {
-                var fileInfo = new FileInfo(file);
-                var mmfName = fileInfo.FullName.Replace("\\", "-");
-                lock (FileLocker)
-                {
-                    try
-                    {
-                        _memoryMappedFile = MemoryMappedFile.OpenExisting(mmfName, MemoryMappedFileRights.Read);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex is IOException || ex is NotImplementedException)
-                        {
-                            _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileName, FileMode.Open,
-                                mmfName, fileInfo.Length, MemoryMappedFileAccess.Read);
-                        }
-                        else
-                            throw;
-                    }
-                }
-            }
 
-            if (mode == FileAccessMode.Memory)
+            switch (mode)
             {
-                var fileBytes = File.ReadAllBytes(_fileName);
-                _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
-            }
-            else
-            {
-                _stream = new ThreadLocal<Stream>(() =>
-                {
-                    var fileLength = (int) new FileInfo(file).Length;
-                    return _memoryMappedFile.CreateViewStream(0, fileLength, MemoryMappedFileAccess.Read);
-                });
+                case FileAccessMode.MemoryMapped:
+                    _database = new MemoryMapReader(file);
+                    break;
+                case FileAccessMode.Memory:
+                    _database = new ArrayReader(file);
+                    break;
+                default:
+                    throw new ArgumentException("Unknown file access mode");
             }
 
             InitMetaData();
@@ -159,17 +97,71 @@ namespace MaxMind.Db
                     "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
 
-            _stream = new ThreadLocal<Stream>(() => new MemoryStream(fileBytes, false));
+            _database = new ArrayReader(fileBytes);
             InitMetaData();
+        }
+
+        /// <summary>
+        ///     The metadata for the open database.
+        /// </summary>
+        /// <value>
+        ///     The metadata.
+        /// </value>
+        public Metadata Metadata { get; private set; }
+
+        private int IPv4Start
+        {
+            get
+            {
+                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
+                {
+                    return _ipV4Start;
+                }
+                var node = 0;
+                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
+                {
+                    node = ReadNode(node, 0);
+                }
+                _ipV4Start = node;
+                return node;
+            }
+        }
+
+        private Decoder Decoder { get; set; }
+
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        ///     Release resources back to the system.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                _database.Dispose();
+            }
+
+            _disposed = true;
         }
 
         private void InitMetaData()
         {
             var start = FindMetadataStart();
-            var metaDecode = new Decoder(_stream, start);
+            var metaDecode = new Decoder(_database, start);
             var result = metaDecode.Decode(start);
             Metadata = Deserialize<Metadata>(result.Node);
-            Decoder = new Decoder(_stream, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
         /// <summary>
@@ -197,7 +189,7 @@ namespace MaxMind.Db
         {
             var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
 
-            if (resolved >= _stream.Value.Length)
+            if (resolved >= _database.Length)
             {
                 throw new InvalidDatabaseException(
                     "The MaxMind Db file's search tree is corrupt: "
@@ -258,13 +250,11 @@ namespace MaxMind.Db
 
         private int FindMetadataStart()
         {
-            _fileSize = (int) _stream.Value.Length;
             var buffer = new byte[_metadataStartMarker.Length];
 
-            for (var i = (_fileSize - _metadataStartMarker.Length); i > 0; i--)
+            for (var i = (_database.Length - _metadataStartMarker.Length); i > 0; i--)
             {
-                _stream.Value.Seek(i, SeekOrigin.Begin);
-                _stream.Value.Read(buffer, 0, buffer.Length);
+                _database.Copy(i, buffer);
 
                 if (!buffer.SequenceEqual(_metadataStartMarker))
                     continue;
@@ -287,50 +277,26 @@ namespace MaxMind.Db
             {
                 case 24:
                 {
-                    var buffer = ReadMany(baseOffset + index*3, 3);
+                    var buffer = _database.Read(baseOffset + index*3, 3);
                     return Decoder.DecodeInteger(buffer);
                 }
                 case 28:
                 {
-                    var middle = ReadOne(baseOffset + 3);
+                    var middle = _database.ReadOne(baseOffset + 3);
                     middle = (index == 0) ? (byte) (middle >> 4) : (byte) (0x0F & middle);
 
-                    var buffer = ReadMany(baseOffset + index*4, 3);
+                    var buffer = _database.Read(baseOffset + index*4, 3);
                     return Decoder.DecodeInteger(middle, buffer);
                 }
                 case 32:
                 {
-                    var buffer = ReadMany(baseOffset + index*4, 4);
+                    var buffer = _database.Read(baseOffset + index*4, 4);
                     return Decoder.DecodeInteger(buffer);
                 }
             }
 
             throw new InvalidDatabaseException("Unknown record size: "
                                                + size);
-        }
-
-        private byte ReadOne(int position)
-        {
-            _stream.Value.Seek(position, SeekOrigin.Begin);
-            return (byte) _stream.Value.ReadByte();
-        }
-
-        private byte[] ReadMany(int position, int size)
-        {
-            var buffer = new byte[size];
-            _stream.Value.Seek(position, SeekOrigin.Begin);
-            _stream.Value.Read(buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        /// <summary>
-        ///     Release resources back to the system.
-        /// </summary>
-        public void Dispose()
-        {
-            _stream.Dispose();
-            if (_memoryMappedFile != null)
-                _memoryMappedFile.Dispose();
         }
     }
 }
