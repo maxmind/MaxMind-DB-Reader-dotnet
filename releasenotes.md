@@ -1,5 +1,19 @@
 # Release Nodes #
 
+## 1.1.0-beta1 (2015-06-30) ##
+
+* A `IOException: Not enough storage is available to process this command`
+  when using the memory-mapped mode with 32-bit builds or many threads was
+  fixed. Closes GH #5.
+* Use of streams was replaced with direct access for both the memory-mapped
+  file mode and the memory mode. This should increase performance in most
+  cases.
+* When using memory-mapped mode, the file is now opened with
+  `FileShare.Delete`, allowing other processes to delete or replace the
+  database when it is in use. The reader object will continue using the old
+  database.
+* The Json.NET dependency was updated to 7.0.1.
+
 ## 1.0.1 (2015-05-19) ##
 
 * Improved the exception thrown when the constructor for `Reader` is called
