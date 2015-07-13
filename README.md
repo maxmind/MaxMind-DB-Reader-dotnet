@@ -48,14 +48,12 @@ read in metadata for the file.
 
 ```csharp
 
-var reader = new Reader("GeoIP2-City.mmdb");
+using (var reader = new Reader("GeoIP2-City.mmdb"))
+{
+    var response = reader.Find("24.24.24.24");
 
-var response = reader.Find("24.24.24.24");
-
-Console.WriteLine(response.ToString());
-
-reader.close();
-
+    Console.WriteLine(response.ToString());
+}
 ```
 
 ## Multi-Threaded Use ##
