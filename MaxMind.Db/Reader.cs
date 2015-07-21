@@ -1,11 +1,11 @@
 ﻿#region
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
 using System.Net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -67,9 +67,11 @@ namespace MaxMind.Db
                 case FileAccessMode.MemoryMapped:
                     _database = new MemoryMapReader(file);
                     break;
+
                 case FileAccessMode.Memory:
                     _database = new ArrayReader(file);
                     break;
+
                 default:
                     throw new ArgumentException("Unknown file access mode");
             }
@@ -203,7 +205,7 @@ namespace MaxMind.Db
         {
             var rawAddress = address.GetAddressBytes();
 
-            var bitLength = rawAddress.Length*8;
+            var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
 
             for (var i = 0; i < bitLength; i++)
@@ -212,8 +214,8 @@ namespace MaxMind.Db
                 {
                     break;
                 }
-                var b = rawAddress[i/8];
-                var bit = 1 & (b >> 7 - (i%8));
+                var b = rawAddress[i / 8];
+                var bit = 1 & (b >> 7 - (i % 8));
                 record = ReadNode(record, bit);
             }
             if (record == Metadata.NodeCount)
@@ -269,30 +271,30 @@ namespace MaxMind.Db
 
         private int ReadNode(int nodeNumber, int index)
         {
-            var baseOffset = nodeNumber*Metadata.NodeByteSize;
+            var baseOffset = nodeNumber * Metadata.NodeByteSize;
 
             var size = Metadata.RecordSize;
 
             switch (size)
             {
                 case 24:
-                {
-                    var buffer = _database.Read(baseOffset + index*3, 3);
-                    return Decoder.DecodeInteger(buffer);
-                }
+                    {
+                        var buffer = _database.Read(baseOffset + index * 3, 3);
+                        return Decoder.DecodeInteger(buffer);
+                    }
                 case 28:
-                {
-                    var middle = _database.ReadOne(baseOffset + 3);
-                    middle = (index == 0) ? (byte) (middle >> 4) : (byte) (0x0F & middle);
+                    {
+                        var middle = _database.ReadOne(baseOffset + 3);
+                        middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
-                    var buffer = _database.Read(baseOffset + index*4, 3);
-                    return Decoder.DecodeInteger(middle, buffer);
-                }
+                        var buffer = _database.Read(baseOffset + index * 4, 3);
+                        return Decoder.DecodeInteger(middle, buffer);
+                    }
                 case 32:
-                {
-                    var buffer = _database.Read(baseOffset + index*4, 4);
-                    return Decoder.DecodeInteger(buffer);
-                }
+                    {
+                        var buffer = _database.Read(baseOffset + index * 4, 4);
+                        return Decoder.DecodeInteger(buffer);
+                    }
             }
 
             throw new InvalidDatabaseException("Unknown record size: "

@@ -1,11 +1,11 @@
 ﻿#region
 
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-using Newtonsoft.Json.Linq;
-using NUnit.Framework;
 
 #endregion
 
@@ -26,7 +26,6 @@ namespace MaxMind.Db.Test
                 {ushort.MaxValue, new[] {(byte) 0xa2, (byte) 0xff, (byte) 0xff}}
             };
 
-
             TestTypeDecoding(uint16s);
         }
 
@@ -43,7 +42,6 @@ namespace MaxMind.Db.Test
                 {(1 << 24) - 1, new[] {(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff}},
                 {uint.MaxValue, new[] {(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}}
             };
-
 
             TestTypeDecoding(uint32s);
         }
@@ -67,7 +65,6 @@ namespace MaxMind.Db.Test
                 {-int.MaxValue, new byte[] {0x4, 0x1, 0x80, 0x0, 0x0, 0x1}}
             };
 
-
             TestTypeDecoding(int32s);
         }
 
@@ -81,13 +78,12 @@ namespace MaxMind.Db.Test
                 {10872, new byte[] {0x2, 0x2, 0x2a, 0x78}}
             };
 
-
             for (var power = 1; power < 8; power++)
             {
-                var key = Int64Pow(2, 8*power) - 1;
+                var key = Int64Pow(2, 8 * power) - 1;
                 var value = new byte[2 + power];
 
-                value[0] = (byte) power;
+                value[0] = (byte)power;
                 value[1] = 0x2;
                 for (var i = 2; i < value.Length; i++)
                 {
@@ -125,10 +121,10 @@ namespace MaxMind.Db.Test
 
             for (var power = 1; power <= 16; power++)
             {
-                var key = BigInteger.Pow(new BigInteger(2), 8*power) - 1;
+                var key = BigInteger.Pow(new BigInteger(2), 8 * power) - 1;
                 var value = new byte[2 + power];
 
-                value[0] = (byte) power;
+                value[0] = (byte)power;
                 value[1] = 0x3;
                 for (var i = 2; i < value.Length; i++)
                 {
@@ -195,7 +191,6 @@ namespace MaxMind.Db.Test
                 {(((long) 1) << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
             };
 
-
             TestTypeDecoding(pointers);
         }
 
@@ -215,18 +210,18 @@ namespace MaxMind.Db.Test
             AddTestString(strings, 0x43, "123");
             AddTestString(strings, 0x5b, "123456789012345678901234567");
             AddTestString(strings, 0x5c, "1234567890123456789012345678");
-            AddTestString(strings, new byte[] {0x5d, 0x0}, "12345678901234567890123456789");
-            AddTestString(strings, new byte[] {0x5d, 0x1}, "123456789012345678901234567890");
+            AddTestString(strings, new byte[] { 0x5d, 0x0 }, "12345678901234567890123456789");
+            AddTestString(strings, new byte[] { 0x5d, 0x1 }, "123456789012345678901234567890");
 
-            AddTestString(strings, new byte[] {0x5e, 0x0, 0xd7}, new string('x', 500));
-            AddTestString(strings, new byte[] {0x5e, 0x6, 0xb3}, new string('x', 2000));
-            AddTestString(strings, new byte[] {0x5f, 0x0, 0x10, 0x53}, new string('x', 70000));
+            AddTestString(strings, new byte[] { 0x5e, 0x0, 0xd7 }, new string('x', 500));
+            AddTestString(strings, new byte[] { 0x5e, 0x6, 0xb3 }, new string('x', 2000));
+            AddTestString(strings, new byte[] { 0x5f, 0x0, 0x10, 0x53 }, new string('x', 70000));
             return strings;
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte ctrl, string str)
         {
-            AddTestString(tests, new[] {ctrl}, str);
+            AddTestString(tests, new[] { ctrl }, str);
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte[] ctrl, string str)
@@ -242,8 +237,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBooleans()
         {
-            var booleans = new Dictionary<bool, byte[]> {{false, new byte[] {0x0, 0x7}}, {true, new byte[] {0x1, 0x7}}};
-
+            var booleans = new Dictionary<bool, byte[]> { { false, new byte[] { 0x0, 0x7 } }, { true, new byte[] { 0x1, 0x7 } } };
 
             TestTypeDecoding(booleans);
         }
@@ -272,16 +266,16 @@ namespace MaxMind.Db.Test
             var maps = new Dictionary<JObject, byte[]>();
 
             var empty = new JObject();
-            maps.Add(empty, new[] {(byte) 0xe0});
+            maps.Add(empty, new[] { (byte)0xe0 });
 
-            var one = new JObject {{"en", "Foo"}};
+            var one = new JObject { { "en", "Foo" } };
             maps.Add(one, new byte[]
             {
                 0xe1, /* en */0x42, 0x65, 0x6e,
                 /* Foo */0x43, 0x46, 0x6f, 0x6f
             });
 
-            var two = new JObject {{"en", "Foo"}, {"zh", "人"}};
+            var two = new JObject { { "en", "Foo" }, { "zh", "人" } };
             maps.Add(two, new byte[]
             {
                 0xe2,
@@ -295,7 +289,7 @@ namespace MaxMind.Db.Test
                 0x43, 0xe4, 0xba, 0xba
             });
 
-            var nested = new JObject {{"name", two}};
+            var nested = new JObject { { "name", two } };
 
             maps.Add(nested, new byte[]
             {
@@ -311,7 +305,7 @@ namespace MaxMind.Db.Test
             });
 
             var guess = new JObject();
-            var languages = new JArray {"en", "zh"};
+            var languages = new JArray { "en", "zh" };
             guess.Add("languages", languages);
             maps.Add(guess, new byte[]
             {
@@ -333,7 +327,7 @@ namespace MaxMind.Db.Test
         {
             var arrays = new Dictionary<JArray, byte[]>();
 
-            var f1 = new JArray {"Foo"};
+            var f1 = new JArray { "Foo" };
             arrays.Add(f1, new byte[]
             {
                 0x1, 0x4,
@@ -341,7 +335,7 @@ namespace MaxMind.Db.Test
                 0x43, 0x46, 0x6f, 0x6f
             });
 
-            var f2 = new JArray {"Foo", "人"};
+            var f2 = new JArray { "Foo", "人" };
             arrays.Add(f2, new byte[]
             {
                 0x2, 0x4,
@@ -352,7 +346,7 @@ namespace MaxMind.Db.Test
             });
 
             var empty = new JArray();
-            arrays.Add(empty, new byte[] {0x0, 0x4});
+            arrays.Add(empty, new byte[] { 0x0, 0x4 });
 
             TestTypeDecoding(arrays);
         }
@@ -366,7 +360,7 @@ namespace MaxMind.Db.Test
 
                 using (var database = new ArrayReader(input))
                 {
-                    var decoder = new Decoder(database, 0) {PointerTestHack = true};
+                    var decoder = new Decoder(database, 0) { PointerTestHack = true };
                     var jToken = decoder.Decode(0).Node;
 
                     if (jToken is JRaw)

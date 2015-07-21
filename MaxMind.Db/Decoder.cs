@@ -1,10 +1,10 @@
 ﻿#region
 
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -67,7 +67,7 @@ namespace MaxMind.Db
     {
         private readonly IByteReader _database;
         private readonly int _pointerBase;
-        private readonly int[] _pointerValueOffset = {0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0};
+        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.
@@ -119,7 +119,7 @@ namespace MaxMind.Db
                         "Something went horribly wrong in the decoder. An extended type "
                         + "resolved to a type number < 8 (" + typeNum
                         + ")");
-                type = (ObjectType) typeNum;
+                type = (ObjectType)typeNum;
                 offset++;
             }
 
@@ -147,28 +147,40 @@ namespace MaxMind.Db
             {
                 case ObjectType.Map:
                     return DecodeMap(size, offset);
+
                 case ObjectType.Array:
                     return DecodeArray(size, offset);
+
                 case ObjectType.Boolean:
                     return new Result(DecodeBoolean(size), offset);
+
                 case ObjectType.Utf8String:
                     return new Result(DecodeString(buffer), newOffset);
+
                 case ObjectType.Double:
                     return new Result(DecodeDouble(buffer), newOffset);
+
                 case ObjectType.Float:
                     return new Result(DecodeFloat(buffer), newOffset);
+
                 case ObjectType.Bytes:
                     return new Result(new JValue(buffer), newOffset);
+
                 case ObjectType.Uint16:
                     return new Result(DecodeIntegerToJValue(buffer), newOffset);
+
                 case ObjectType.Uint32:
                     return new Result(DecodeLong(buffer), newOffset);
+
                 case ObjectType.Int32:
                     return new Result(DecodeIntegerToJValue(buffer), newOffset);
+
                 case ObjectType.Uint64:
                     return new Result(DecodeUInt64(buffer), newOffset);
+
                 case ObjectType.Uint128:
                     return new Result(DecodeBigInteger(buffer), newOffset);
+
                 default:
                     throw new InvalidDatabaseException("Unable to handle type:" + type);
             }
@@ -182,7 +194,7 @@ namespace MaxMind.Db
         private ObjectType FromControlByte(byte b)
         {
             var p = b >> 5;
-            return (ObjectType) p;
+            return (ObjectType)p;
         }
 
         /// <summary>
@@ -211,11 +223,11 @@ namespace MaxMind.Db
             else if (size > 30)
             {
                 var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8*bytesToRead)));
+                var i = DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
                 size = 65821 + i;
             }
 
-            return new[] {size, offset + bytesToRead};
+            return new[] { size, offset + bytesToRead };
         }
 
         /// <summary>
@@ -229,8 +241,10 @@ namespace MaxMind.Db
             {
                 case 0:
                     return new JValue(false);
+
                 case 1:
                     return new JValue(true);
+
                 default:
                     throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                        + "invalid size of boolean.");
