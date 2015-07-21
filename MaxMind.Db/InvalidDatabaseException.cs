@@ -9,6 +9,7 @@ namespace MaxMind.Db
     /// <summary>
     ///     Thrown when the MaxMind database file is incorrectly formatted
     /// </summary>
+    [Serializable]
     public class InvalidDatabaseException : ApplicationException
     {
         /// <summary>
