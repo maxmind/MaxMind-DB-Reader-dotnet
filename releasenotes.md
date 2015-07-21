@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 1.1.0 (2015-07-21) ##
+
+* Minor code cleanup.
+
 ## 1.1.0-beta1 (2015-06-30) ##
 
 * A `IOException: Not enough storage is available to process this command`
