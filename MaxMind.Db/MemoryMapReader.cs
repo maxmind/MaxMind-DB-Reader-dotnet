@@ -15,7 +15,7 @@ namespace MaxMind.Db
         {
             var fileInfo = new FileInfo(file);
 
-            Length = (int) fileInfo.Length;
+            Length = (int)fileInfo.Length;
 
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
@@ -32,7 +32,6 @@ namespace MaxMind.Db
                         var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                             FileShare.Delete | FileShare.Read))
                     {
-
                         _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
                             MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
                     }

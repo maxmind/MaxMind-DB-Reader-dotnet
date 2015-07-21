@@ -1,12 +1,12 @@
 ﻿#region
 
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Newtonsoft.Json.Linq;
-using NUnit.Framework;
 
 #endregion
 
@@ -20,9 +20,9 @@ namespace MaxMind.Db.Test
         [Test]
         public void Test()
         {
-            foreach (var recordSize in new long[] {24, 28, 32})
+            foreach (var recordSize in new long[] { 24, 28, 32 })
             {
-                foreach (var ipVersion in new[] {4, 6})
+                foreach (var ipVersion in new[] { 4, 6 })
                 {
                     var file = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     var reader = new Reader(file);
@@ -46,9 +46,9 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestStream()
         {
-            foreach (var recordSize in new long[] {24, 28, 32})
+            foreach (var recordSize in new long[] { 24, 28, 32 })
             {
-                foreach (var ipVersion in new[] {4, 6})
+                foreach (var ipVersion in new[] { 4, 6 })
                 {
                     var file = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     using (var streamReader = new StreamReader(file))
@@ -72,7 +72,7 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream",
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream",
             MatchType = MessageMatch.Contains)]
         public void TestEmptyStream()
         {
@@ -101,7 +101,7 @@ namespace MaxMind.Db.Test
 
                 Assert.That(record.Value<bool>("boolean"), Is.True);
 
-                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] {0, 0, 0, 42}));
+                Assert.That(record.Value<byte[]>("bytes"), Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
 
                 Assert.That(record.Value<string>("utf8_string"), Is.EqualTo("unicode! ☯ - ♫"));
 
@@ -168,7 +168,7 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "contains bad data",
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data",
             MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
@@ -179,7 +179,7 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "search tree is corrupt",
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt",
             MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
@@ -190,7 +190,7 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof (InvalidDatabaseException), ExpectedMessage = "data section contains bad data",
+        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data",
             MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
@@ -204,7 +204,7 @@ namespace MaxMind.Db.Test
         {
             TestAddresses(reader,
                 file,
-                new[] {"::1:ffff:ffff", "::2:0:0", "::2:0:40", "::2:0:50", "::2:0:58"},
+                new[] { "::1:ffff:ffff", "::2:0:0", "::2:0:40", "::2:0:50", "::2:0:58" },
                 new Dictionary<string, string>
                 {
                     {"::2:0:1", "::2:0:0"},
@@ -216,7 +216,7 @@ namespace MaxMind.Db.Test
                     {"::2:0:57", "::2:0:50"},
                     {"::2:0:59", "::2:0:58"}
                 },
-                new[] {"1.1.1.33", "255.254.253.123", "89fa::"}
+                new[] { "1.1.1.33", "255.254.253.123", "89fa::" }
                 );
         }
 
@@ -224,7 +224,7 @@ namespace MaxMind.Db.Test
         {
             TestAddresses(reader,
                 file,
-                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int) Math.Pow(2, 1)),
+                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
                 new Dictionary<string, string>
                 {
                     {"1.1.1.3", "1.1.1.2"},
@@ -235,7 +235,7 @@ namespace MaxMind.Db.Test
                     {"1.1.1.17", "1.1.1.16"},
                     {"1.1.1.31", "1.1.1.16"}
                 },
-                new[] {"1.1.1.33", "255.254.253.123"});
+                new[] { "1.1.1.33", "255.254.253.123" });
         }
 
         private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,

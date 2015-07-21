@@ -1,9 +1,9 @@
 ﻿#region
 
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 #endregion
 
@@ -67,8 +67,8 @@ namespace MaxMind.Db
         internal int RecordSize { get; set; }
 
         [JsonIgnore]
-        internal int NodeByteSize => RecordSize/4;
+        internal int NodeByteSize => RecordSize / 4;
 
-        internal int SearchTreeSize => NodeCount*NodeByteSize;
+        internal int SearchTreeSize => NodeCount * NodeByteSize;
     }
 }
