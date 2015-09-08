@@ -1,5 +1,12 @@
 # Release Nodes #
 
+## 1.2.0-beta1 (2015-09-08) ##
+
+* The assembly now has a strong name.
+* An internal use of `JTokenReader` is now disposed of after use.
+* A null stream passed to the `Reader(Stream)` constructor will now throw an
+  `ArgumentNullException`.
+
 ## 1.1.0 (2015-07-21) ##
 
 * Minor code cleanup.
