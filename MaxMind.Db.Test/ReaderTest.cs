@@ -72,6 +72,14 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
+        [ExpectedException(typeof(ArgumentNullException), ExpectedMessage = "The database stream must not be null.",
+            MatchType = MessageMatch.Contains)]
+        public void NullStreamThrowsArgumentNullException()
+        {
+            new Reader((Stream)null);
+        }
+
+        [Test]
         [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream",
             MatchType = MessageMatch.Contains)]
         public void TestEmptyStream()

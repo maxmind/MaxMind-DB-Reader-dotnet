@@ -83,8 +83,13 @@ namespace MaxMind.Db
         ///     Initialize with Stream.
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
+        /// <exception cref="ArgumentNullException"></exception>
         public Reader(Stream stream)
         {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
+            }
             byte[] fileBytes;
 
             using (var memoryStream = new MemoryStream())
@@ -247,7 +252,10 @@ namespace MaxMind.Db
         private T Deserialize<T>(JToken value)
         {
             var serializer = new JsonSerializer();
-            return serializer.Deserialize<T>(new JTokenReader(value));
+            using (var reader = new JTokenReader(value))
+            {
+                return serializer.Deserialize<T>(reader);
+            }
         }
 
         private int FindMetadataStart()
