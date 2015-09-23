@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 1.2.0 (2015-09-23) ##
+
+* Production release. No changes.
+
 ## 1.2.0-beta1 (2015-09-08) ##
 
 * The assembly now has a strong name.
