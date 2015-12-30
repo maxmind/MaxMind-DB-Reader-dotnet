@@ -109,6 +109,7 @@
   <ItemGroup>
     <Compile Include="Decoder.cs" />
     <Compile Include="ArrayReader.cs" />
+    <Compile Include="DeserializationException.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IByteReader.cs" />
     <Compile Include="InvalidDatabaseException.cs" />

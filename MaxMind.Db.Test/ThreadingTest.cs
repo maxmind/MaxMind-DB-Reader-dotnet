@@ -28,7 +28,7 @@ namespace MaxMind.Db.Test
                 while (count < 10000)
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
-                    var resp = reader.Find(ip);
+                    var resp = reader.Find<object>(ip);
                     if (resp != null && !ipsAndResults.ContainsKey(ip))
                     {
                         ipsAndResults.Add(ip, resp.ToString());
@@ -40,7 +40,7 @@ namespace MaxMind.Db.Test
                 Parallel.For(0, ips.Length, i =>
                 {
                     var ipAddress = ips[i];
-                    var result = reader.Find(ipAddress);
+                    var result = reader.Find<object>(ipAddress);
                     var resultString = result.ToString();
                     var expectedString = ipsAndResults[ipAddress];
                     if (resultString != expectedString)
@@ -59,7 +59,7 @@ namespace MaxMind.Db.Test
             {
                 using (var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode))
                 {
-                    reader.Find("1.1.1.1");
+                    reader.Find<object>("1.1.1.1");
                 }
             });
         }

@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -167,7 +168,7 @@ namespace MaxMind.Db
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
             int ignore;
-            var result = metaDecode.Decode(start, out ignore);
+            var result = metaDecode.Decode<ReadOnlyDictionary<string, object>>(start, out ignore);
             Metadata = Deserialize<Metadata>(JObject.FromObject(result));
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
@@ -177,9 +178,9 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public object Find(string ipAddress)
+        public T Find<T>(string ipAddress) where T : class
         {
-            return Find(IPAddress.Parse(ipAddress));
+            return Find<T>(IPAddress.Parse(ipAddress));
         }
 
         /// <summary>
@@ -187,13 +188,13 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public object Find(IPAddress ipAddress)
+        public T Find<T>(IPAddress ipAddress) where T : class
         {
             var pointer = FindAddressInTree(ipAddress);
-            return pointer == 0 ? null : ResolveDataPointer(pointer);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer);
         }
 
-        private object ResolveDataPointer(int pointer)
+        private T ResolveDataPointer<T>(int pointer) where T : class
         {
             var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
 
@@ -205,7 +206,7 @@ namespace MaxMind.Db
             }
 
             int ignore;
-            return Decoder.Decode(resolved, out ignore);
+            return Decoder.Decode<T>(resolved, out ignore);
         }
 
         private int FindAddressInTree(IPAddress address)
@@ -308,6 +309,7 @@ namespace MaxMind.Db
                                                + size);
         }
 
+        // XXX share again
         private int DecodeInteger(int val, int offset, int size)
         {
             for (var i = 0; i < size; i++)
