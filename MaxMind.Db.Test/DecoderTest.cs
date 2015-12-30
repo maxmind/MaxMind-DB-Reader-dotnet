@@ -17,7 +17,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestUInt16()
         {
-            var uint16s = new Dictionary<int, byte[]>
+            var uint16s = new Dictionary<object, byte[]>
             {
                 {0, new byte[] {0xa0}},
                 {(1 << 8) - 1, new[] {(byte) 0xa1, (byte) 0xff}},
@@ -32,7 +32,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestUInt32()
         {
-            var uint32s = new Dictionary<long, byte[]>
+            var uint32s = new Dictionary<object, byte[]>
             {
                 {0, new[] {(byte) 0xc0}},
                 {(1 << 8) - 1, new[] {(byte) 0xc1, (byte) 0xff}},
@@ -49,7 +49,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestInt32s()
         {
-            var int32s = new Dictionary<int, byte[]>
+            var int32s = new Dictionary<object, byte[]>
             {
                 {0, new byte[] {0x0, 0x1}},
                 {-1, new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0xff}},
@@ -71,7 +71,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestInt64s()
         {
-            var int64s = new Dictionary<long, byte[]>
+            var int64s = new Dictionary<object, byte[]>
             {
                 {0L, new byte[] {0x0, 0x2}},
                 {500L, new byte[] {0x2, 0x2, 0x1, 0xf4}},
@@ -112,7 +112,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBigIntegers()
         {
-            var bigInts = new Dictionary<BigInteger, byte[]>
+            var bigInts = new Dictionary<object, byte[]>
             {
                 {new BigInteger(0), new byte[] {0x0, 0x3}},
                 {new BigInteger(500), new byte[] {0x2, 0x3, 0x1, 0xf4}},
@@ -140,7 +140,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestDoubles()
         {
-            var doubles = new Dictionary<double, byte[]>
+            var doubles = new Dictionary<object, byte[]>
             {
                 {0.0, new byte[] {0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
                 {0.5, new byte[] {0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
@@ -158,7 +158,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestFloats()
         {
-            var floats = new Dictionary<float, byte[]>
+            var floats = new Dictionary<object, byte[]>
             {
                 {(float) 0.0, new byte[] {0x4, 0x8, 0x0, 0x0, 0x0, 0x0}},
                 {(float) 1.0, new byte[] {0x4, 0x8, 0x3F, 0x80, 0x0, 0x0}},
@@ -177,7 +177,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestPointers()
         {
-            var pointers = new Dictionary<long, byte[]>
+            var pointers = new Dictionary<object, byte[]>
             {
                 {0, new byte[] {0x20, 0x0}},
                 {5, new byte[] {0x20, 0x5}},
@@ -237,7 +237,7 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBooleans()
         {
-            var booleans = new Dictionary<bool, byte[]> { { false, new byte[] { 0x0, 0x7 } }, { true, new byte[] { 0x1, 0x7 } } };
+            var booleans = new Dictionary<object, byte[]> { { false, new byte[] { 0x0, 0x7 } }, { true, new byte[] { 0x1, 0x7 } } };
 
             TestTypeDecoding(booleans);
         }
@@ -351,7 +351,7 @@ namespace MaxMind.Db.Test
             TestTypeDecoding(arrays);
         }
 
-        private static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests)
+        private static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests) where T : class
         {
             foreach (var entry in tests)
             {
@@ -362,7 +362,7 @@ namespace MaxMind.Db.Test
                 {
                     var decoder = new Decoder(database, 0) { PointerTestHack = true };
                     int offset;
-                    var val = decoder.Decode(0, out offset);
+                    var val = decoder.Decode<T>(0, out offset);
                     Assert.That(val, Is.EqualTo(expect));
                 }
             }
