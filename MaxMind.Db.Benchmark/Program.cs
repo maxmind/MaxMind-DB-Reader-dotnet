@@ -1,6 +1,9 @@
 ﻿#region
 
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Net;
 
 #endregion
@@ -19,10 +22,10 @@ namespace MaxMind.Db.Benchmark
                 for (var i = 0; i < count; i++)
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
-                    if (i % 50000 == 0)
-                        Console.WriteLine(i + " " + ip);
+                    var resp = reader.Find<IDictionary<string, object>>(ip);
 
-                    var resp = reader.Find(ip);
+                    if (i % 50000 == 0)
+                        Console.WriteLine(i + " " + ip); // + " " + JsonConvert.SerializeObject(resp));
                 }
 
                 var stop = DateTime.Now;
