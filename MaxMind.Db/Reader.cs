@@ -289,26 +289,32 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        var buffer = _database.Read(baseOffset + index * 3, 3);
-                        return Decoder.DecodeInteger(buffer);
+                        return DecodeInteger(0, baseOffset + index * 3, 3);
                     }
                 case 28:
                     {
                         var middle = _database.ReadOne(baseOffset + 3);
                         middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
-                        var buffer = _database.Read(baseOffset + index * 4, 3);
-                        return Decoder.DecodeInteger(middle, buffer);
+                        return DecodeInteger(middle, baseOffset + index * 4, 3);
                     }
                 case 32:
                     {
-                        var buffer = _database.Read(baseOffset + index * 4, 4);
-                        return Decoder.DecodeInteger(buffer);
+                        return DecodeInteger(0, baseOffset + index * 4, 4);
                     }
             }
 
             throw new InvalidDatabaseException("Unknown record size: "
                                                + size);
+        }
+
+        private int DecodeInteger(int val, int offset, int size)
+        {
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _database.ReadOne(offset + i);
+            }
+            return val;
         }
     }
 }
