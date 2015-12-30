@@ -168,7 +168,7 @@ namespace MaxMind.Db
             var metaDecode = new Decoder(_database, start);
             int ignore;
             var result = metaDecode.Decode(start, out ignore);
-            Metadata = Deserialize<Metadata>(result);
+            Metadata = Deserialize<Metadata>(JObject.FromObject(result));
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
@@ -177,7 +177,7 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public JToken Find(string ipAddress)
+        public object Find(string ipAddress)
         {
             return Find(IPAddress.Parse(ipAddress));
         }
@@ -187,13 +187,13 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
         /// <returns>An object containing the IP related data</returns>
-        public JToken Find(IPAddress ipAddress)
+        public object Find(IPAddress ipAddress)
         {
             var pointer = FindAddressInTree(ipAddress);
             return pointer == 0 ? null : ResolveDataPointer(pointer);
         }
 
-        private JToken ResolveDataPointer(int pointer)
+        private object ResolveDataPointer(int pointer)
         {
             var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
 

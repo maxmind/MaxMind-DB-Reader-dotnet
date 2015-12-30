@@ -1,6 +1,10 @@
-﻿using System;
+﻿#region
+
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+
+#endregion
 
 namespace MaxMind.Db
 {
@@ -15,7 +19,7 @@ namespace MaxMind.Db
         {
             var fileInfo = new FileInfo(file);
 
-            Length = (int)fileInfo.Length;
+            Length = (int) fileInfo.Length;
 
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
