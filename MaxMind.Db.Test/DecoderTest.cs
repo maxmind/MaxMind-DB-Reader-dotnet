@@ -237,7 +237,11 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestBooleans()
         {
-            var booleans = new Dictionary<object, byte[]> { { false, new byte[] { 0x0, 0x7 } }, { true, new byte[] { 0x1, 0x7 } } };
+            var booleans = new Dictionary<object, byte[]>
+            {
+                {false, new byte[] {0x0, 0x7}},
+                {true, new byte[] {0x1, 0x7}}
+            };
 
             TestTypeDecoding(booleans);
         }
