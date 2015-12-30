@@ -2,7 +2,6 @@
 
 using Newtonsoft.Json.Linq;
 using System;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -115,7 +114,6 @@ namespace MaxMind.Db
         private JToken DecodeByType(ObjectType type, int offset, int size, out int outOffset)
         {
             outOffset = offset + size;
-            var buffer = type == ObjectType.Boolean ? null : _database.Read(offset, size);
 
             switch (type)
             {
@@ -130,31 +128,31 @@ namespace MaxMind.Db
                     return DecodeBoolean(size);
 
                 case ObjectType.Utf8String:
-                    return DecodeString(buffer);
+                    return DecodeString(offset, size);
 
                 case ObjectType.Double:
-                    return DecodeDouble(buffer);
+                    return DecodeDouble(offset, size);
 
                 case ObjectType.Float:
-                    return DecodeFloat(buffer);
+                    return DecodeFloat(offset, size);
 
                 case ObjectType.Bytes:
-                    return new JValue(buffer);
+                    return DecodeBytes(offset, size);
 
                 case ObjectType.Uint16:
-                    return DecodeIntegerToJValue(buffer);
+                    return DecodeIntegerToJValue(offset, size);
 
                 case ObjectType.Uint32:
-                    return DecodeLong(buffer);
+                    return DecodeLong(offset, size);
 
                 case ObjectType.Int32:
-                    return DecodeIntegerToJValue(buffer);
+                    return DecodeIntegerToJValue(offset, size);
 
                 case ObjectType.Uint64:
-                    return DecodeUInt64(buffer);
+                    return DecodeUInt64(offset, size);
 
                 case ObjectType.Uint128:
-                    return DecodeBigInteger(buffer);
+                    return DecodeBigInteger(offset, size);
 
                 default:
                     throw new InvalidDatabaseException("Unable to handle type:" + type);
@@ -186,20 +184,17 @@ namespace MaxMind.Db
 
             if (size == 29)
             {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer);
+                var i = DecodeInteger(offset, bytesToRead);
                 size = 29 + i;
             }
             else if (size == 30)
             {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer);
+                var i = DecodeInteger(offset, bytesToRead);
                 size = 285 + i;
             }
             else if (size > 30)
             {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
+                var i = DecodeInteger(offset, bytesToRead) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
                 size = 65821 + i;
             }
 
@@ -231,14 +226,13 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the double.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeDouble(byte[] buffer)
+        private JValue DecodeDouble(int offset, int size)
         {
-            if (buffer.Length != 8)
+            if (size != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of double.");
-
+            var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
             return new JValue(BitConverter.ToDouble(buffer, 0));
         }
@@ -246,13 +240,13 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the float.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeFloat(byte[] buffer)
+        private JValue DecodeFloat(int offset, int size)
         {
-            if (buffer.Length != 4)
+            if (size != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of float.");
+            var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
             return new JValue(BitConverter.ToSingle(buffer, 0));
         }
@@ -260,11 +254,15 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the string.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeString(byte[] buffer)
+        private JValue DecodeString(int offset, int size)
         {
-            return new JValue(Encoding.UTF8.GetString(buffer));
+            return new JValue(Encoding.UTF8.GetString(_database.Read(offset, size)));
+        }
+
+        private JValue DecodeBytes(int offset, int size)
+        {
+            return new JValue(_database.Read(offset, size));
         }
 
         /// <summary>
@@ -292,22 +290,24 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the long.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeLong(byte[] buffer)
+        private JValue DecodeLong(int offset, int size)
         {
-            var integer = buffer.Aggregate<byte, long>(0, (current, t) => (current << 8) | t);
-            return new JValue(integer);
+            long val = 0;
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _database.ReadOne(offset + i);
+            }
+            return new JValue(val);
         }
 
         /// <summary>
         ///     Decodes the integer.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeIntegerToJValue(byte[] buffer)
+        private JValue DecodeIntegerToJValue(int offset, int size)
         {
-            return new JValue(DecodeInteger(buffer));
+            return new JValue(DecodeInteger(offset, size));
         }
 
         /// <summary>
@@ -334,21 +334,24 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the uint64.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeUInt64(byte[] buffer)
+        private JValue DecodeUInt64(int offset, int size)
         {
-            var integer = buffer.Aggregate<byte, ulong>(0, (current, t) => (current << 8) | t);
-            return new JValue(integer);
+            ulong val = 0;
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _database.ReadOne(offset + i);
+            }
+            return new JValue(val);
         }
 
         /// <summary>
         ///     Decodes the big integer.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JToken DecodeBigInteger(byte[] buffer)
+        private JToken DecodeBigInteger(int offset, int size)
         {
+            var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
 
             //Pad with a 0 in case we're on a byte boundary
@@ -369,8 +372,7 @@ namespace MaxMind.Db
         {
             var pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
             var b = pointerSize == 4 ? 0 : ctrlByte & 0x7;
-            var buffer = _database.Read(offset, pointerSize);
-            var packed = DecodeInteger(b, buffer);
+            var packed = DecodeInteger(b, offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }
@@ -378,22 +380,23 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the integer.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        internal static int DecodeInteger(byte[] buffer)
+        private int DecodeInteger(int offset, int size)
         {
-            return DecodeInteger(0, buffer);
+            return DecodeInteger(0, offset, size);
         }
 
         /// <summary>
         ///     Decodes the integer.
         /// </summary>
-        /// <param name="baseValue">The base value.</param>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        internal static int DecodeInteger(int baseValue, byte[] buffer)
+        private int DecodeInteger(int val, int offset, int size)
         {
-            return buffer.Aggregate(baseValue, (current, t) => (current << 8) | t);
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _database.ReadOne(offset + i);
+            }
+            return val;
         }
     }
 }
