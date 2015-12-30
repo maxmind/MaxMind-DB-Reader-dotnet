@@ -88,6 +88,7 @@
     <AssemblyOriginatorKeyFile>..\MaxMind.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -113,6 +114,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IByteReader.cs" />
     <Compile Include="InvalidDatabaseException.cs" />
+    <Compile Include="MaxMindDbConstructorAttribute.cs" />
     <Compile Include="MemoryMapReader.cs" />
     <Compile Include="Reader.cs" />
     <Compile Include="Metadata.cs" />
