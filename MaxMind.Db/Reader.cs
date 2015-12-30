@@ -166,8 +166,9 @@ namespace MaxMind.Db
         {
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
-            var result = metaDecode.Decode(start);
-            Metadata = Deserialize<Metadata>(result.Node);
+            int ignore;
+            var result = metaDecode.Decode(start, out ignore);
+            Metadata = Deserialize<Metadata>(result);
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
@@ -203,7 +204,8 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            return Decoder.Decode(resolved).Node;
+            int ignore;
+            return Decoder.Decode(resolved, out ignore);
         }
 
         private int FindAddressInTree(IPAddress address)

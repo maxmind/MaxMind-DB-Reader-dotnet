@@ -34,33 +34,6 @@ namespace MaxMind.Db
     }
 
     /// <summary>
-    ///     A data structure to store an object read from the database
-    /// </summary>
-    internal class Result
-    {
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="Result" /> class.
-        /// </summary>
-        /// <param name="node">The node.</param>
-        /// <param name="offset">The offset.</param>
-        internal Result(JToken node, int offset)
-        {
-            Node = node;
-            Offset = offset;
-        }
-
-        /// <summary>
-        ///     The object read from the database
-        /// </summary>
-        internal JToken Node { get; set; }
-
-        /// <summary>
-        ///     The offset
-        /// </summary>
-        internal int Offset { get; set; }
-    }
-
-    /// <summary>
     ///     Given a stream, this class decodes the object graph at a particular location
     /// </summary>
     internal class Decoder
@@ -86,8 +59,9 @@ namespace MaxMind.Db
         ///     Decodes the object at the specified offset.
         /// </summary>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset</param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal Result Decode(int offset)
+        internal JToken Decode(int offset, out int outOffset)
         {
             if (offset >= _database.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -101,12 +75,13 @@ namespace MaxMind.Db
             if (type == ObjectType.Pointer)
             {
                 long pointer = DecodePointer(ctrlByte, offset, out offset);
+                outOffset = offset;
                 if (PointerTestHack)
                 {
-                    return new Result(new JValue(pointer), offset);
+                    return new JValue(pointer);
                 }
-                var result = Decode(Convert.ToInt32(pointer));
-                result.Offset = offset;
+                int ignore;
+                var result = Decode(Convert.ToInt32(pointer), out ignore);
                 return result;
             }
 
@@ -123,11 +98,9 @@ namespace MaxMind.Db
                 offset++;
             }
 
-            var sizeArray = SizeFromCtrlByte(ctrlByte, offset);
-            var size = sizeArray[0];
-            offset = sizeArray[1];
+            var size = SizeFromCtrlByte(ctrlByte, offset, out offset);
 
-            return DecodeByType(type, offset, size);
+            return DecodeByType(type, offset, size, out outOffset);
         }
 
         /// <summary>
@@ -136,50 +109,52 @@ namespace MaxMind.Db
         /// <param name="type">The type.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="size">The size.</param>
+        /// <param name="outOffset">The out offset</param>
         /// <returns></returns>
         /// <exception cref="System.Exception">Unable to handle type!</exception>
-        private Result DecodeByType(ObjectType type, int offset, int size)
+        private JToken DecodeByType(ObjectType type, int offset, int size, out int outOffset)
         {
-            var newOffset = offset + size;
+            outOffset = offset + size;
             var buffer = type == ObjectType.Boolean ? null : _database.Read(offset, size);
 
             switch (type)
             {
                 case ObjectType.Map:
-                    return DecodeMap(size, offset);
+                    return DecodeMap(size, offset, out outOffset);
 
                 case ObjectType.Array:
-                    return DecodeArray(size, offset);
+                    return DecodeArray(size, offset, out outOffset);
 
                 case ObjectType.Boolean:
-                    return new Result(DecodeBoolean(size), offset);
+                    outOffset = offset;
+                    return DecodeBoolean(size);
 
                 case ObjectType.Utf8String:
-                    return new Result(DecodeString(buffer), newOffset);
+                    return DecodeString(buffer);
 
                 case ObjectType.Double:
-                    return new Result(DecodeDouble(buffer), newOffset);
+                    return DecodeDouble(buffer);
 
                 case ObjectType.Float:
-                    return new Result(DecodeFloat(buffer), newOffset);
+                    return DecodeFloat(buffer);
 
                 case ObjectType.Bytes:
-                    return new Result(new JValue(buffer), newOffset);
+                    return new JValue(buffer);
 
                 case ObjectType.Uint16:
-                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
+                    return DecodeIntegerToJValue(buffer);
 
                 case ObjectType.Uint32:
-                    return new Result(DecodeLong(buffer), newOffset);
+                    return DecodeLong(buffer);
 
                 case ObjectType.Int32:
-                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
+                    return DecodeIntegerToJValue(buffer);
 
                 case ObjectType.Uint64:
-                    return new Result(DecodeUInt64(buffer), newOffset);
+                    return DecodeUInt64(buffer);
 
                 case ObjectType.Uint128:
-                    return new Result(DecodeBigInteger(buffer), newOffset);
+                    return DecodeBigInteger(buffer);
 
                 default:
                     throw new InvalidDatabaseException("Unable to handle type:" + type);
@@ -187,7 +162,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Froms the control byte.
+        ///     From the control byte.
         /// </summary>
         /// <param name="b">The attribute.</param>
         /// <returns></returns>
@@ -202,8 +177,9 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="ctrlByte">The control byte.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset.</param>
         /// <returns></returns>
-        private int[] SizeFromCtrlByte(byte ctrlByte, int offset)
+        private int SizeFromCtrlByte(byte ctrlByte, int offset, out int outOffset)
         {
             var size = ctrlByte & 0x1f;
             var bytesToRead = size < 29 ? 0 : size - 28;
@@ -227,7 +203,8 @@ namespace MaxMind.Db
                 size = 65821 + i;
             }
 
-            return new[] { size, offset + bytesToRead };
+            outOffset = offset + bytesToRead;
+            return size;
         }
 
         /// <summary>
@@ -295,23 +272,21 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset.</param>
         /// <returns></returns>
-        private Result DecodeMap(int size, int offset)
+        private JToken DecodeMap(int size, int offset, out int outOffset)
         {
             var obj = new JObject();
 
             for (var i = 0; i < size; i++)
             {
-                var left = Decode(offset);
-                var key = left.Node;
-                offset = left.Offset;
-                var right = Decode(offset);
-                var value = right.Node;
-                offset = right.Offset;
+                var key = Decode(offset, out offset);
+                var value = Decode(offset, out offset);
                 obj.Add(key.Value<string>(), value);
             }
 
-            return new Result(obj, offset);
+            outOffset = offset;
+            return obj;
         }
 
         /// <summary>
@@ -340,19 +315,20 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset.</param>
         /// <returns></returns>
-        private Result DecodeArray(int size, int offset)
+        private JToken DecodeArray(int size, int offset, out int outOffset)
         {
             var array = new JArray();
 
             for (var i = 0; i < size; i++)
             {
-                var r = Decode(offset);
-                offset = r.Offset;
-                array.Add(r.Node);
+                var r = Decode(offset, out offset);
+                array.Add(r);
             }
 
-            return new Result(array, offset);
+            outOffset = offset;
+            return array;
         }
 
         /// <summary>

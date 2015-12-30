@@ -361,7 +361,8 @@ namespace MaxMind.Db.Test
                 using (var database = new ArrayReader(input))
                 {
                     var decoder = new Decoder(database, 0) { PointerTestHack = true };
-                    var jToken = decoder.Decode(0).Node;
+                    int offset;
+                    var jToken = decoder.Decode(0, out offset);
 
                     if (jToken is JRaw)
                     {
