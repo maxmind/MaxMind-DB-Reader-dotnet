@@ -1,7 +1,8 @@
 ﻿#region
 
-using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Numerics;
 using System.Text;
 
@@ -60,7 +61,7 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset</param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal JToken Decode(int offset, out int outOffset)
+        internal object Decode(int offset, out int outOffset)
         {
             if (offset >= _database.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -77,7 +78,7 @@ namespace MaxMind.Db
                 outOffset = offset;
                 if (PointerTestHack)
                 {
-                    return new JValue(pointer);
+                    return pointer;
                 }
                 int ignore;
                 var result = Decode(Convert.ToInt32(pointer), out ignore);
@@ -111,7 +112,7 @@ namespace MaxMind.Db
         /// <param name="outOffset">The out offset</param>
         /// <returns></returns>
         /// <exception cref="System.Exception">Unable to handle type!</exception>
-        private JToken DecodeByType(ObjectType type, int offset, int size, out int outOffset)
+        private object DecodeByType(ObjectType type, int offset, int size, out int outOffset)
         {
             outOffset = offset + size;
 
@@ -140,13 +141,13 @@ namespace MaxMind.Db
                     return DecodeBytes(offset, size);
 
                 case ObjectType.Uint16:
-                    return DecodeIntegerToJValue(offset, size);
+                    return DecodeInteger(offset, size);
 
                 case ObjectType.Uint32:
                     return DecodeLong(offset, size);
 
                 case ObjectType.Int32:
-                    return DecodeIntegerToJValue(offset, size);
+                    return DecodeInteger(offset, size);
 
                 case ObjectType.Uint64:
                     return DecodeUInt64(offset, size);
@@ -207,15 +208,15 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="size">The size of the structure.</param>
         /// <returns></returns>
-        private JValue DecodeBoolean(int size)
+        private bool DecodeBoolean(int size)
         {
             switch (size)
             {
                 case 0:
-                    return new JValue(false);
+                    return false;
 
                 case 1:
-                    return new JValue(true);
+                    return true;
 
                 default:
                     throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -227,42 +228,42 @@ namespace MaxMind.Db
         ///     Decodes the double.
         /// </summary>
         /// <returns></returns>
-        private JValue DecodeDouble(int offset, int size)
+        private double DecodeDouble(int offset, int size)
         {
             if (size != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of double.");
             var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
-            return new JValue(BitConverter.ToDouble(buffer, 0));
+            return BitConverter.ToDouble(buffer, 0);
         }
 
         /// <summary>
         ///     Decodes the float.
         /// </summary>
         /// <returns></returns>
-        private JValue DecodeFloat(int offset, int size)
+        private float DecodeFloat(int offset, int size)
         {
             if (size != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of float.");
             var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
-            return new JValue(BitConverter.ToSingle(buffer, 0));
+            return BitConverter.ToSingle(buffer, 0);
         }
 
         /// <summary>
         ///     Decodes the string.
         /// </summary>
         /// <returns></returns>
-        private JValue DecodeString(int offset, int size)
+        private string DecodeString(int offset, int size)
         {
-            return new JValue(Encoding.UTF8.GetString(_database.Read(offset, size)));
+            return Encoding.UTF8.GetString(_database.Read(offset, size));
         }
 
-        private JValue DecodeBytes(int offset, int size)
+        private byte[] DecodeBytes(int offset, int size)
         {
-            return new JValue(_database.Read(offset, size));
+            return _database.Read(offset, size);
         }
 
         /// <summary>
@@ -272,42 +273,33 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset.</param>
         /// <returns></returns>
-        private JToken DecodeMap(int size, int offset, out int outOffset)
+        private ReadOnlyDictionary<string, object> DecodeMap(int size, int offset, out int outOffset)
         {
-            var obj = new JObject();
+            var obj = new Dictionary<string, object>(size);
 
             for (var i = 0; i < size; i++)
             {
-                var key = Decode(offset, out offset);
+                var key = (string)Decode(offset, out offset);
                 var value = Decode(offset, out offset);
-                obj.Add(key.Value<string>(), value);
+                obj.Add(key, value);
             }
 
             outOffset = offset;
-            return obj;
+            return new ReadOnlyDictionary<string, object>(obj);
         }
 
         /// <summary>
         ///     Decodes the long.
         /// </summary>
         /// <returns></returns>
-        private JValue DecodeLong(int offset, int size)
+        private long DecodeLong(int offset, int size)
         {
             long val = 0;
             for (var i = 0; i < size; i++)
             {
                 val = (val << 8) | _database.ReadOne(offset + i);
             }
-            return new JValue(val);
-        }
-
-        /// <summary>
-        ///     Decodes the integer.
-        /// </summary>
-        /// <returns></returns>
-        private JValue DecodeIntegerToJValue(int offset, int size)
-        {
-            return new JValue(DecodeInteger(offset, size));
+            return val;
         }
 
         /// <summary>
@@ -317,9 +309,9 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset.</param>
         /// <returns></returns>
-        private JToken DecodeArray(int size, int offset, out int outOffset)
+        private ReadOnlyCollection<object> DecodeArray(int size, int offset, out int outOffset)
         {
-            var array = new JArray();
+            var array = new List<object>(size);
 
             for (var i = 0; i < size; i++)
             {
@@ -328,28 +320,28 @@ namespace MaxMind.Db
             }
 
             outOffset = offset;
-            return array;
+            return array.AsReadOnly();
         }
 
         /// <summary>
         ///     Decodes the uint64.
         /// </summary>
         /// <returns></returns>
-        private JValue DecodeUInt64(int offset, int size)
+        private ulong DecodeUInt64(int offset, int size)
         {
             ulong val = 0;
             for (var i = 0; i < size; i++)
             {
                 val = (val << 8) | _database.ReadOne(offset + i);
             }
-            return new JValue(val);
+            return val;
         }
 
         /// <summary>
         ///     Decodes the big integer.
         /// </summary>
         /// <returns></returns>
-        private JToken DecodeBigInteger(int offset, int size)
+        private BigInteger DecodeBigInteger(int offset, int size)
         {
             var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
@@ -358,7 +350,7 @@ namespace MaxMind.Db
             Array.Resize(ref buffer, buffer.Length + 1);
             buffer[buffer.Length - 1] = 0x0;
 
-            return new JValue(new BigInteger(buffer));
+            return new BigInteger(buffer);
         }
 
         /// <summary>

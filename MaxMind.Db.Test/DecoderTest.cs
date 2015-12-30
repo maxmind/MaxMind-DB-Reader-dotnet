@@ -1,9 +1,9 @@
 ﻿#region
 
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Numerics;
 using System.Text;
 
@@ -263,20 +263,20 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestMaps()
         {
-            var maps = new Dictionary<JObject, byte[]>();
+            var maps = new Dictionary<ReadOnlyDictionary<string, object>, byte[]>();
 
-            var empty = new JObject();
-            maps.Add(empty, new[] { (byte)0xe0 });
+            var empty = new Dictionary<string, object>();
+            maps.Add(new ReadOnlyDictionary<string, object>(empty), new[] { (byte)0xe0 });
 
-            var one = new JObject { { "en", "Foo" } };
-            maps.Add(one, new byte[]
+            var one = new Dictionary<string, object> { { "en", "Foo" } };
+            maps.Add(new ReadOnlyDictionary<string, object>(one), new byte[]
             {
                 0xe1, /* en */0x42, 0x65, 0x6e,
                 /* Foo */0x43, 0x46, 0x6f, 0x6f
             });
 
-            var two = new JObject { { "en", "Foo" }, { "zh", "人" } };
-            maps.Add(two, new byte[]
+            var two = new Dictionary<string, object> { { "en", "Foo" }, { "zh", "人" } };
+            maps.Add(new ReadOnlyDictionary<string, object>(two), new byte[]
             {
                 0xe2,
                 /* en */
@@ -289,9 +289,9 @@ namespace MaxMind.Db.Test
                 0x43, 0xe4, 0xba, 0xba
             });
 
-            var nested = new JObject { { "name", two } };
+            var nested = new Dictionary<string, object> { { "name", two } };
 
-            maps.Add(nested, new byte[]
+            maps.Add(new ReadOnlyDictionary<string, object>(nested), new byte[]
             {
                 0xe1, /* name */
                 0x44, 0x6e, 0x61, 0x6d, 0x65, 0xe2, /* en */
@@ -304,10 +304,10 @@ namespace MaxMind.Db.Test
                 0x43, 0xe4, 0xba, 0xba
             });
 
-            var guess = new JObject();
-            var languages = new JArray { "en", "zh" };
-            guess.Add("languages", languages);
-            maps.Add(guess, new byte[]
+            var guess = new Dictionary<string, object>();
+            var languages = new List<object> { "en", "zh" };
+            guess.Add("languages", languages.AsReadOnly());
+            maps.Add(new ReadOnlyDictionary<string, object>(guess), new byte[]
             {
                 0xe1, /* languages */
                 0x49, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x73,
@@ -325,18 +325,18 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestArrays()
         {
-            var arrays = new Dictionary<JArray, byte[]>();
+            var arrays = new Dictionary<ReadOnlyCollection<object>, byte[]>();
 
-            var f1 = new JArray { "Foo" };
-            arrays.Add(f1, new byte[]
+            var f1 = new List<object> { "Foo" };
+            arrays.Add(f1.AsReadOnly(), new byte[]
             {
                 0x1, 0x4,
                 /* Foo */
                 0x43, 0x46, 0x6f, 0x6f
             });
 
-            var f2 = new JArray { "Foo", "人" };
-            arrays.Add(f2, new byte[]
+            var f2 = new List<object> { "Foo", "人" };
+            arrays.Add(f2.AsReadOnly(), new byte[]
             {
                 0x2, 0x4,
                 /* Foo */
@@ -345,8 +345,8 @@ namespace MaxMind.Db.Test
                 0x43, 0xe4, 0xba, 0xba
             });
 
-            var empty = new JArray();
-            arrays.Add(empty, new byte[] { 0x0, 0x4 });
+            var empty = new List<object>();
+            arrays.Add(empty.AsReadOnly(), new byte[] { 0x0, 0x4 });
 
             TestTypeDecoding(arrays);
         }
@@ -362,19 +362,8 @@ namespace MaxMind.Db.Test
                 {
                     var decoder = new Decoder(database, 0) { PointerTestHack = true };
                     int offset;
-                    var jToken = decoder.Decode(0, out offset);
-
-                    if (jToken is JRaw)
-                    {
-                        var obj = jToken.ToObject<T>();
-                        Assert.That(obj, Is.EqualTo(expect));
-                    }
-                    else
-                    {
-                        var jValue = jToken as JValue;
-                        if (jValue != null)
-                            Assert.That(jValue.Value, Is.EqualTo(expect));
-                    }
+                    var val = decoder.Decode(0, out offset);
+                    Assert.That(val, Is.EqualTo(expect));
                 }
             }
         }
