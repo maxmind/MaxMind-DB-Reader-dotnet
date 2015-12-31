@@ -162,22 +162,18 @@ namespace MaxMind.Db.Test
                 Assert.That(array[0], Is.EqualTo(1));
                 Assert.That(array[1], Is.EqualTo(2));
                 Assert.That(array[2], Is.EqualTo(3));
-                //
-                //                var map = (ReadOnlyDictionary<string, object>)record["map"];
-                //                Assert.That(map.Count(), Is.EqualTo(1));
-                //
-                //                var mapX = (ReadOnlyDictionary<string, object>)map["mapX"];
-                //                Assert.That(mapX.Count(), Is.EqualTo(2));
-                //                Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
-                //
-                //                var arrayX = (ReadOnlyCollection<object>)mapX["arrayX"];
-                //                Assert.That(arrayX.Count(), Is.EqualTo(3));
-                //                Assert.That(arrayX[0], Is.EqualTo(7));
-                //                Assert.That(arrayX[1], Is.EqualTo(8));
-                //                Assert.That(arrayX[2], Is.EqualTo(9));
-                //
-                //                Assert.AreEqual(42.123456, record.Double, 0.000000001);
-                //                Assert.AreEqual(1.1, (float)record["float"], 0.000001);
+
+                var mapX = record.Map.MapX;
+                Assert.That(mapX.Utf8StringX, Is.EqualTo("hello"));
+
+                var arrayX = mapX.ArrayX;
+                Assert.That(arrayX.Count(), Is.EqualTo(3));
+                Assert.That(arrayX[0], Is.EqualTo(7));
+                Assert.That(arrayX[1], Is.EqualTo(8));
+                Assert.That(arrayX[2], Is.EqualTo(9));
+
+                Assert.AreEqual(42.123456, record.Double, 0.000000001);
+                Assert.AreEqual(1.1, record.Float, 0.000001);
                 Assert.That(record.Int32, Is.EqualTo(-268435456));
                 Assert.That(record.Uint16, Is.EqualTo(100));
                 Assert.That(record.Uint32, Is.EqualTo(268435456));
