@@ -39,12 +39,49 @@ namespace MaxMind.Db
     internal struct ClassConstructor
     {
         internal ConstructorInfo Constructor;
-        internal Dictionary<string, ParameterInfo> Parameters;
+        internal Dictionary<byte[], ParameterInfo> Parameters;
 
-        public ClassConstructor(ConstructorInfo constructor, Dictionary<string, ParameterInfo> paramNameTypes) : this()
+        public ClassConstructor(ConstructorInfo constructor, Dictionary<byte[], ParameterInfo> paramNameTypes) : this()
         {
             Constructor = constructor;
             Parameters = paramNameTypes;
+        }
+    }
+
+    internal class ByteArrayEqualityComparer : IEqualityComparer<byte[]>
+    {
+        public bool Equals(byte[] x, byte[] y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
+
+            if (x.Length != y.Length)
+            {
+                return false;
+            }
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (x[i] != y[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public int GetHashCode(byte[] bytes)
+        {
+            int result = 17;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                unchecked
+                {
+                    result = result * 31 + bytes[i];
+                }
+            }
+            return result;
         }
     }
 
@@ -333,8 +370,7 @@ namespace MaxMind.Db
 
             for (var i = 0; i < size; i++)
             {
-                // XXX - do not bother decoding this.
-                var key = Decode<string>(offset, out offset);
+                var key = DecodeKey(offset, out offset);
                 if (constructor.Parameters.ContainsKey(key))
                 {
                     var param = constructor.Parameters[key];
@@ -374,17 +410,37 @@ namespace MaxMind.Db
 
             var constructor = constructors[0];
             var paramNameTypes = constructor.GetParameters()
-                .ToDictionary(MapPropertyName, x => x);
+                .ToDictionary(MapPropertyName, x => x, new ByteArrayEqualityComparer());
 
             var clsConstructor = new ClassConstructor(constructor, paramNameTypes);
             typeConstructors.TryAdd(expectedType, clsConstructor);
             return clsConstructor;
         }
 
-        private string MapPropertyName(ParameterInfo paramInfo)
+        private byte[] MapPropertyName(ParameterInfo paramInfo)
         {
             var attribute = paramInfo.GetCustomAttributes<MaxMindDbPropertyAttribute>().FirstOrDefault();
-            return attribute == null ? paramInfo.Name : attribute.PropertyName;
+            var s = attribute == null ? paramInfo.Name : attribute.PropertyName;
+            return Encoding.UTF8.GetBytes(s);
+        }
+
+        private byte[] DecodeKey(int offset, out int outOffset)
+        {
+            int size;
+            var type = CtrlData(offset, out size, out offset);
+            switch (type)
+            {
+                case ObjectType.Pointer:
+                    offset = DecodePointer(offset, size, out outOffset);
+                    return DecodeKey(offset, out offset);
+
+                case ObjectType.Utf8String:
+                    outOffset = offset + size;
+                    return _database.Read(offset, size);
+
+                default:
+                    throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
+            }
         }
 
         private int NextValueOffset(int offset, int numberToSkip)
