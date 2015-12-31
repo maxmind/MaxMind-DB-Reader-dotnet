@@ -7,6 +7,34 @@ using System.Numerics;
 
 namespace MaxMind.Db.Test.Helper
 {
+    public class InnerMapX
+    {
+        [MaxMindDbConstructor]
+        public InnerMapX(
+            string utf8_stringX,
+            IList<long> arrayX
+            )
+        {
+            ArrayX = arrayX;
+            Utf8StringX = utf8_stringX;
+        }
+
+        public IList<long> ArrayX { get; set; }
+
+        public string Utf8StringX { get; set; }
+    }
+
+    public class InnerMap
+    {
+        [MaxMindDbConstructor]
+        public InnerMap(InnerMapX mapX)
+        {
+            MapX = mapX;
+        }
+
+        public InnerMapX MapX { get; set; }
+    }
+
     public class TypeHolder
     {
         [MaxMindDbConstructor]
@@ -19,14 +47,20 @@ namespace MaxMind.Db.Test.Helper
             BigInteger uint128,
             int int32,
             bool boolean,
-            IList<long> array
+            IList<long> array,
+            [MaxMindDbProperty("double")] double mmDouble,
+            [MaxMindDbProperty("float")] float mmFloat,
+            [MaxMindDbProperty("map")] InnerMap map
             )
         {
             Array = array;
             Boolean = boolean;
             Bytes = bytes;
+            Double = mmDouble;
+            Float = mmFloat;
 
             Int32 = int32;
+            Map = map;
 
             Uint16 = uint16;
             Uint32 = uint32;
@@ -40,6 +74,12 @@ namespace MaxMind.Db.Test.Helper
         public bool Boolean { get; set; }
 
         public byte[] Bytes { get; set; }
+
+        public double Double { get; set; }
+        public float Float { get; set; }
+
+        public InnerMap Map { get; set; }
+
         public long Int32 { get; set; }
         public int Uint16 { get; set; }
         public long Uint32 { get; set; }

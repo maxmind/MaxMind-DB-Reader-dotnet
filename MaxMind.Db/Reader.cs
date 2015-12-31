@@ -31,7 +31,7 @@ namespace MaxMind.Db
     /// <summary>
     ///     Given a MaxMind DB file, this class will retrieve information about an IP address
     /// </summary>
-    public class Reader : IDisposable
+    public sealed class Reader : IDisposable
     {
         private const int DataSectionSeparatorSize = 16;
         private readonly IByteReader _database;
@@ -150,7 +150,7 @@ namespace MaxMind.Db
         ///     Release resources back to the system.
         /// </summary>
         /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;

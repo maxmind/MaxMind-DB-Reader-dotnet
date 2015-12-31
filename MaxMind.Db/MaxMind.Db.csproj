@@ -115,6 +115,7 @@
     <Compile Include="IByteReader.cs" />
     <Compile Include="InvalidDatabaseException.cs" />
     <Compile Include="MaxMindDbConstructorAttribute.cs" />
+    <Compile Include="MaxMindDbPropertyAttribute.cs" />
     <Compile Include="MemoryMapReader.cs" />
     <Compile Include="Reader.cs" />
     <Compile Include="Metadata.cs" />
