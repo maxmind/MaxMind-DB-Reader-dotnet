@@ -329,7 +329,8 @@ namespace MaxMind.Db
 
             // XXX - cache type information
             var constructor = constructors[0];
-            var paramNameTypes = constructor.GetParameters().ToDictionary(x => x.Name, x => x);
+            var paramNameTypes = constructor.GetParameters()
+                .ToDictionary(MapPropertyName, x => x);
             var parameters = new object[paramNameTypes.Count];
             for (var i = 0; i < size; i++)
             {
@@ -349,6 +350,12 @@ namespace MaxMind.Db
             }
             outOffset = offset;
             return constructor.Invoke(parameters);
+        }
+
+        private string MapPropertyName(ParameterInfo paramInfo)
+        {
+            var attribute = paramInfo.GetCustomAttributes<MaxMindDbPropertyAttribute>().FirstOrDefault();
+            return attribute == null ? paramInfo.Name : attribute.PropertyName;
         }
 
         private int NextValueOffset(int offset, int numberToSkip)
