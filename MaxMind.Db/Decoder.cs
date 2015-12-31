@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -35,11 +36,26 @@ namespace MaxMind.Db
         Float
     }
 
+    internal struct ClassConstructor
+    {
+        internal ConstructorInfo Constructor;
+        internal Dictionary<string, ParameterInfo> Parameters;
+
+        public ClassConstructor(ConstructorInfo constructor, Dictionary<string, ParameterInfo> paramNameTypes) : this()
+        {
+            Constructor = constructor;
+            Parameters = paramNameTypes;
+        }
+    }
+
     /// <summary>
     ///     Given a stream, this class decodes the object graph at a particular location
     /// </summary>
     internal class Decoder
     {
+        private readonly ConcurrentDictionary<Type, ClassConstructor> typeConstructors =
+            new ConcurrentDictionary<Type, ClassConstructor>();
+
         private readonly IByteReader _database;
         private readonly int _pointerBase;
         private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
@@ -153,13 +169,13 @@ namespace MaxMind.Db
                     return DecodeBytes(expectedType, offset, size);
 
                 case ObjectType.Uint16:
-                    return DecodeIntegerAsT(expectedType, offset, size);
+                    return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint32:
                     return DecodeLong(expectedType, offset, size);
 
                 case ObjectType.Int32:
-                    return DecodeIntegerAsT(expectedType, offset, size);
+                    return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint64:
                     return DecodeUInt64(expectedType, offset, size);
@@ -312,6 +328,35 @@ namespace MaxMind.Db
                 return new ReadOnlyDictionary<string, object>(obj);
             }
 
+            var constructor = DeserializationConstructor(expectedType);
+            var parameters = new object[constructor.Parameters.Count];
+
+            for (var i = 0; i < size; i++)
+            {
+                // XXX - do not bother decoding this.
+                var key = Decode<string>(offset, out offset);
+                if (constructor.Parameters.ContainsKey(key))
+                {
+                    var param = constructor.Parameters[key];
+                    var paramType = param.ParameterType;
+                    var value = Decode(paramType, offset, out offset);
+                    parameters[param.Position] = value;
+                }
+                else
+                {
+                    offset = NextValueOffset(offset, 1);
+                }
+            }
+            outOffset = offset;
+            return constructor.Constructor.Invoke(parameters);
+        }
+
+        private ClassConstructor DeserializationConstructor(Type expectedType)
+        {
+            if (typeConstructors.ContainsKey(expectedType))
+            {
+                return typeConstructors[expectedType];
+            }
             var constructors =
                 expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(c => c.IsDefined(typeof(MaxMindDbConstructorAttribute), true))
@@ -327,29 +372,13 @@ namespace MaxMind.Db
                     $"More than one constructor found for {expectedType} found with MaxMindDbConstructor attribute");
             }
 
-            // XXX - cache type information
             var constructor = constructors[0];
             var paramNameTypes = constructor.GetParameters()
                 .ToDictionary(MapPropertyName, x => x);
-            var parameters = new object[paramNameTypes.Count];
-            for (var i = 0; i < size; i++)
-            {
-                // XXX - do not bother decoding this.
-                var key = Decode<string>(offset, out offset);
-                if (paramNameTypes.ContainsKey(key))
-                {
-                    var param = paramNameTypes[key];
-                    var paramType = param.ParameterType;
-                    var value = Decode(paramType, offset, out offset);
-                    parameters[param.Position] = value;
-                }
-                else
-                {
-                    offset = NextValueOffset(offset, 1);
-                }
-            }
-            outOffset = offset;
-            return constructor.Invoke(parameters);
+
+            var clsConstructor = new ClassConstructor(constructor, paramNameTypes);
+            typeConstructors.TryAdd(expectedType, clsConstructor);
+            return clsConstructor;
         }
 
         private string MapPropertyName(ParameterInfo paramInfo)
@@ -486,9 +515,8 @@ namespace MaxMind.Db
         ///     Decodes the integer.
         /// </summary>
         /// <returns></returns>
-        private int DecodeIntegerAsT(Type expectedType, int offset, int size)
+        private int DecodeInteger(Type expectedType, int offset, int size)
         {
-            // XXX - get rid of method
             checkType(expectedType, typeof(int));
 
             return DecodeInteger(0, offset, size);
