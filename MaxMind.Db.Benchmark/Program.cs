@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
@@ -47,7 +48,7 @@ namespace MaxMind.Db.Benchmark
             }
         }
 
-        private static void Bench(string name, Action<IPAddress> op) // Action<IPAddress> op)
+        private static void Bench(string name, Action<IPAddress> op)
         {
             var rand = new Random(1);
             var s = Stopwatch.StartNew();
@@ -56,7 +57,7 @@ namespace MaxMind.Db.Benchmark
                 var ip = new IPAddress(rand.Next(int.MaxValue));
                 op(ip);
                 if (i % 50000 == 0)
-                    Console.WriteLine(i + " " + ip); // + " " + JsonConvert.SerializeObject(resp));
+                    Console.WriteLine(i + " " + ip);
             }
             s.Stop();
             Console.WriteLine("{0}: {1:N0} queries per second", name, COUNT / s.Elapsed.TotalSeconds);
