@@ -401,13 +401,13 @@ namespace MaxMind.Db
             return obj;
         }
 
-        private readonly ConcurrentDictionary<Type, ObjectActivator> constructorCache =
+        private readonly ConcurrentDictionary<Type, ObjectActivator> _constructorCache =
             new ConcurrentDictionary<Type, ObjectActivator>();
 
         internal ObjectActivator DictionaryConstructor(Type expectedType)
         {
-            if (constructorCache.ContainsKey(expectedType))
-                return constructorCache[expectedType];
+            if (_constructorCache.ContainsKey(expectedType))
+                return _constructorCache[expectedType];
 
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
@@ -419,7 +419,7 @@ namespace MaxMind.Db
 
             var constructor = dictType.GetConstructor(new[] { typeof(int) });
             var activator = CreateActivator(constructor);
-            constructorCache.TryAdd(expectedType, activator);
+            _constructorCache.TryAdd(expectedType, activator);
             return activator;
         }
 
