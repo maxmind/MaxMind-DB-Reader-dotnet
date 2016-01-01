@@ -23,7 +23,7 @@ namespace MaxMind.Db
 
         public int Length => _fileBytes.Length;
 
-        public byte[] Read(int offset, int count)
+        public byte[] Read(long offset, int count)
         {
             // Not using an ArraySegment as you can cast it into an IList
             // in .NET 4. I also looked into ImmutableArray, but it appears
@@ -33,13 +33,13 @@ namespace MaxMind.Db
             return bytes;
         }
 
-        public byte ReadOne(int offset) => _fileBytes[offset];
+        public byte ReadOne(long offset) => _fileBytes[offset];
 
-        public void Copy(int offset, byte[] bytes)
+        public void Copy(long offset, byte[] bytes)
         {
             if (bytes.Length > 0)
             {
-                Array.Copy(_fileBytes, offset, bytes, 0, bytes.Length);
+                Array.Copy(_fileBytes, (int)offset, bytes, 0, bytes.Length);
             }
         }
 
