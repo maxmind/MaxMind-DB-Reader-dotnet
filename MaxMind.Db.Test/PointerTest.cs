@@ -19,7 +19,7 @@ namespace MaxMind.Db.Test
             {
                 var decoder = new Decoder(database, 0);
 
-                int offset;
+                long offset;
                 var node = decoder.Decode<ReadOnlyDictionary<string, object>>(0, out offset);
                 Assert.That(node["long_key"], Is.EqualTo("long_value1"));
 

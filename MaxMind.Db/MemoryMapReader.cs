@@ -19,7 +19,7 @@ namespace MaxMind.Db
         {
             var fileInfo = new FileInfo(file);
 
-            Length = (int) fileInfo.Length;
+            Length = (int)fileInfo.Length;
 
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
@@ -47,16 +47,16 @@ namespace MaxMind.Db
 
         public int Length { get; }
 
-        public byte[] Read(int offset, int count)
+        public byte[] Read(long offset, int count)
         {
             var bytes = new byte[count];
             Copy(offset, bytes);
             return bytes;
         }
 
-        public byte ReadOne(int offset) => _view.ReadByte(offset);
+        public byte ReadOne(long offset) => _view.ReadByte(offset);
 
-        public void Copy(int offset, byte[] bytes)
+        public void Copy(long offset, byte[] bytes)
         {
             // Although not explicitly marked as thread safe, from
             // reviewing the source code, these operations appear to

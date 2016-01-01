@@ -1,10 +1,8 @@
 ﻿#region
 
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 #endregion
 
@@ -13,70 +11,75 @@ namespace MaxMind.Db
     /// <summary>
     ///     Data about the database file itself
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
     public class Metadata
     {
+        [MaxMindDbConstructor]
+        public Metadata(
+            [MaxMindDbProperty("binary_format_major_version")] int binaryFormatMajorVersion,
+            [MaxMindDbProperty("binary_format_minor_version")] int binaryFormatMinorVersion,
+            [MaxMindDbProperty("build_epoch")] ulong buildEpoch,
+            [MaxMindDbProperty("database_type")] string databaseType,
+            IDictionary<string, string> description,
+            [MaxMindDbProperty("ip_version")] int ipVersion,
+            IReadOnlyList<string> languages,
+            [MaxMindDbProperty("node_count")] long nodeCount,
+            [MaxMindDbProperty("record_size")] int recordSize
+            )
+        {
+            BinaryFormatMajorVersion = binaryFormatMajorVersion;
+            BinaryFormatMinorVersion = binaryFormatMinorVersion;
+            BuildEpoch = buildEpoch;
+            DatabaseType = databaseType;
+            Description = description;
+            IPVersion = ipVersion;
+            Languages = languages;
+            NodeCount = nodeCount;
+            RecordSize = recordSize;
+        }
+
         /// <summary>
         ///     The major version number for the MaxMind DB binary format used by the database.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("binary_format_major_version")]
         public int BinaryFormatMajorVersion { get; private set; }
 
         /// <summary>
         ///     The minor version number for the MaxMind DB binary format used by the database.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("binary_format_minor_version")]
         public int BinaryFormatMinorVersion { get; private set; }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("build_epoch")]
-        internal long BuildEpoch { get; private set; }
+        internal ulong BuildEpoch { get; }
 
         /// <summary>
         ///     The date-time of the database build.
         /// </summary>
-        [JsonIgnore]
         public DateTime BuildDate => new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(BuildEpoch);
 
         /// <summary>
         ///     The MaxMind DB database type.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("database_type")]
-        public string DatabaseType { get; private set; }
+        public string DatabaseType { get; }
 
         /// <summary>
         ///     A map from locale codes to the database description in that language.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("description")]
-        public Hashtable Description { get; private set; }
+        public IDictionary<string, string> Description { get; }
 
         /// <summary>
         ///     The IP version that the database supports. This will be 4 or 6.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("ip_version")]
-        public int IPVersion { get; private set; }
+        public int IPVersion { get; }
 
         /// <summary>
         ///     A list of locale codes for languages that the database supports.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [JsonProperty("languages")]
-        public List<string> Languages { get; private set; }
+        public IReadOnlyList<string> Languages { get; }
 
-        [JsonProperty("node_count")]
-        internal int NodeCount { get; set; }
+        internal long NodeCount { get; }
 
-        [JsonProperty("record_size")]
-        internal int RecordSize { get; set; }
+        internal int RecordSize { get; }
 
-        [JsonIgnore]
-        internal int NodeByteSize => RecordSize / 4;
+        internal long NodeByteSize => RecordSize / 4;
 
-        internal int SearchTreeSize => NodeCount * NodeByteSize;
+        internal long SearchTreeSize => NodeCount * NodeByteSize;
     }
 }

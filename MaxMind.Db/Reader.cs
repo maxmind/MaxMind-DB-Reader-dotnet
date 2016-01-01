@@ -167,20 +167,9 @@ namespace MaxMind.Db
         {
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
-            int ignore;
-            var result = metaDecode.Decode<ReadOnlyDictionary<string, object>>(start, out ignore);
-            Metadata = Deserialize<Metadata>(JObject.FromObject(result));
+            long ignore;
+            Metadata = metaDecode.Decode<Metadata>(start, out ignore);
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
-        }
-
-        /// <summary>
-        ///     Finds the data related to the specified address.
-        /// </summary>
-        /// <param name="ipAddress">The IP address.</param>
-        /// <returns>An object containing the IP related data</returns>
-        public T Find<T>(string ipAddress) where T : class
-        {
-            return Find<T>(IPAddress.Parse(ipAddress));
         }
 
         /// <summary>
@@ -205,7 +194,7 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            int ignore;
+            long ignore;
             return Decoder.Decode<T>(resolved, out ignore);
         }
 
@@ -290,33 +279,22 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        return DecodeInteger(0, baseOffset + index * 3, 3);
+                        return Decoder.DecodeInteger(0, baseOffset + index * 3, 3);
                     }
                 case 28:
                     {
                         var middle = _database.ReadOne(baseOffset + 3);
                         middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
-                        return DecodeInteger(middle, baseOffset + index * 4, 3);
+                        return Decoder.DecodeInteger(middle, baseOffset + index * 4, 3);
                     }
                 case 32:
                     {
-                        return DecodeInteger(0, baseOffset + index * 4, 4);
+                        return Decoder.DecodeInteger(0, baseOffset + index * 4, 4);
                     }
             }
 
-            throw new InvalidDatabaseException("Unknown record size: "
-                                               + size);
-        }
-
-        // XXX share again
-        private int DecodeInteger(int val, int offset, int size)
-        {
-            for (var i = 0; i < size; i++)
-            {
-                val = (val << 8) | _database.ReadOne(offset + i);
-            }
-            return val;
+            throw new InvalidDatabaseException($"Unknown record size: {size}");
         }
     }
 }
