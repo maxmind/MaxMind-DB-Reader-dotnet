@@ -13,11 +13,25 @@ namespace MaxMind.Db
     /// </summary>
     public class Metadata
     {
+        /// <summary>
+        /// Construct a metadata object.
+        /// </summary>
+        /// <param name="binaryFormatMajorVersion"></param>
+        /// <param name="binaryFormatMinorVersion"></param>
+        /// <param name="buildEpoch"></param>
+        /// <param name="databaseType"></param>
+        /// <param name="description"></param>
+        /// <param name="ipVersion"></param>
+        /// <param name="languages"></param>
+        /// <param name="nodeCount"></param>
+        /// <param name="recordSize"></param>
         [MaxMindDbConstructor]
         public Metadata(
             [MaxMindDbProperty("binary_format_major_version")] int binaryFormatMajorVersion,
             [MaxMindDbProperty("binary_format_minor_version")] int binaryFormatMinorVersion,
+#pragma warning disable CS3001 // Argument type is not CLS-compliant
             [MaxMindDbProperty("build_epoch")] ulong buildEpoch,
+#pragma warning restore CS3001 // Argument type is not CLS-compliant
             [MaxMindDbProperty("database_type")] string databaseType,
             IDictionary<string, string> description,
             [MaxMindDbProperty("ip_version")] int ipVersion,

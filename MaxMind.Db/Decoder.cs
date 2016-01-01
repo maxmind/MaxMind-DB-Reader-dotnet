@@ -1,11 +1,11 @@
 ﻿#region
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
@@ -37,15 +37,19 @@ namespace MaxMind.Db
         Float
     }
 
+    internal delegate object ObjectActivator(params object[] args);
+
     internal struct ClassConstructor
     {
-        internal ConstructorInfo Constructor;
+        internal ObjectActivator Activator;
         internal Dictionary<byte[], ParameterInfo> Parameters;
+        internal Type[] ParameterTypes;
 
-        public ClassConstructor(ConstructorInfo constructor, Dictionary<byte[], ParameterInfo> paramNameTypes) : this()
+        public ClassConstructor(ObjectActivator activator, Dictionary<byte[], ParameterInfo> paramsInfo) : this()
         {
-            Constructor = constructor;
-            Parameters = paramNameTypes;
+            Activator = activator;
+            Parameters = paramsInfo;
+            ParameterTypes = paramsInfo.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
         }
     }
 
@@ -66,7 +70,7 @@ namespace MaxMind.Db
             {
                 return false;
             }
-            for (int i = 0; i < x.Length; i++)
+            for (var i = 0; i < x.Length; i++)
             {
                 if (x[i] != y[i])
                 {
@@ -83,7 +87,7 @@ namespace MaxMind.Db
                 throw new ArgumentNullException(nameof(bytes));
             }
             var result = 17;
-            for (int i = 0; i < bytes.Length; i++)
+            for (var i = 0; i < bytes.Length; i++)
             {
                 unchecked
                 {
@@ -183,7 +187,7 @@ namespace MaxMind.Db
             switch (type)
             {
                 case ObjectType.Pointer:
-                    long pointer = DecodePointer(offset, size, out offset);
+                    var pointer = DecodePointer(offset, size, out offset);
                     outOffset = offset;
                     if (PointerTestHack)
                     {
@@ -362,8 +366,9 @@ namespace MaxMind.Db
         /// <returns></returns>
         private object DecodeMap(Type expectedType, long offset, int size, out long outOffset)
         {
+            // XXX - combine with todict meth
             if (expectedType == typeof(object))
-                expectedType = typeof(ReadOnlyDictionary<string, object>);
+                expectedType = typeof(Dictionary<string, object>);
 
             // The only generic type we support is Dictionaries.
             if (expectedType.IsGenericType)
@@ -376,15 +381,13 @@ namespace MaxMind.Db
 
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset)
         {
+            // XXX - cache this
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
-                throw new DeserializationException($"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+                throw new DeserializationException(
+                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
 
-            var roDictType = typeof(ReadOnlyDictionary<,>).MakeGenericType(genericArgs);
-            checkType(expectedType, roDictType);
-
-            var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
-            dynamic obj = Activator.CreateInstance(dictType, size);
+            dynamic obj = DictionaryConstructor(expectedType)(size);
 
             for (var i = 0; i < size; i++)
             {
@@ -394,7 +397,55 @@ namespace MaxMind.Db
             }
 
             outOffset = offset;
-            return Activator.CreateInstance(roDictType, obj);
+
+            return obj;
+        }
+
+        private readonly ConcurrentDictionary<Type, ObjectActivator> constructorCache =
+            new ConcurrentDictionary<Type, ObjectActivator>();
+
+        internal ObjectActivator DictionaryConstructor(Type expectedType)
+        {
+            if (constructorCache.ContainsKey(expectedType))
+                return constructorCache[expectedType];
+
+            var genericArgs = expectedType.GetGenericArguments();
+            if (genericArgs.Length != 2)
+                throw new DeserializationException(
+                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+
+            var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
+            checkType(expectedType, dictType);
+
+            var constructor = dictType.GetConstructor(new[] { typeof(int) });
+            var activator = CreateActivator(constructor);
+            constructorCache.TryAdd(expectedType, activator);
+            return activator;
+        }
+
+        // Activator.CreateInstance is extremely slow and ConstuctorInfo.Invoke is
+        // somewhat slow. This faster alternative (when cached) is largely based off
+        // of:
+        // http://rogeralsing.com/2008/02/28/linq-expressions-creating-objects/
+        internal ObjectActivator CreateActivator(ConstructorInfo constructor)
+        {
+            var paramInfo = constructor.GetParameters();
+
+            var paramExp = Expression.Parameter(typeof(object[]), "args");
+
+            var argsExp = new Expression[paramInfo.Length];
+            for (var i = 0; i < paramInfo.Length; i++)
+            {
+                var index = Expression.Constant(i);
+                var paramType = paramInfo[i].ParameterType;
+                var accessorExp = Expression.ArrayIndex(paramExp, index);
+                var castExp = Expression.Convert(accessorExp, paramType);
+                argsExp[i] = castExp;
+            }
+
+            var newExp = Expression.New(constructor, argsExp);
+            var lambda = Expression.Lambda(typeof(ObjectActivator), newExp, paramExp);
+            return (ObjectActivator)lambda.Compile();
         }
 
         private object DecodeMapToType(Type expectedType, long offset, int size, out long outOffset)
@@ -418,7 +469,7 @@ namespace MaxMind.Db
                 }
             }
             outOffset = offset;
-            return constructor.Constructor.Invoke(parameters);
+            return constructor.Activator(parameters);
         }
 
         private ClassConstructor DeserializationConstructor(Type expectedType)
@@ -446,7 +497,8 @@ namespace MaxMind.Db
             var paramNameTypes = constructor.GetParameters()
                 .ToDictionary(MapPropertyName, x => x, new ByteArrayEqualityComparer());
 
-            var clsConstructor = new ClassConstructor(constructor, paramNameTypes);
+            var activator = CreateActivator(constructor);
+            var clsConstructor = new ClassConstructor(activator, paramNameTypes);
             _typeConstructors.TryAdd(expectedType, clsConstructor);
             return clsConstructor;
         }

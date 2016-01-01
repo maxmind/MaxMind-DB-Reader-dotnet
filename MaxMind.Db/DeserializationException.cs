@@ -9,6 +9,7 @@ namespace MaxMind.Db
     /// <summary>
     /// Thrown when there is an error deserializing to the provided type.
     /// </summary>
+    [Serializable]
     public class DeserializationException : Exception
     {
         /// <summary>
