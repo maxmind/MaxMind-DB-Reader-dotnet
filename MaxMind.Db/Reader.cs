@@ -241,15 +241,6 @@ namespace MaxMind.Db
             return 0;
         }
 
-        private T Deserialize<T>(JToken value)
-        {
-            var serializer = new JsonSerializer();
-            using (var reader = new JTokenReader(value))
-            {
-                return serializer.Deserialize<T>(reader);
-            }
-        }
-
         private int FindMetadataStart()
         {
             var buffer = new byte[_metadataStartMarker.Length];

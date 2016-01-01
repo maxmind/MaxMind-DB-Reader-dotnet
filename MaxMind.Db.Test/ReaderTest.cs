@@ -109,7 +109,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+                var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
 
                 Assert.That(record["boolean"], Is.True);
 
@@ -123,10 +123,10 @@ namespace MaxMind.Db.Test
                 Assert.That(array[1], Is.EqualTo(2));
                 Assert.That(array[2], Is.EqualTo(3));
 
-                var map = (ReadOnlyDictionary<string, object>)record["map"];
+                var map = (Dictionary<string, object>)record["map"];
                 Assert.That(map.Count(), Is.EqualTo(1));
 
-                var mapX = (ReadOnlyDictionary<string, object>)map["mapX"];
+                var mapX = (Dictionary<string, object>)map["mapX"];
                 Assert.That(mapX.Count(), Is.EqualTo(2));
                 Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
 
@@ -189,7 +189,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse("::"));
+                var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::"));
 
                 Assert.That(record["boolean"], Is.False);
 
@@ -200,8 +200,8 @@ namespace MaxMind.Db.Test
                 Assert.That(record["array"], Is.InstanceOf<ReadOnlyCollection<object>>());
                 Assert.That(((ReadOnlyCollection<object>)record["array"]).Count(), Is.EqualTo(0));
 
-                Assert.That(record["map"], Is.InstanceOf<ReadOnlyDictionary<string, object>>());
-                Assert.That(((ReadOnlyDictionary<string, object>)record["map"]).Count(), Is.EqualTo(0));
+                Assert.That(record["map"], Is.InstanceOf<Dictionary<string, object>>());
+                Assert.That(((Dictionary<string, object>)record["map"]).Count(), Is.EqualTo(0));
 
                 Assert.AreEqual(0, (double)record["double"], 0.000000001);
                 Assert.AreEqual(0, (float)record["float"], 0.000001);
@@ -289,13 +289,13 @@ namespace MaxMind.Db.Test
         {
             foreach (var address in singleAddresses)
             {
-                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse(address)))["ip"], Is.EqualTo(address),
+                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"], Is.EqualTo(address),
                     $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in pairs.Keys)
             {
-                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse(address)))["ip"],
+                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"],
                     Is.EqualTo(pairs[address]),
                     $"Did not find expected data record for {address} in {file}");
             }
