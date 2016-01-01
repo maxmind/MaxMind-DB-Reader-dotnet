@@ -44,7 +44,7 @@ namespace MaxMind.Db.Benchmark
             using (var reader = new Reader("GeoLite2-City.mmdb", FileAccessMode.Memory))
             {
                 Bench("GeoIP2 class", ip => reader.Find<GeoIP2>(ip));
-                //                Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
+                Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
             }
         }
 

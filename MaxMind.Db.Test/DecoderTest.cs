@@ -365,7 +365,7 @@ namespace MaxMind.Db.Test
                 using (var database = new ArrayReader(input))
                 {
                     var decoder = new Decoder(database, 0) { PointerTestHack = true };
-                    int offset;
+                    long offset;
                     var val = decoder.Decode<T>(0, out offset);
                     Assert.That(val, Is.EqualTo(expect));
                 }

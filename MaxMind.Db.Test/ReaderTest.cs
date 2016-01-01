@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Numerics;
 
 #endregion
@@ -98,8 +99,8 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
             {
-                Assert.That(reader.Find<string>("1.1.1.1"), Is.EqualTo("::0/64"));
-                Assert.That(reader.Find<string>("192.1.1.1"), Is.EqualTo("::0/64"));
+                Assert.That(reader.Find<string>(IPAddress.Parse("1.1.1.1")), Is.EqualTo("::0/64"));
+                Assert.That(reader.Find<string>(IPAddress.Parse("192.1.1.1")), Is.EqualTo("::0/64"));
             }
         }
 
@@ -108,7 +109,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<ReadOnlyDictionary<string, object>>("::1.1.1.0");
+                var record = reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
 
                 Assert.That(record["boolean"], Is.True);
 
@@ -151,7 +152,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<TypeHolder>("::1.1.1.0");
+                var record = reader.Find<TypeHolder>(IPAddress.Parse("::1.1.1.0"));
 
                 Assert.That(record.Boolean, Is.True);
                 Assert.That(record.Bytes, Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
@@ -188,7 +189,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<ReadOnlyDictionary<string, object>>("::");
+                var record = reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse("::"));
 
                 Assert.That(record["boolean"], Is.False);
 
@@ -219,7 +220,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
-                reader.Find<object>("2001:220::");
+                reader.Find<object>(IPAddress.Parse("2001:220::"));
             }
         }
 
@@ -230,7 +231,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                reader.Find<object>("1.1.1.32");
+                reader.Find<object>(IPAddress.Parse("1.1.1.32"));
             }
         }
 
@@ -241,7 +242,7 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                reader.Find<object>("1.1.1.16");
+                reader.Find<object>(IPAddress.Parse("1.1.1.16"));
             }
         }
 
@@ -288,20 +289,20 @@ namespace MaxMind.Db.Test
         {
             foreach (var address in singleAddresses)
             {
-                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(address))["ip"], Is.EqualTo(address),
+                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse(address)))["ip"], Is.EqualTo(address),
                     $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in pairs.Keys)
             {
-                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(address))["ip"],
+                Assert.That((reader.Find<ReadOnlyDictionary<string, object>>(IPAddress.Parse(address)))["ip"],
                     Is.EqualTo(pairs[address]),
                     $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in nullAddresses)
             {
-                Assert.That(reader.Find<object>(address), Is.Null,
+                Assert.That(reader.Find<object>(IPAddress.Parse(address)), Is.Null,
                     $"Did not find expected data record for {address} in {file}");
             }
         }

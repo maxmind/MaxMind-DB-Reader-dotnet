@@ -10,10 +10,10 @@ namespace MaxMind.Db
     {
         int Length { get; }
 
-        byte[] Read(int offset, int count);
+        byte[] Read(long offset, int count);
 
-        byte ReadOne(int offset);
+        byte ReadOne(long offset);
 
-        void Copy(int offset, byte[] array);
+        void Copy(long offset, byte[] array);
     }
 }

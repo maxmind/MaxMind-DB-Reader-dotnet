@@ -59,7 +59,7 @@ namespace MaxMind.Db.Test
             {
                 using (var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode))
                 {
-                    reader.Find<object>("1.1.1.1");
+                    reader.Find<object>(IPAddress.Parse("1.1.1.1"));
                 }
             });
         }
