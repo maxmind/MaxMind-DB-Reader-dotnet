@@ -1,20 +1,19 @@
+---
+sudo: false
 language: csharp
-
 solution: MaxMind.Db.sln
-
 before_install:
   - git submodule update --init --recursive
   - nuget install NUnit.Runners -Version 2.6.3 -o packages
-
 script:
   - xbuild MaxMind.Db.sln
   - mono --runtime=v4.0 packages/NUnit.Runners.2.6.3/tools/nunit-console.exe -exclude=BreaksMono ./MaxMind.Db.Test/bin/Debug/MaxMind.Db.Test.dll
-
-sudo: false
-
 notifications:
   email:
+    on_failure: always
+    on_success: change
     recipients:
       - dev-ci@maxmind.com
-    on_success: change
-    on_failure: always
+  slack:
+    rooms:
+      secure: "Squj/3RvcTEfCK72Jw5Zzdgk9whWZJAP/n7mqD08siCq1uu5ZRZLLGrawYjKPXwkafmX5MCbmqF6pGOtvnupRiHNWkaY4br7hclkqUCerZi5QROuFOKChKTu7lVxzZkU0e/d+0Ujfqb+1VVPm+oahfZKZ/eG61Em3klKo7sEfig=\n"
