@@ -329,10 +329,10 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestArrays()
         {
-            var arrays = new Dictionary<ReadOnlyCollection<object>, byte[]>();
+            var arrays = new Dictionary<List<object>, byte[]>();
 
             var f1 = new List<object> { "Foo" };
-            arrays.Add(f1.AsReadOnly(), new byte[]
+            arrays.Add(f1, new byte[]
             {
                 0x1, 0x4,
                 /* Foo */
@@ -340,7 +340,7 @@ namespace MaxMind.Db.Test
             });
 
             var f2 = new List<object> { "Foo", "人" };
-            arrays.Add(f2.AsReadOnly(), new byte[]
+            arrays.Add(f2, new byte[]
             {
                 0x2, 0x4,
                 /* Foo */
@@ -350,7 +350,7 @@ namespace MaxMind.Db.Test
             });
 
             var empty = new List<object>();
-            arrays.Add(empty.AsReadOnly(), new byte[] { 0x0, 0x4 });
+            arrays.Add(empty, new byte[] { 0x0, 0x4 });
 
             TestTypeDecoding(arrays);
         }
