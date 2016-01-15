@@ -143,7 +143,7 @@ namespace MaxMind.Db.Test
 
             Assert.That(record["utf8_string"], Is.EqualTo("unicode! ☯ - ♫"));
 
-            var array = (ReadOnlyCollection<object>)record["array"];
+            var array = (List<object>)record["array"];
             Assert.That(array.Count(), Is.EqualTo(3));
             Assert.That(array[0], Is.EqualTo(1));
             Assert.That(array[1], Is.EqualTo(2));
@@ -156,7 +156,7 @@ namespace MaxMind.Db.Test
             Assert.That(mapX.Count(), Is.EqualTo(2));
             Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
 
-            var arrayX = (ReadOnlyCollection<object>)mapX["arrayX"];
+            var arrayX = (List<object>)mapX["arrayX"];
             Assert.That(arrayX.Count(), Is.EqualTo(3));
             Assert.That(arrayX[0], Is.EqualTo(7));
             Assert.That(arrayX[1], Is.EqualTo(8));
@@ -183,20 +183,12 @@ namespace MaxMind.Db.Test
                 Assert.That(record.Bytes, Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
                 Assert.That(record.Utf8String, Is.EqualTo("unicode! ☯ - ♫"));
 
-                var array = record.Array;
-                Assert.That(array.Count(), Is.EqualTo(3));
-                Assert.That(array[0], Is.EqualTo(1));
-                Assert.That(array[1], Is.EqualTo(2));
-                Assert.That(array[2], Is.EqualTo(3));
+                Assert.That(record.Array, Is.EqualTo(new List<long> { 1, 2, 3 }));
 
                 var mapX = record.Map.MapX;
                 Assert.That(mapX.Utf8StringX, Is.EqualTo("hello"));
 
-                var arrayX = mapX.ArrayX;
-                Assert.That(arrayX.Count(), Is.EqualTo(3));
-                Assert.That(arrayX[0], Is.EqualTo(7));
-                Assert.That(arrayX[1], Is.EqualTo(8));
-                Assert.That(arrayX[2], Is.EqualTo(9));
+                Assert.That(mapX.ArrayX, Is.EqualTo(new List<long> { 7, 8, 9 }));
 
                 Assert.AreEqual(42.123456, record.Double, 0.000000001);
                 Assert.AreEqual(1.1, record.Float, 0.000001);
@@ -222,8 +214,8 @@ namespace MaxMind.Db.Test
 
                 Assert.That(record["utf8_string"], Is.EqualTo(""));
 
-                Assert.That(record["array"], Is.InstanceOf<ReadOnlyCollection<object>>());
-                Assert.That(((ReadOnlyCollection<object>)record["array"]).Count(), Is.EqualTo(0));
+                Assert.That(record["array"], Is.InstanceOf<List<object>>());
+                Assert.That(((List<object>)record["array"]).Count(), Is.EqualTo(0));
 
                 Assert.That(record["map"], Is.InstanceOf<Dictionary<string, object>>());
                 Assert.That(((Dictionary<string, object>)record["map"]).Count(), Is.EqualTo(0));

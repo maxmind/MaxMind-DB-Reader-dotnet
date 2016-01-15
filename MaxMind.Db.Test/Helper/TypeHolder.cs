@@ -12,14 +12,14 @@ namespace MaxMind.Db.Test.Helper
         [MaxMindDbConstructor]
         public InnerMapX(
             string utf8_stringX,
-            IList<long> arrayX
+            LinkedList<long> arrayX
             )
         {
             ArrayX = arrayX;
             Utf8StringX = utf8_stringX;
         }
 
-        public IList<long> ArrayX { get; set; }
+        public LinkedList<long> ArrayX { get; set; }
 
         public string Utf8StringX { get; set; }
     }
@@ -47,7 +47,7 @@ namespace MaxMind.Db.Test.Helper
             BigInteger uint128,
             int int32,
             bool boolean,
-            IList<long> array,
+            ICollection<long> array,
             [MaxMindDbProperty("double")] double mmDouble,
             [MaxMindDbProperty("float")] float mmFloat,
             [MaxMindDbProperty("map")] InnerMap map
@@ -70,7 +70,7 @@ namespace MaxMind.Db.Test.Helper
             Utf8String = utf8_string;
         }
 
-        public IList<long> Array { get; set; }
+        public ICollection<long> Array { get; set; }
         public bool Boolean { get; set; }
 
         public byte[] Bytes { get; set; }
