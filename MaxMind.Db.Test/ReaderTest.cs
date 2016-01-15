@@ -3,6 +3,7 @@
 using MaxMind.Db.Test.Helper;
 using NUnit.Framework;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -105,46 +106,70 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        public void TestDecodingTypes()
+        public void TestDecodingToDictionary()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
-
-                Assert.That(record["boolean"], Is.True);
-
-                Assert.That(record["bytes"], Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
-
-                Assert.That(record["utf8_string"], Is.EqualTo("unicode! ☯ - ♫"));
-
-                var array = (ReadOnlyCollection<object>)record["array"];
-                Assert.That(array.Count(), Is.EqualTo(3));
-                Assert.That(array[0], Is.EqualTo(1));
-                Assert.That(array[1], Is.EqualTo(2));
-                Assert.That(array[2], Is.EqualTo(3));
-
-                var map = (Dictionary<string, object>)record["map"];
-                Assert.That(map.Count(), Is.EqualTo(1));
-
-                var mapX = (Dictionary<string, object>)map["mapX"];
-                Assert.That(mapX.Count(), Is.EqualTo(2));
-                Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
-
-                var arrayX = (ReadOnlyCollection<object>)mapX["arrayX"];
-                Assert.That(arrayX.Count(), Is.EqualTo(3));
-                Assert.That(arrayX[0], Is.EqualTo(7));
-                Assert.That(arrayX[1], Is.EqualTo(8));
-                Assert.That(arrayX[2], Is.EqualTo(9));
-
-                Assert.AreEqual(42.123456, (double)record["double"], 0.000000001);
-                Assert.AreEqual(1.1, (float)record["float"], 0.000001);
-                Assert.That(record["int32"], Is.EqualTo(-268435456));
-                Assert.That(record["uint16"], Is.EqualTo(100));
-                Assert.That(record["uint32"], Is.EqualTo(268435456));
-                Assert.That(record["uint64"], Is.EqualTo(1152921504606846976));
-                Assert.That(record["uint128"],
-                    Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
+                TestDecodingTypes(record);
             }
+        }
+
+        [Test]
+        public void TestDecodingToGenericIDictionary()
+        {
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            {
+                var record = reader.Find<IDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+                TestDecodingTypes(record);
+            }
+        }
+
+        [Test]
+        public void TestDecodingToConcurrentDictionary()
+        {
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            {
+                var record = reader.Find<ConcurrentDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+                TestDecodingTypes(record);
+            }
+        }
+
+        public void TestDecodingTypes(IDictionary<string, object> record)
+        {
+            Assert.That(record["boolean"], Is.True);
+
+            Assert.That(record["bytes"], Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
+
+            Assert.That(record["utf8_string"], Is.EqualTo("unicode! ☯ - ♫"));
+
+            var array = (ReadOnlyCollection<object>)record["array"];
+            Assert.That(array.Count(), Is.EqualTo(3));
+            Assert.That(array[0], Is.EqualTo(1));
+            Assert.That(array[1], Is.EqualTo(2));
+            Assert.That(array[2], Is.EqualTo(3));
+
+            var map = (Dictionary<string, object>)record["map"];
+            Assert.That(map.Count(), Is.EqualTo(1));
+
+            var mapX = (Dictionary<string, object>)map["mapX"];
+            Assert.That(mapX.Count(), Is.EqualTo(2));
+            Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
+
+            var arrayX = (ReadOnlyCollection<object>)mapX["arrayX"];
+            Assert.That(arrayX.Count(), Is.EqualTo(3));
+            Assert.That(arrayX[0], Is.EqualTo(7));
+            Assert.That(arrayX[1], Is.EqualTo(8));
+            Assert.That(arrayX[2], Is.EqualTo(9));
+
+            Assert.AreEqual(42.123456, (double)record["double"], 0.000000001);
+            Assert.AreEqual(1.1, (float)record["float"], 0.000001);
+            Assert.That(record["int32"], Is.EqualTo(-268435456));
+            Assert.That(record["uint16"], Is.EqualTo(100));
+            Assert.That(record["uint32"], Is.EqualTo(268435456));
+            Assert.That(record["uint64"], Is.EqualTo(1152921504606846976));
+            Assert.That(record["uint128"],
+                Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
         }
 
         [Test]
