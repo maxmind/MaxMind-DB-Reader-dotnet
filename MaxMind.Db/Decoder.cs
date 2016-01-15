@@ -392,8 +392,8 @@ namespace MaxMind.Db
 
             for (var i = 0; i < size; i++)
             {
-                dynamic key = Decode(genericArgs[0], offset, out offset);
-                dynamic value = Decode(genericArgs[1], offset, out offset);
+                var key = Decode(genericArgs[0], offset, out offset);
+                var value = Decode(genericArgs[1], offset, out offset);
                 obj.Add(key, value);
             }
 
@@ -418,6 +418,7 @@ namespace MaxMind.Db
             if (expectedType.IsInterface)
             {
                 var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
+                checkType(expectedType, dictType);
                 constructor = dictType.GetConstructor(new[] { typeof(int) });
             }
             else
@@ -599,19 +600,26 @@ namespace MaxMind.Db
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
 
-            checkType(expectedType, typeof(ReadOnlyCollection<>).MakeGenericType(argType));
-
+            object array;
+            var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
             var listType = typeof(List<>).MakeGenericType(argType);
-            dynamic array = Activator.CreateInstance(listType, size);
-
+            if (expectedType.IsAssignableFrom(listType))
+            {
+                array = Activator.CreateInstance(listType, size);
+            }
+            else
+            {
+                checkType(interfaceType, expectedType);
+                array = Activator.CreateInstance(expectedType);
+            }
             for (var i = 0; i < size; i++)
             {
-                dynamic r = Decode(argType, offset, out offset);
-                array.Add(r);
+                var r = Decode(argType, offset, out offset);
+                interfaceType.GetMethod("Add").Invoke(array, new[] { r });
             }
 
             outOffset = offset;
-            return array.AsReadOnly();
+            return array;
         }
 
         /// <summary>
