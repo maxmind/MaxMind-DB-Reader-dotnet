@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -387,7 +388,7 @@ namespace MaxMind.Db
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
 
-            dynamic obj = DictionaryConstructor(expectedType)(size);
+            var obj = (IDictionary)DictionaryConstructor(expectedType)(size);
 
             for (var i = 0; i < size; i++)
             {
@@ -413,11 +414,19 @@ namespace MaxMind.Db
             if (genericArgs.Length != 2)
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
-
-            var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
-            checkType(expectedType, dictType);
-
-            var constructor = dictType.GetConstructor(new[] { typeof(int) });
+            ConstructorInfo constructor;
+            if (expectedType.IsInterface)
+            {
+                var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
+                constructor = dictType.GetConstructor(new[] { typeof(int) });
+            }
+            else
+            {
+                checkType(typeof(IDictionary), expectedType);
+                constructor = expectedType.GetConstructor(Type.EmptyTypes);
+                if (constructor == null)
+                    throw new DeserializationException($"Unable to find default constructor for {expectedType}");
+            }
             var activator = CreateActivator(constructor);
             _constructorCache.TryAdd(expectedType, activator);
             return activator;
