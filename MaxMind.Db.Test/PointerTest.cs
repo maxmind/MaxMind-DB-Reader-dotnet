@@ -15,7 +15,7 @@ namespace MaxMind.Db.Test
         public void TestWithPointers()
         {
             var path = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
-            using (var database = new ArrayReader(path))
+            using (var database = new ArrayBuffer(path))
             {
                 var decoder = new Decoder(database, 0);
 

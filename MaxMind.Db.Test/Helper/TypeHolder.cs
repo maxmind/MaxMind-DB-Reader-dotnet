@@ -9,7 +9,7 @@ namespace MaxMind.Db.Test.Helper
 {
     public class InnerMapX
     {
-        [MaxMindDbConstructor]
+        [Constructor]
         public InnerMapX(
             string utf8_stringX,
             LinkedList<long> arrayX
@@ -26,7 +26,7 @@ namespace MaxMind.Db.Test.Helper
 
     public class InnerMap
     {
-        [MaxMindDbConstructor]
+        [Constructor]
         public InnerMap(InnerMapX mapX)
         {
             MapX = mapX;
@@ -35,9 +35,35 @@ namespace MaxMind.Db.Test.Helper
         public InnerMapX MapX { get; set; }
     }
 
+    public class InnerNonexistant
+    {
+        [Constructor]
+        public InnerNonexistant([Inject("injected")] string injected)
+        {
+            Injected = injected;
+        }
+
+        public string Injected { get; set; }
+    }
+
+    public class Nonexistant
+    {
+        [Constructor]
+        public Nonexistant(
+            [Parameter("innerNonexistant", true)] InnerNonexistant innerNonexistant,
+            [Inject("injected")] string injected)
+        {
+            Injected = injected;
+            InnerNonexistant = innerNonexistant;
+        }
+
+        public string Injected { get; set; }
+        public InnerNonexistant InnerNonexistant { get; set; }
+    }
+
     public class TypeHolder
     {
-        [MaxMindDbConstructor]
+        [Constructor]
         public TypeHolder(
             string utf8_string,
             byte[] bytes,
@@ -48,9 +74,10 @@ namespace MaxMind.Db.Test.Helper
             int int32,
             bool boolean,
             ICollection<long> array,
-            [MaxMindDbProperty("double")] double mmDouble,
-            [MaxMindDbProperty("float")] float mmFloat,
-            [MaxMindDbProperty("map")] InnerMap map
+            [Parameter("double")] double mmDouble,
+            [Parameter("float")] float mmFloat,
+            [Parameter("map")] InnerMap map,
+            [Parameter("nonexistant", true)] Nonexistant nonexistant
             )
         {
             Array = array;
@@ -68,7 +95,11 @@ namespace MaxMind.Db.Test.Helper
             Uint128 = uint128;
 
             Utf8String = utf8_string;
+
+            Nonexistant = nonexistant;
         }
+
+        public Nonexistant Nonexistant { get; set; }
 
         public ICollection<long> Array { get; set; }
         public bool Boolean { get; set; }

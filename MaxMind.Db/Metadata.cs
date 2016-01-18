@@ -13,7 +13,7 @@ namespace MaxMind.Db
     public class Metadata
     {
         /// <summary>
-        /// Construct a metadata object.
+        ///     Construct a metadata object.
         /// </summary>
         /// <param name="binaryFormatMajorVersion"></param>
         /// <param name="binaryFormatMinorVersion"></param>
@@ -24,19 +24,19 @@ namespace MaxMind.Db
         /// <param name="languages"></param>
         /// <param name="nodeCount"></param>
         /// <param name="recordSize"></param>
-        [MaxMindDbConstructor]
+        [Constructor]
         public Metadata(
-            [MaxMindDbProperty("binary_format_major_version")] int binaryFormatMajorVersion,
-            [MaxMindDbProperty("binary_format_minor_version")] int binaryFormatMinorVersion,
+            [Parameter("binary_format_major_version")] int binaryFormatMajorVersion,
+            [Parameter("binary_format_minor_version")] int binaryFormatMinorVersion,
 #pragma warning disable CS3001 // Argument type is not CLS-compliant
-            [MaxMindDbProperty("build_epoch")] ulong buildEpoch,
+            [Parameter("build_epoch")] ulong buildEpoch,
 #pragma warning restore CS3001 // Argument type is not CLS-compliant
-            [MaxMindDbProperty("database_type")] string databaseType,
+            [Parameter("database_type")] string databaseType,
             IDictionary<string, string> description,
-            [MaxMindDbProperty("ip_version")] int ipVersion,
+            [Parameter("ip_version")] int ipVersion,
             IReadOnlyList<string> languages,
-            [MaxMindDbProperty("node_count")] long nodeCount,
-            [MaxMindDbProperty("record_size")] int recordSize
+            [Parameter("node_count")] long nodeCount,
+            [Parameter("record_size")] int recordSize
             )
         {
             BinaryFormatMajorVersion = binaryFormatMajorVersion;
