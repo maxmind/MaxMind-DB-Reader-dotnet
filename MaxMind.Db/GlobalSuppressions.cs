@@ -25,3 +25,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly:
     SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member",
         Target = "MaxMind.Db.ParameterAttribute.#.ctor(System.String,System.Boolean)")]
+[assembly: SuppressMessage("Microsoft.Usage", "CA2243:AttributeStringLiteralsShouldParseCorrectly")]

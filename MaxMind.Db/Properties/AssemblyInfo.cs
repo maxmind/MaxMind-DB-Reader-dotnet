@@ -42,9 +42,9 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("1.0.1")]
-[assembly: AssemblyFileVersion("1.2.0")]
-[assembly: AssemblyInformationalVersion("1.2.0")]
+[assembly: AssemblyVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.0.0")]
+[assembly: AssemblyInformationalVersion("2.0.0-beta1")]
 [assembly: InternalsVisibleTo("MaxMind.Db.Test,PublicKey=" +
                               "0024000004800000940000000602000000240000525341310004000001000100e30b6e4a9425b1" +
                               "617ffc8bdf79801e67a371f9f650db860dc0dfff92cb63258765a0955c6fcde1da78dbaf5bf84d" +
