@@ -5,7 +5,6 @@ using NUnit.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -177,7 +176,9 @@ namespace MaxMind.Db.Test
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
-                var record = reader.Find<TypeHolder>(IPAddress.Parse("::1.1.1.0"));
+                var injectables = new InjectableValues();
+                injectables.AddValue("injected", "injected string");
+                var record = reader.Find<TypeHolder>(IPAddress.Parse("::1.1.1.0"), injectables);
 
                 Assert.That(record.Boolean, Is.True);
                 Assert.That(record.Bytes, Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
@@ -198,6 +199,9 @@ namespace MaxMind.Db.Test
                 Assert.That(record.Uint64, Is.EqualTo(1152921504606846976));
                 Assert.That(record.Uint128,
                     Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
+
+                Assert.That(record.Nonexistant.Injected, Is.EqualTo("injected string"));
+                Assert.That(record.Nonexistant.InnerNonexistant.Injected, Is.EqualTo("injected string"));
             }
         }
 
@@ -306,7 +310,8 @@ namespace MaxMind.Db.Test
         {
             foreach (var address in singleAddresses)
             {
-                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"], Is.EqualTo(address),
+                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"],
+                    Is.EqualTo(address),
                     $"Did not find expected data record for {address} in {file}");
             }
 

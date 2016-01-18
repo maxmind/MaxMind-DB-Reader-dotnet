@@ -17,8 +17,8 @@ namespace MaxMind.Db.Benchmark
         {
         }
 
-        [MaxMindDbConstructor]
-        public Country([MaxMindDbProperty("iso_code")] string isoCode)
+        [Constructor]
+        public Country([Parameter("iso_code")] string isoCode)
         {
             IsoCode = isoCode;
         }
@@ -28,7 +28,7 @@ namespace MaxMind.Db.Benchmark
     {
         public Country Country;
 
-        [MaxMindDbConstructor]
+        [Constructor]
         public GeoIP2(Country country)
         {
             Country = country ?? new Country();

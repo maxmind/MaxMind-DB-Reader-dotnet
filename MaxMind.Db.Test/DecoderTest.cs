@@ -3,7 +3,6 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Numerics;
 using System.Text;
 
@@ -362,9 +361,9 @@ namespace MaxMind.Db.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using (var database = new ArrayReader(input))
+                using (var database = new ArrayBuffer(input))
                 {
-                    var decoder = new Decoder(database, 0) { PointerTestHack = true };
+                    var decoder = new Decoder(database, 0, false);
                     long offset;
                     var val = decoder.Decode<T>(0, out offset);
                     Assert.That(val, Is.EqualTo(expect));

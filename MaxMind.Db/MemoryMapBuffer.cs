@@ -3,24 +3,25 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Text;
 
 #endregion
 
 namespace MaxMind.Db
 {
-    internal class MemoryMapReader : IByteReader
+    internal sealed class MemoryMapBuffer : Buffer
     {
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;
 
-        public MemoryMapReader(string file)
+        public MemoryMapBuffer(string file) : this(file, new FileInfo(file))
         {
-            var fileInfo = new FileInfo(file);
+        }
 
-            Length = (int)fileInfo.Length;
-
+        private MemoryMapBuffer(string file, FileInfo fileInfo) : base((int)fileInfo.Length)
+        {
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
             var mapName = $"{fileInfo.FullName.Replace("\\", "-")}-{Length}";
@@ -45,18 +46,18 @@ namespace MaxMind.Db
             _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
         }
 
-        public int Length { get; }
-
-        public byte[] Read(long offset, int count)
+        public override byte[] Read(long offset, int count)
         {
             var bytes = new byte[count];
             Copy(offset, bytes);
             return bytes;
         }
 
-        public byte ReadOne(long offset) => _view.ReadByte(offset);
+        public override byte ReadOne(long offset) => _view.ReadByte(offset);
 
-        public void Copy(long offset, byte[] bytes)
+        public override string ReadString(long offset, int count) => Encoding.UTF8.GetString(Read(offset, count));
+
+        public override void Copy(long offset, byte[] bytes)
         {
             // Although not explicitly marked as thread safe, from
             // reviewing the source code, these operations appear to
@@ -68,7 +69,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Release resources back to the system.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -78,7 +79,7 @@ namespace MaxMind.Db
         ///     Release resources back to the system.
         /// </summary>
         /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;

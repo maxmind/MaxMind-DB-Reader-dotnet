@@ -2,14 +2,8 @@
 
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Numerics;
-using System.Reflection;
-using System.Text;
 
 #endregion
 
@@ -38,108 +32,52 @@ namespace MaxMind.Db
         Float
     }
 
-    internal delegate object ObjectActivator(params object[] args);
-
-    internal struct ClassConstructor
-    {
-        internal ObjectActivator Activator;
-        internal Dictionary<byte[], ParameterInfo> Parameters;
-        internal Type[] ParameterTypes;
-
-        public ClassConstructor(ObjectActivator activator, Dictionary<byte[], ParameterInfo> paramsInfo) : this()
-        {
-            Activator = activator;
-            Parameters = paramsInfo;
-            ParameterTypes = paramsInfo.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
-        }
-    }
-
-    internal class ByteArrayEqualityComparer : IEqualityComparer<byte[]>
-    {
-        public bool Equals(byte[] x, byte[] y)
-        {
-            if (x == null || y == null)
-            {
-                return false;
-            }
-            if (ReferenceEquals(x, y))
-            {
-                return true;
-            }
-
-            if (x.Length != y.Length)
-            {
-                return false;
-            }
-            for (var i = 0; i < x.Length; i++)
-            {
-                if (x[i] != y[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public int GetHashCode(byte[] bytes)
-        {
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
-            var result = 17;
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                unchecked
-                {
-                    result = result * 31 + bytes[i];
-                }
-            }
-            return result;
-        }
-    }
-
     /// <summary>
     ///     Given a stream, this class decodes the object graph at a particular location
     /// </summary>
-    internal class Decoder
+    internal sealed class Decoder
     {
-        private readonly ConcurrentDictionary<Type, ClassConstructor> _typeConstructors =
-            new ConcurrentDictionary<Type, ClassConstructor>();
-
-        private readonly IByteReader _database;
+        private readonly Buffer _database;
         private readonly long _pointerBase;
+        private readonly bool _followPointers;
         private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
+
+        private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
+        private readonly ListActivatorCreator _listActivatorCreator;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.
         /// </summary>
         /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
-        internal Decoder(IByteReader database, long pointerBase)
+        /// <param name="followPointers">Whether to follow pointers. For testing.</param>
+        internal Decoder(Buffer database, long pointerBase, bool followPointers = true)
         {
             _pointerBase = pointerBase;
             _database = database;
+            _followPointers = followPointers;
+            _listActivatorCreator = new ListActivatorCreator();
+            _dictionaryActivatorCreator = new DictionaryActivatorCreator();
+            _typeAcivatorCreator = new TypeAcivatorCreator();
         }
-
-        internal bool PointerTestHack { get; set; }
 
         /// <summary>
         ///     Decodes the object at the specified offset.
         /// </summary>
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset</param>
+        /// <param name="injectables"></param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal T Decode<T>(long offset, out long outOffset) where T : class
+        internal T Decode<T>(long offset, out long outOffset, InjectableValues injectables = null) where T : class
         {
-            return Decode(typeof(T), offset, out outOffset) as T;
+            return Decode(typeof(T), offset, out outOffset, injectables) as T;
         }
 
-        internal object Decode(Type expectedType, long offset, out long outOffset)
+        internal object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
         {
             int size;
             var type = CtrlData(offset, out size, out offset);
-            return DecodeByType(expectedType, type, offset, size, out outOffset);
+            return DecodeByType(expectedType, type, offset, size, out outOffset, injectables);
         }
 
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
@@ -151,7 +89,7 @@ namespace MaxMind.Db
             var ctrlByte = _database.ReadOne(offset);
             offset++;
 
-            var type = FromControlByte(ctrlByte);
+            var type = (ObjectType)(ctrlByte >> 5);
 
             if (type == ObjectType.Extended)
             {
@@ -166,7 +104,28 @@ namespace MaxMind.Db
                 offset++;
             }
 
-            size = SizeFromCtrlByte(ctrlByte, offset, out offset);
+            // The size calculation is inlined as it is hot code
+            size = ctrlByte & 0x1f;
+            if (size >= 29)
+            {
+                var bytesToRead = size - 28;
+                var i = _database.ReadInteger(0, offset, bytesToRead);
+                offset = offset + bytesToRead;
+                switch (size)
+                {
+                    case 29:
+                        size = 29 + i;
+                        break;
+
+                    case 30:
+                        size = 285 + i;
+                        break;
+
+                    default:
+                        size = 65821 + (i & (0x0FFFFFFF >> (32 - 8 * bytesToRead)));
+                        break;
+                }
+            }
             outOffset = offset;
             return type;
         }
@@ -179,9 +138,11 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="size">The size.</param>
         /// <param name="outOffset">The out offset</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        /// <exception cref="System.Exception">Unable to handle type!</exception>
-        private object DecodeByType(Type expectedType, ObjectType type, long offset, int size, out long outOffset)
+        /// <exception cref="Exception">Unable to handle type!</exception>
+        private object DecodeByType(Type expectedType, ObjectType type, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
             outOffset = offset + size;
 
@@ -190,19 +151,19 @@ namespace MaxMind.Db
                 case ObjectType.Pointer:
                     var pointer = DecodePointer(offset, size, out offset);
                     outOffset = offset;
-                    if (PointerTestHack)
+                    if (!_followPointers)
                     {
                         return pointer;
                     }
                     long ignore;
-                    var result = Decode(expectedType, Convert.ToInt32(pointer), out ignore);
+                    var result = Decode(expectedType, Convert.ToInt32(pointer), out ignore, injectables);
                     return result;
 
                 case ObjectType.Map:
-                    return DecodeMap(expectedType, offset, size, out outOffset);
+                    return DecodeMap(expectedType, offset, size, out outOffset, injectables);
 
                 case ObjectType.Array:
-                    return DecodeArray(expectedType, size, offset, out outOffset);
+                    return DecodeArray(expectedType, size, offset, out outOffset, injectables);
 
                 case ObjectType.Boolean:
                     outOffset = offset;
@@ -241,57 +202,14 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     From the control byte.
-        /// </summary>
-        /// <param name="b">The attribute.</param>
-        /// <returns></returns>
-        private ObjectType FromControlByte(byte b)
-        {
-            var p = b >> 5;
-            return (ObjectType)p;
-        }
-
-        /// <summary>
-        ///     Sizes from control byte.
-        /// </summary>
-        /// <param name="ctrlByte">The control byte.</param>
-        /// <param name="offset">The offset.</param>
-        /// <param name="outOffset">The out offset.</param>
-        /// <returns></returns>
-        private int SizeFromCtrlByte(byte ctrlByte, long offset, out long outOffset)
-        {
-            var size = ctrlByte & 0x1f;
-            var bytesToRead = size < 29 ? 0 : size - 28;
-
-            if (size == 29)
-            {
-                var i = DecodeInteger(offset, bytesToRead);
-                size = 29 + i;
-            }
-            else if (size == 30)
-            {
-                var i = DecodeInteger(offset, bytesToRead);
-                size = 285 + i;
-            }
-            else if (size > 30)
-            {
-                var i = DecodeInteger(offset, bytesToRead) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
-                size = 65821 + i;
-            }
-
-            outOffset = offset + bytesToRead;
-            return size;
-        }
-
-        /// <summary>
         ///     Decodes the boolean.
         /// </summary>
         /// <param name="expectedType"></param>
         /// <param name="size">The size of the structure.</param>
         /// <returns></returns>
-        private bool DecodeBoolean(Type expectedType, int size)
+        private static bool DecodeBoolean(Type expectedType, int size)
         {
-            checkType(expectedType, typeof(bool));
+            ReflectionUtil.CheckType(expectedType, typeof(bool));
 
             switch (size)
             {
@@ -313,7 +231,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private double DecodeDouble(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(double));
+            ReflectionUtil.CheckType(expectedType, typeof(double));
 
             if (size != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -329,7 +247,7 @@ namespace MaxMind.Db
         /// <returns></returns>
         private float DecodeFloat(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(float));
+            ReflectionUtil.CheckType(expectedType, typeof(float));
 
             if (size != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -345,14 +263,14 @@ namespace MaxMind.Db
         /// <returns></returns>
         private string DecodeString(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(string));
+            ReflectionUtil.CheckType(expectedType, typeof(string));
 
-            return Encoding.UTF8.GetString(_database.Read(offset, size));
+            return _database.ReadString(offset, size);
         }
 
         private byte[] DecodeBytes(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(byte[]));
+            ReflectionUtil.CheckType(expectedType, typeof(byte[]));
 
             return _database.Read(offset, size);
         }
@@ -364,36 +282,38 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="size">The size.</param>
         /// <param name="outOffset">The out offset.</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        private object DecodeMap(Type expectedType, long offset, int size, out long outOffset)
+        private object DecodeMap(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
-            // XXX - combine with todict meth
-            if (expectedType == typeof(object))
-                expectedType = typeof(Dictionary<string, object>);
+            var objDictType = typeof(Dictionary<string, object>);
+            if (!expectedType.IsGenericType && expectedType.IsAssignableFrom(objDictType))
+                expectedType = objDictType;
 
-            // The only generic type we support is Dictionaries.
+            // Currently we don't support non-dict generic types
             if (expectedType.IsGenericType)
             {
-                return DecodeMapToDictionary(expectedType, offset, size, out outOffset);
+                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables);
             }
 
-            return DecodeMapToType(expectedType, offset, size, out outOffset);
+            return DecodeMapToType(expectedType, offset, size, out outOffset, injectables);
         }
 
-        private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset)
+        private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
-            // XXX - cache this
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
 
-            var obj = (IDictionary)DictionaryConstructor(expectedType)(size);
+            var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
 
             for (var i = 0; i < size; i++)
             {
                 var key = Decode(genericArgs[0], offset, out offset);
-                var value = Decode(genericArgs[1], offset, out offset);
+                var value = Decode(genericArgs[1], offset, out offset, injectables);
                 obj.Add(key, value);
             }
 
@@ -402,75 +322,20 @@ namespace MaxMind.Db
             return obj;
         }
 
-        private readonly ConcurrentDictionary<Type, ObjectActivator> _constructorCache =
-            new ConcurrentDictionary<Type, ObjectActivator>();
-
-        internal ObjectActivator DictionaryConstructor(Type expectedType)
+        private object DecodeMapToType(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
-            if (_constructorCache.ContainsKey(expectedType))
-                return _constructorCache[expectedType];
-
-            var genericArgs = expectedType.GetGenericArguments();
-            if (genericArgs.Length != 2)
-                throw new DeserializationException(
-                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
-            ConstructorInfo constructor;
-            if (expectedType.IsInterface)
-            {
-                var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
-                checkType(expectedType, dictType);
-                constructor = dictType.GetConstructor(new[] { typeof(int) });
-            }
-            else
-            {
-                checkType(typeof(IDictionary), expectedType);
-                constructor = expectedType.GetConstructor(Type.EmptyTypes);
-                if (constructor == null)
-                    throw new DeserializationException($"Unable to find default constructor for {expectedType}");
-            }
-            var activator = CreateActivator(constructor);
-            _constructorCache.TryAdd(expectedType, activator);
-            return activator;
-        }
-
-        // Activator.CreateInstance is extremely slow and ConstuctorInfo.Invoke is
-        // somewhat slow. This faster alternative (when cached) is largely based off
-        // of:
-        // http://rogeralsing.com/2008/02/28/linq-expressions-creating-objects/
-        internal ObjectActivator CreateActivator(ConstructorInfo constructor)
-        {
-            var paramInfo = constructor.GetParameters();
-
-            var paramExp = Expression.Parameter(typeof(object[]), "args");
-
-            var argsExp = new Expression[paramInfo.Length];
-            for (var i = 0; i < paramInfo.Length; i++)
-            {
-                var index = Expression.Constant(i);
-                var paramType = paramInfo[i].ParameterType;
-                var accessorExp = Expression.ArrayIndex(paramExp, index);
-                var castExp = Expression.Convert(accessorExp, paramType);
-                argsExp[i] = castExp;
-            }
-
-            var newExp = Expression.New(constructor, argsExp);
-            var lambda = Expression.Lambda(typeof(ObjectActivator), newExp, paramExp);
-            return (ObjectActivator)lambda.Compile();
-        }
-
-        private object DecodeMapToType(Type expectedType, long offset, int size, out long outOffset)
-        {
-            var constructor = DeserializationConstructor(expectedType);
-            var parameters = new object[constructor.Parameters.Count];
+            var constructor = _typeAcivatorCreator.GetActivator(expectedType);
+            var parameters = constructor.DefaultParameters();
 
             for (var i = 0; i < size; i++)
             {
                 var key = DecodeKey(offset, out offset);
-                if (constructor.Parameters.ContainsKey(key))
+                if (constructor.DeserializationParameters.ContainsKey(key))
                 {
-                    var param = constructor.Parameters[key];
+                    var param = constructor.DeserializationParameters[key];
                     var paramType = param.ParameterType;
-                    var value = Decode(paramType, offset, out offset);
+                    var value = Decode(paramType, offset, out offset, injectables);
                     parameters[param.Position] = value;
                 }
                 else
@@ -478,47 +343,41 @@ namespace MaxMind.Db
                     offset = NextValueOffset(offset, 1);
                 }
             }
+
+            SetInjectables(constructor, parameters, injectables);
+            SetAlwaysCreatedParams(constructor, parameters, injectables);
+
             outOffset = offset;
             return constructor.Activator(parameters);
         }
 
-        private ClassConstructor DeserializationConstructor(Type expectedType)
+        private void SetAlwaysCreatedParams(TypeActivator constructor, object[] parameters, InjectableValues injectables)
         {
-            if (_typeConstructors.ContainsKey(expectedType))
+            foreach (var param in constructor.AlwaysCreatedParameters)
             {
-                return _typeConstructors[expectedType];
+                if (parameters[param.Position] == null)
+                {
+                    var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                    var cstorParams = activator.DefaultParameters();
+                    SetInjectables(activator, cstorParams, injectables);
+                    SetAlwaysCreatedParams(activator, cstorParams, injectables);
+                    parameters[param.Position] = activator.Activator(cstorParams);
+                }
             }
-            var constructors =
-                expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    .Where(c => c.IsDefined(typeof(MaxMindDbConstructorAttribute), true))
-                    .ToList();
-            if (constructors.Count == 0)
-            {
-                throw new DeserializationException(
-                    $"No constructors found for {expectedType} found with MaxMindDbConstructor attribute");
-            }
-            if (constructors.Count > 1)
-            {
-                throw new DeserializationException(
-                    $"More than one constructor found for {expectedType} found with MaxMindDbConstructor attribute");
-            }
-
-            var constructor = constructors[0];
-            var paramNameTypes = constructor.GetParameters()
-                .ToDictionary(MapPropertyName, x => x, new ByteArrayEqualityComparer());
-
-            var activator = CreateActivator(constructor);
-            var clsConstructor = new ClassConstructor(activator, paramNameTypes);
-            _typeConstructors.TryAdd(expectedType, clsConstructor);
-            return clsConstructor;
         }
 
-        private byte[] MapPropertyName(ParameterInfo paramInfo)
+        private static void SetInjectables(TypeActivator constructor, object[] parameters, InjectableValues injectables)
         {
-            var attribute = paramInfo.GetCustomAttributes<MaxMindDbPropertyAttribute>().FirstOrDefault();
-            var s = attribute == null ? paramInfo.Name : attribute.PropertyName;
-            return Encoding.UTF8.GetBytes(s);
+            foreach (var item in constructor.InjectableParameters)
+            {
+                if (injectables == null || !injectables.Values.ContainsKey(item.Key))
+                    throw new DeserializationException($"No injectable value found for {item.Key}");
+
+                parameters[item.Value.Position] = injectables.Values[item.Key];
+            }
         }
+
+        private readonly TypeAcivatorCreator _typeAcivatorCreator;
 
         private byte[] DecodeKey(long offset, out long outOffset)
         {
@@ -577,14 +436,8 @@ namespace MaxMind.Db
         /// <returns></returns>
         private long DecodeLong(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(long));
-
-            long val = 0;
-            for (var i = 0; i < size; i++)
-            {
-                val = (val << 8) | _database.ReadOne(offset + i);
-            }
-            return val;
+            ReflectionUtil.CheckType(expectedType, typeof(long));
+            return _database.ReadLong(offset, size);
         }
 
         /// <summary>
@@ -594,27 +447,19 @@ namespace MaxMind.Db
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset.</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        private object DecodeArray(Type expectedType, int size, long offset, out long outOffset)
+        private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
+            InjectableValues injectables)
         {
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
-
-            object array;
             var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
-            var listType = typeof(List<>).MakeGenericType(argType);
-            if (expectedType.IsAssignableFrom(listType))
-            {
-                array = Activator.CreateInstance(listType, size);
-            }
-            else
-            {
-                checkType(interfaceType, expectedType);
-                array = Activator.CreateInstance(expectedType);
-            }
+
+            var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
-                var r = Decode(argType, offset, out offset);
+                var r = Decode(argType, offset, out offset, injectables);
                 interfaceType.GetMethod("Add").Invoke(array, new[] { r });
             }
 
@@ -628,14 +473,8 @@ namespace MaxMind.Db
         /// <returns></returns>
         private ulong DecodeUInt64(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(ulong));
-
-            ulong val = 0;
-            for (var i = 0; i < size; i++)
-            {
-                val = (val << 8) | _database.ReadOne(offset + i);
-            }
-            return val;
+            ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            return _database.ReadULong(offset, size);
         }
 
         /// <summary>
@@ -644,16 +483,8 @@ namespace MaxMind.Db
         /// <returns></returns>
         private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(BigInteger));
-
-            var buffer = _database.Read(offset, size);
-            Array.Reverse(buffer);
-
-            //Pad with a 0 in case we're on a byte boundary
-            Array.Resize(ref buffer, buffer.Length + 1);
-            buffer[buffer.Length - 1] = 0x0;
-
-            return new BigInteger(buffer);
+            ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
+            return _database.ReadBigInteger(offset, size);
         }
 
         /// <summary>
@@ -667,7 +498,7 @@ namespace MaxMind.Db
         {
             var pointerSize = ((size >> 3) & 0x3) + 1;
             var b = pointerSize == 4 ? 0 : size & 0x7;
-            var packed = DecodeInteger(b, offset, pointerSize);
+            var packed = _database.ReadInteger(b, offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }
@@ -678,39 +509,9 @@ namespace MaxMind.Db
         /// <returns></returns>
         private int DecodeInteger(Type expectedType, long offset, int size)
         {
-            checkType(expectedType, typeof(int));
+            ReflectionUtil.CheckType(expectedType, typeof(int));
 
-            return DecodeInteger(0, offset, size);
-        }
-
-        /// <summary>
-        ///     Decodes the integer.
-        /// </summary>
-        /// <returns></returns>
-        private int DecodeInteger(long offset, int size)
-        {
-            return DecodeInteger(0, offset, size);
-        }
-
-        /// <summary>
-        ///     Decodes the integer.
-        /// </summary>
-        /// <returns></returns>
-        internal int DecodeInteger(int val, long offset, int size)
-        {
-            for (var i = 0; i < size; i++)
-            {
-                val = (val << 8) | _database.ReadOne(offset + i);
-            }
-            return val;
-        }
-
-        private void checkType(Type expected, Type from)
-        {
-            if (!expected.IsAssignableFrom(from))
-            {
-                throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
-            }
+            return _database.ReadInteger(0, offset, size);
         }
     }
 }
