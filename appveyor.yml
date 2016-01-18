@@ -7,7 +7,7 @@ before_build:
 install:
   - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
 build:
-  - verbosity: minimal
+  verbosity: minimal
 notifications:
   - auth_token:
       secure: X+ymndzchVeC2LYsehzOt/GEMFfZJeTENeAU9lwNwTuCxBXFJNkuwZLd9joAtHgykHQoYqmEv/nH64+MA6nTlw==
