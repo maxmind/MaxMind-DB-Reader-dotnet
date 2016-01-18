@@ -1,5 +1,15 @@
 # Release Nodes #
 
+## 2.0.0-beta1 (2016-01-18) ##
+
+* Significant API changes. The `Find` method now takes a type parameter
+  specifying the type to deserialize to. Note that `JToken` is _not_ supported
+  for this. You can either deserialize to an arbitrary collection or to
+  model classes that use the `MaxMind.Db.Constructor` and
+  `MaxMind.Db.Parameter` attributes to identify the constructors and
+  parameters to deserialize to.
+* The API now significantly faster.
+
 ## 1.2.0 (2015-09-23) ##
 
 * Production release. No changes.
