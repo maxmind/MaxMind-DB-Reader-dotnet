@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Runtime.Serialization;
 
 #endregion
 
@@ -10,7 +11,7 @@ namespace MaxMind.Db
     ///     Thrown when the MaxMind database file is incorrectly formatted
     /// </summary>
     [Serializable]
-    public class InvalidDatabaseException : ApplicationException
+    public sealed class InvalidDatabaseException : Exception
     {
         /// <summary>
         ///     Initializes a new instance of the <see cref="InvalidDatabaseException" /> class.
@@ -32,6 +33,15 @@ namespace MaxMind.Db
         /// </param>
         public InvalidDatabaseException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        /// <summary>
+        ///     Constructor for deserialization.
+        /// </summary>
+        /// <param name="info">The SerializationInfo with data.</param>
+        /// <param name="context">The source for this deserialization.</param>
+        private InvalidDatabaseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
