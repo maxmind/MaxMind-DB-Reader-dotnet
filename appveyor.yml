@@ -1,20 +1,25 @@
-version: 1.0.{build}
-
+---
+version: '1.0.{build}'
 os: Visual Studio 2015 RC
-
 before_build:
   - nuget restore -verbosity detailed
   - git submodule update --init --recursive
-
 install:
-- set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
-
+  - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
 build:
-  verbosity: minimal
-
+  - verbosity: minimal
 notifications:
-- provider: Email
-  to: dev-ci@maxmind.com
-  on_build_success: false
-  on_build_failure: true
-  on_build_status_changed: true
+  - auth_token:
+      secure: X+ymndzchVeC2LYsehzOt/GEMFfZJeTENeAU9lwNwTuCxBXFJNkuwZLd9joAtHgykHQoYqmEv/nH64+MA6nTlw==
+    channel: ci
+    on_build_failure: true
+    on_build_status_changed: true
+    on_build_success: false
+    provider: Slack
+  - on_build_failure: true
+    on_build_status_changed: true
+    on_build_success: false
+    provider: Email
+    subject: 'AppVeyor build {{status}}'
+    to:
+      - dev-ci@maxmind.com
