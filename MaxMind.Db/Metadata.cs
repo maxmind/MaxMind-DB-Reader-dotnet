@@ -10,7 +10,7 @@ namespace MaxMind.Db
     /// <summary>
     ///     Data about the database file itself
     /// </summary>
-    public class Metadata
+    public sealed class Metadata
     {
         /// <summary>
         ///     Construct a metadata object.
