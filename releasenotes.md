@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.0.0-beta2 (2016-01-29) ##
+
+* Minor refactoring. No substantial changes since beta1.
+
 ## 2.0.0-beta1 (2016-01-18) ##
 
 * Significant API changes. The `Find` method now takes a type parameter
