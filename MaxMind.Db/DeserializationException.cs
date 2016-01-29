@@ -19,7 +19,7 @@ namespace MaxMind.Db
         ///     Construct a DeserializationException
         /// </summary>
         /// <param name="message"></param>
-        public DeserializationException(string message)
+        internal DeserializationException(string message)
             : base(message)
         {
         }
@@ -29,7 +29,7 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException">The underlying exception that caused this one.</param>
-        public DeserializationException(string message, Exception innerException)
+        private DeserializationException(string message, Exception innerException)
             : base(message, innerException)
         {
         }

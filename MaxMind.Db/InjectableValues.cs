@@ -9,7 +9,7 @@ namespace MaxMind.Db
     /// <summary>
     ///     Values to be injected into classes during deserialization.
     /// </summary>
-    public class InjectableValues
+    public sealed class InjectableValues
     {
         internal IDictionary<string, object> Values { get; } = new Dictionary<string, object>();
 
