@@ -16,7 +16,7 @@ namespace MaxMind.Db
         // somewhat slow. This faster alternative (when cached) is largely based off
         // of:
         // http://rogeralsing.com/2008/02/28/linq-expressions-creating-objects/
-        public static ObjectActivator CreateActivator(ConstructorInfo constructor)
+        internal static ObjectActivator CreateActivator(ConstructorInfo constructor)
         {
             if (constructor == null)
             {
@@ -41,7 +41,7 @@ namespace MaxMind.Db
             return (ObjectActivator)lambda.Compile();
         }
 
-        public static void CheckType(Type expected, Type from)
+        internal static void CheckType(Type expected, Type from)
         {
             if (!expected.IsAssignableFrom(@from))
             {

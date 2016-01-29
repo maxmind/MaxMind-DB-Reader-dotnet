@@ -73,7 +73,7 @@ namespace MaxMind.Db
             return Decode(typeof(T), offset, out outOffset, injectables) as T;
         }
 
-        internal object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
+        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
         {
             int size;
             var type = CtrlData(offset, out size, out offset);

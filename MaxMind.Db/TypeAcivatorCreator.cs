@@ -38,7 +38,7 @@ namespace MaxMind.Db
 
         internal object[] DefaultParameters() => (object[])_defaultParameters.Clone();
 
-        private object DefaultValue(Type type)
+        static private object DefaultValue(Type type)
         {
             if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)
             {

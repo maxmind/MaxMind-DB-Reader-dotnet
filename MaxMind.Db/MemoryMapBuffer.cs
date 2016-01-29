@@ -16,7 +16,7 @@ namespace MaxMind.Db
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;
 
-        public MemoryMapBuffer(string file) : this(file, new FileInfo(file))
+        internal MemoryMapBuffer(string file) : this(file, new FileInfo(file))
         {
         }
 

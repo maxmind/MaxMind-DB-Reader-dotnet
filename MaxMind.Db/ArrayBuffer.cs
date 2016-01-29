@@ -21,7 +21,7 @@ namespace MaxMind.Db
         {
         }
 
-        public ArrayBuffer(Stream stream) : this(BytesFromStream(stream))
+        internal ArrayBuffer(Stream stream) : this(BytesFromStream(stream))
         {
         }
 

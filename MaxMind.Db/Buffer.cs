@@ -29,7 +29,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read a big integer from the buffer.
         /// </summary>
-        public BigInteger ReadBigInteger(long offset, int size)
+        internal BigInteger ReadBigInteger(long offset, int size)
         {
             // This could be optimized if it ever matters
             var buffer = Read(offset, size);
@@ -47,7 +47,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read an integer from the buffer.
         /// </summary>
-        public int ReadInteger(int val, long offset, int size)
+        internal int ReadInteger(int val, long offset, int size)
         {
             for (var i = 0; i < size; i++)
             {
@@ -59,7 +59,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read a long from the buffer.
         /// </summary>
-        public long ReadLong(long offset, int size)
+        internal long ReadLong(long offset, int size)
         {
             long val = 0;
             for (var i = 0; i < size; i++)
@@ -72,7 +72,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read a uint64 from the buffer.
         /// </summary>
-        public ulong ReadULong(long offset, int size)
+        internal ulong ReadULong(long offset, int size)
         {
             ulong val = 0;
             for (var i = 0; i < size; i++)
