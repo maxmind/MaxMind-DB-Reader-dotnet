@@ -15,14 +15,14 @@ namespace MaxMind.Db
         /// <summary>
         ///     The name to use for the property.
         /// </summary>
-        internal string ParameterName { get; }
+        public string ParameterName { get; }
 
         /// <summary>
         ///     Whether to create the object even if the key is not present in
         ///     the database. If this is false, the default value will be used
         ///     (null for nullable types).
         /// </summary>
-        internal bool AlwaysCreate { get; }
+        public bool AlwaysCreate { get; }
 
         /// <summary>
         ///     Create a new instance of <code>ParameterAttribute</code>.
