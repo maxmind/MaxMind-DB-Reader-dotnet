@@ -7,9 +7,7 @@ format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Requirements ##
 
-This library works with .NET Framework version 4.0 and above.
-
-This library also uses [Json.NET](http://json.codeplex.com/).
+This library works with .NET Framework version 4.5 and above.
 
 ## Installation ##
 
@@ -36,9 +34,11 @@ comparable to loading the file into real memory with the `Memory`  mode while
 using significantly less memory.
 
 To look up an IP address, pass a `string` representing the IP address to the
-`Find` method on `Reader`. This method will return the result as a
-`Newtonsoft.Json.Linq.JToken`. `JToken` objects are used as they provide a
-convenient representation of multi-type data structures.
+`Find<T>` method on `Reader`. This method will return the result as type `T`.
+`T` may either be a generic collection or a class using the
+`[MaxMind.Db.Constructor]` attribute to declare which constructor to use
+during deserialization and the `[MaxMind.Db.Parameter("name")]` to map the
+database key `name` to a particular constructor parameter.
 
 We recommend reusing the `Reader` object rather than creating a new one for
 each lookup. The creation of this object is relatively expensive as it must
@@ -50,9 +50,8 @@ read in metadata for the file.
 
 using (var reader = new Reader("GeoIP2-City.mmdb"))
 {
-    var response = reader.Find("24.24.24.24");
-
-    Console.WriteLine(response.ToString());
+    var data = reader.Find<Dictionary<string, object>>("24.24.24.24");
+    ...
 }
 ```
 
@@ -89,6 +88,6 @@ The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2015 by MaxMind, Inc.
+This software is Copyright (c) 2016 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.

@@ -1,10 +1,9 @@
 ﻿#region
 
-using Newtonsoft.Json.Linq;
 using System;
-using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 
 #endregion
 
@@ -34,60 +33,54 @@ namespace MaxMind.Db
     }
 
     /// <summary>
-    ///     A data structure to store an object read from the database
-    /// </summary>
-    internal class Result
-    {
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="Result" /> class.
-        /// </summary>
-        /// <param name="node">The node.</param>
-        /// <param name="offset">The offset.</param>
-        internal Result(JToken node, int offset)
-        {
-            Node = node;
-            Offset = offset;
-        }
-
-        /// <summary>
-        ///     The object read from the database
-        /// </summary>
-        internal JToken Node { get; set; }
-
-        /// <summary>
-        ///     The offset
-        /// </summary>
-        internal int Offset { get; set; }
-    }
-
-    /// <summary>
     ///     Given a stream, this class decodes the object graph at a particular location
     /// </summary>
-    internal class Decoder
+    internal sealed class Decoder
     {
-        private readonly IByteReader _database;
-        private readonly int _pointerBase;
+        private readonly Buffer _database;
+        private readonly long _pointerBase;
+        private readonly bool _followPointers;
         private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
+
+        private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
+        private readonly ListActivatorCreator _listActivatorCreator;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.
         /// </summary>
         /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
-        internal Decoder(IByteReader database, int pointerBase)
+        /// <param name="followPointers">Whether to follow pointers. For testing.</param>
+        internal Decoder(Buffer database, long pointerBase, bool followPointers = true)
         {
             _pointerBase = pointerBase;
             _database = database;
+            _followPointers = followPointers;
+            _listActivatorCreator = new ListActivatorCreator();
+            _dictionaryActivatorCreator = new DictionaryActivatorCreator();
+            _typeAcivatorCreator = new TypeAcivatorCreator();
         }
-
-        internal bool PointerTestHack { get; set; }
 
         /// <summary>
         ///     Decodes the object at the specified offset.
         /// </summary>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset</param>
+        /// <param name="injectables"></param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal Result Decode(int offset)
+        internal T Decode<T>(long offset, out long outOffset, InjectableValues injectables = null) where T : class
+        {
+            return Decode(typeof(T), offset, out outOffset, injectables) as T;
+        }
+
+        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
+        {
+            int size;
+            var type = CtrlData(offset, out size, out offset);
+            return DecodeByType(expectedType, type, offset, size, out outOffset, injectables);
+        }
+
+        private ObjectType CtrlData(long offset, out int size, out long outOffset)
         {
             if (offset >= _database.Length)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -96,19 +89,7 @@ namespace MaxMind.Db
             var ctrlByte = _database.ReadOne(offset);
             offset++;
 
-            var type = FromControlByte(ctrlByte);
-
-            if (type == ObjectType.Pointer)
-            {
-                long pointer = DecodePointer(ctrlByte, offset, out offset);
-                if (PointerTestHack)
-                {
-                    return new Result(new JValue(pointer), offset);
-                }
-                var result = Decode(Convert.ToInt32(pointer));
-                result.Offset = offset;
-                return result;
-            }
+            var type = (ObjectType)(ctrlByte >> 5);
 
             if (type == ObjectType.Extended)
             {
@@ -123,63 +104,97 @@ namespace MaxMind.Db
                 offset++;
             }
 
-            var sizeArray = SizeFromCtrlByte(ctrlByte, offset);
-            var size = sizeArray[0];
-            offset = sizeArray[1];
+            // The size calculation is inlined as it is hot code
+            size = ctrlByte & 0x1f;
+            if (size >= 29)
+            {
+                var bytesToRead = size - 28;
+                var i = _database.ReadInteger(0, offset, bytesToRead);
+                offset = offset + bytesToRead;
+                switch (size)
+                {
+                    case 29:
+                        size = 29 + i;
+                        break;
 
-            return DecodeByType(type, offset, size);
+                    case 30:
+                        size = 285 + i;
+                        break;
+
+                    default:
+                        size = 65821 + (i & (0x0FFFFFFF >> (32 - 8 * bytesToRead)));
+                        break;
+                }
+            }
+            outOffset = offset;
+            return type;
         }
 
         /// <summary>
         ///     Decodes the type of the by.
         /// </summary>
+        /// <param name="expectedType"></param>
         /// <param name="type">The type.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="size">The size.</param>
+        /// <param name="outOffset">The out offset</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        /// <exception cref="System.Exception">Unable to handle type!</exception>
-        private Result DecodeByType(ObjectType type, int offset, int size)
+        /// <exception cref="Exception">Unable to handle type!</exception>
+        private object DecodeByType(Type expectedType, ObjectType type, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
-            var newOffset = offset + size;
-            var buffer = type == ObjectType.Boolean ? null : _database.Read(offset, size);
+            outOffset = offset + size;
 
             switch (type)
             {
+                case ObjectType.Pointer:
+                    var pointer = DecodePointer(offset, size, out offset);
+                    outOffset = offset;
+                    if (!_followPointers)
+                    {
+                        return pointer;
+                    }
+                    long ignore;
+                    var result = Decode(expectedType, Convert.ToInt32(pointer), out ignore, injectables);
+                    return result;
+
                 case ObjectType.Map:
-                    return DecodeMap(size, offset);
+                    return DecodeMap(expectedType, offset, size, out outOffset, injectables);
 
                 case ObjectType.Array:
-                    return DecodeArray(size, offset);
+                    return DecodeArray(expectedType, size, offset, out outOffset, injectables);
 
                 case ObjectType.Boolean:
-                    return new Result(DecodeBoolean(size), offset);
+                    outOffset = offset;
+                    return DecodeBoolean(expectedType, size);
 
                 case ObjectType.Utf8String:
-                    return new Result(DecodeString(buffer), newOffset);
+                    return DecodeString(expectedType, offset, size);
 
                 case ObjectType.Double:
-                    return new Result(DecodeDouble(buffer), newOffset);
+                    return DecodeDouble(expectedType, offset, size);
 
                 case ObjectType.Float:
-                    return new Result(DecodeFloat(buffer), newOffset);
+                    return DecodeFloat(expectedType, offset, size);
 
                 case ObjectType.Bytes:
-                    return new Result(new JValue(buffer), newOffset);
+                    return DecodeBytes(expectedType, offset, size);
 
                 case ObjectType.Uint16:
-                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
+                    return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint32:
-                    return new Result(DecodeLong(buffer), newOffset);
+                    return DecodeLong(expectedType, offset, size);
 
                 case ObjectType.Int32:
-                    return new Result(DecodeIntegerToJValue(buffer), newOffset);
+                    return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint64:
-                    return new Result(DecodeUInt64(buffer), newOffset);
+                    return DecodeUInt64(expectedType, offset, size);
 
                 case ObjectType.Uint128:
-                    return new Result(DecodeBigInteger(buffer), newOffset);
+                    return DecodeBigInteger(expectedType, offset, size);
 
                 default:
                     throw new InvalidDatabaseException("Unable to handle type:" + type);
@@ -187,63 +202,22 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Froms the control byte.
-        /// </summary>
-        /// <param name="b">The attribute.</param>
-        /// <returns></returns>
-        private ObjectType FromControlByte(byte b)
-        {
-            var p = b >> 5;
-            return (ObjectType)p;
-        }
-
-        /// <summary>
-        ///     Sizes from control byte.
-        /// </summary>
-        /// <param name="ctrlByte">The control byte.</param>
-        /// <param name="offset">The offset.</param>
-        /// <returns></returns>
-        private int[] SizeFromCtrlByte(byte ctrlByte, int offset)
-        {
-            var size = ctrlByte & 0x1f;
-            var bytesToRead = size < 29 ? 0 : size - 28;
-
-            if (size == 29)
-            {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer);
-                size = 29 + i;
-            }
-            else if (size == 30)
-            {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer);
-                size = 285 + i;
-            }
-            else if (size > 30)
-            {
-                var buffer = _database.Read(offset, bytesToRead);
-                var i = DecodeInteger(buffer) & (0x0FFFFFFF >> (32 - (8 * bytesToRead)));
-                size = 65821 + i;
-            }
-
-            return new[] { size, offset + bytesToRead };
-        }
-
-        /// <summary>
         ///     Decodes the boolean.
         /// </summary>
+        /// <param name="expectedType"></param>
         /// <param name="size">The size of the structure.</param>
         /// <returns></returns>
-        private JValue DecodeBoolean(int size)
+        private static bool DecodeBoolean(Type expectedType, int size)
         {
+            ReflectionUtil.CheckType(expectedType, typeof(bool));
+
             switch (size)
             {
                 case 0:
-                    return new JValue(false);
+                    return false;
 
                 case 1:
-                    return new JValue(true);
+                    return true;
 
                 default:
                     throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
@@ -254,147 +228,277 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the double.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeDouble(byte[] buffer)
+        private double DecodeDouble(Type expectedType, long offset, int size)
         {
-            if (buffer.Length != 8)
+            ReflectionUtil.CheckType(expectedType, typeof(double));
+
+            if (size != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of double.");
-
+            var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
-            return new JValue(BitConverter.ToDouble(buffer, 0));
+            return BitConverter.ToDouble(buffer, 0);
         }
 
         /// <summary>
         ///     Decodes the float.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeFloat(byte[] buffer)
+        private float DecodeFloat(Type expectedType, long offset, int size)
         {
-            if (buffer.Length != 4)
+            ReflectionUtil.CheckType(expectedType, typeof(float));
+
+            if (size != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of float.");
+            var buffer = _database.Read(offset, size);
             Array.Reverse(buffer);
-            return new JValue(BitConverter.ToSingle(buffer, 0));
+            return BitConverter.ToSingle(buffer, 0);
         }
 
         /// <summary>
         ///     Decodes the string.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeString(byte[] buffer)
+        private string DecodeString(Type expectedType, long offset, int size)
         {
-            return new JValue(Encoding.UTF8.GetString(buffer));
+            ReflectionUtil.CheckType(expectedType, typeof(string));
+
+            return _database.ReadString(offset, size);
+        }
+
+        private byte[] DecodeBytes(Type expectedType, long offset, int size)
+        {
+            ReflectionUtil.CheckType(expectedType, typeof(byte[]));
+
+            return _database.Read(offset, size);
         }
 
         /// <summary>
         ///     Decodes the map.
         /// </summary>
-        /// <param name="size">The size.</param>
+        /// <param name="expectedType"></param>
         /// <param name="offset">The offset.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="outOffset">The out offset.</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        private Result DecodeMap(int size, int offset)
+        private object DecodeMap(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
         {
-            var obj = new JObject();
+            var objDictType = typeof(Dictionary<string, object>);
+            if (!expectedType.IsGenericType && expectedType.IsAssignableFrom(objDictType))
+                expectedType = objDictType;
+
+            // Currently we don't support non-dict generic types
+            if (expectedType.IsGenericType)
+            {
+                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables);
+            }
+
+            return DecodeMapToType(expectedType, offset, size, out outOffset, injectables);
+        }
+
+        private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
+        {
+            var genericArgs = expectedType.GetGenericArguments();
+            if (genericArgs.Length != 2)
+                throw new DeserializationException(
+                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+
+            var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
 
             for (var i = 0; i < size; i++)
             {
-                var left = Decode(offset);
-                var key = left.Node;
-                offset = left.Offset;
-                var right = Decode(offset);
-                var value = right.Node;
-                offset = right.Offset;
-                obj.Add(key.Value<string>(), value);
+                var key = Decode(genericArgs[0], offset, out offset);
+                var value = Decode(genericArgs[1], offset, out offset, injectables);
+                obj.Add(key, value);
             }
 
-            return new Result(obj, offset);
+            outOffset = offset;
+
+            return obj;
+        }
+
+        private object DecodeMapToType(Type expectedType, long offset, int size, out long outOffset,
+            InjectableValues injectables)
+        {
+            var constructor = _typeAcivatorCreator.GetActivator(expectedType);
+            var parameters = constructor.DefaultParameters();
+
+            for (var i = 0; i < size; i++)
+            {
+                var key = DecodeKey(offset, out offset);
+                if (constructor.DeserializationParameters.ContainsKey(key))
+                {
+                    var param = constructor.DeserializationParameters[key];
+                    var paramType = param.ParameterType;
+                    var value = Decode(paramType, offset, out offset, injectables);
+                    parameters[param.Position] = value;
+                }
+                else
+                {
+                    offset = NextValueOffset(offset, 1);
+                }
+            }
+
+            SetInjectables(constructor, parameters, injectables);
+            SetAlwaysCreatedParams(constructor, parameters, injectables);
+
+            outOffset = offset;
+            return constructor.Activator(parameters);
+        }
+
+        private void SetAlwaysCreatedParams(TypeActivator constructor, object[] parameters, InjectableValues injectables)
+        {
+            foreach (var param in constructor.AlwaysCreatedParameters)
+            {
+                if (parameters[param.Position] == null)
+                {
+                    var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                    var cstorParams = activator.DefaultParameters();
+                    SetInjectables(activator, cstorParams, injectables);
+                    SetAlwaysCreatedParams(activator, cstorParams, injectables);
+                    parameters[param.Position] = activator.Activator(cstorParams);
+                }
+            }
+        }
+
+        private static void SetInjectables(TypeActivator constructor, object[] parameters, InjectableValues injectables)
+        {
+            foreach (var item in constructor.InjectableParameters)
+            {
+                if (injectables == null || !injectables.Values.ContainsKey(item.Key))
+                    throw new DeserializationException($"No injectable value found for {item.Key}");
+
+                parameters[item.Value.Position] = injectables.Values[item.Key];
+            }
+        }
+
+        private readonly TypeAcivatorCreator _typeAcivatorCreator;
+
+        private byte[] DecodeKey(long offset, out long outOffset)
+        {
+            int size;
+            var type = CtrlData(offset, out size, out offset);
+            switch (type)
+            {
+                case ObjectType.Pointer:
+                    offset = DecodePointer(offset, size, out outOffset);
+                    return DecodeKey(offset, out offset);
+
+                case ObjectType.Utf8String:
+                    outOffset = offset + size;
+                    return _database.Read(offset, size);
+
+                default:
+                    throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
+            }
+        }
+
+        private long NextValueOffset(long offset, int numberToSkip)
+        {
+            if (numberToSkip == 0)
+            {
+                return offset;
+            }
+            int size;
+            var type = CtrlData(offset, out size, out offset);
+            switch (type)
+            {
+                case ObjectType.Pointer:
+                    DecodePointer(offset, size, out offset);
+                    break;
+
+                case ObjectType.Map:
+                    numberToSkip += 2 * size;
+                    break;
+
+                case ObjectType.Array:
+                    numberToSkip += size;
+                    break;
+
+                case ObjectType.Boolean:
+                    break;
+
+                default:
+                    offset += size;
+                    break;
+            }
+            return NextValueOffset(offset, numberToSkip - 1);
         }
 
         /// <summary>
         ///     Decodes the long.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeLong(byte[] buffer)
+        private long DecodeLong(Type expectedType, long offset, int size)
         {
-            var integer = buffer.Aggregate<byte, long>(0, (current, t) => (current << 8) | t);
-            return new JValue(integer);
-        }
-
-        /// <summary>
-        ///     Decodes the integer.
-        /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns></returns>
-        private JValue DecodeIntegerToJValue(byte[] buffer)
-        {
-            return new JValue(DecodeInteger(buffer));
+            ReflectionUtil.CheckType(expectedType, typeof(long));
+            return _database.ReadLong(offset, size);
         }
 
         /// <summary>
         ///     Decodes the array.
         /// </summary>
+        /// <param name="expectedType"></param>
         /// <param name="size">The size.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="outOffset">The out offset.</param>
+        /// <param name="injectables"></param>
         /// <returns></returns>
-        private Result DecodeArray(int size, int offset)
+        private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
+            InjectableValues injectables)
         {
-            var array = new JArray();
+            var genericArgs = expectedType.GetGenericArguments();
+            var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
+            var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
 
+            var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
-                var r = Decode(offset);
-                offset = r.Offset;
-                array.Add(r.Node);
+                var r = Decode(argType, offset, out offset, injectables);
+                interfaceType.GetMethod("Add").Invoke(array, new[] { r });
             }
 
-            return new Result(array, offset);
+            outOffset = offset;
+            return array;
         }
 
         /// <summary>
         ///     Decodes the uint64.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JValue DecodeUInt64(byte[] buffer)
+        private ulong DecodeUInt64(Type expectedType, long offset, int size)
         {
-            var integer = buffer.Aggregate<byte, ulong>(0, (current, t) => (current << 8) | t);
-            return new JValue(integer);
+            ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            return _database.ReadULong(offset, size);
         }
 
         /// <summary>
         ///     Decodes the big integer.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        private JToken DecodeBigInteger(byte[] buffer)
+        private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
         {
-            Array.Reverse(buffer);
-
-            //Pad with a 0 in case we're on a byte boundary
-            Array.Resize(ref buffer, buffer.Length + 1);
-            buffer[buffer.Length - 1] = 0x0;
-
-            return new JValue(new BigInteger(buffer));
+            ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
+            return _database.ReadBigInteger(offset, size);
         }
 
         /// <summary>
         ///     Decodes the pointer.
         /// </summary>
-        /// <param name="ctrlByte">The control byte.</param>
         /// <param name="offset">The offset.</param>
+        /// <param name="size"></param>
         /// <param name="outOffset">The resulting offset</param>
         /// <returns></returns>
-        private int DecodePointer(int ctrlByte, int offset, out int outOffset)
+        private long DecodePointer(long offset, int size, out long outOffset)
         {
-            var pointerSize = ((ctrlByte >> 3) & 0x3) + 1;
-            var b = pointerSize == 4 ? 0 : ctrlByte & 0x7;
-            var buffer = _database.Read(offset, pointerSize);
-            var packed = DecodeInteger(b, buffer);
+            var pointerSize = ((size >> 3) & 0x3) + 1;
+            var b = pointerSize == 4 ? 0 : size & 0x7;
+            var packed = _database.ReadInteger(b, offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }
@@ -402,22 +506,12 @@ namespace MaxMind.Db
         /// <summary>
         ///     Decodes the integer.
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
         /// <returns></returns>
-        internal static int DecodeInteger(byte[] buffer)
+        private int DecodeInteger(Type expectedType, long offset, int size)
         {
-            return DecodeInteger(0, buffer);
-        }
+            ReflectionUtil.CheckType(expectedType, typeof(int));
 
-        /// <summary>
-        ///     Decodes the integer.
-        /// </summary>
-        /// <param name="baseValue">The base value.</param>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns></returns>
-        internal static int DecodeInteger(int baseValue, byte[] buffer)
-        {
-            return buffer.Aggregate(baseValue, (current, t) => (current << 8) | t);
+            return _database.ReadInteger(0, offset, size);
         }
     }
 }

@@ -1,7 +1,5 @@
 ﻿#region
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
@@ -30,11 +28,13 @@ namespace MaxMind.Db
     /// <summary>
     ///     Given a MaxMind DB file, this class will retrieve information about an IP address
     /// </summary>
-    public class Reader : IDisposable
+    public sealed class Reader : IDisposable
     {
         private const int DataSectionSeparatorSize = 16;
-        private readonly IByteReader _database;
+        private readonly Buffer _database;
         private readonly string _fileName;
+
+        // The property getter was a hotspot during profiling.
 
         private readonly byte[] _metadataStartMarker =
         {
@@ -58,25 +58,24 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="file">The MaxMind DB file.</param>
         /// <param name="mode">The mode by which to access the DB file.</param>
-        public Reader(string file, FileAccessMode mode)
+        public Reader(string file, FileAccessMode mode) : this(BufferForMode(file, mode))
         {
             _fileName = file;
+        }
 
+        private static Buffer BufferForMode(string file, FileAccessMode mode)
+        {
             switch (mode)
             {
                 case FileAccessMode.MemoryMapped:
-                    _database = new MemoryMapReader(file);
-                    break;
+                    return new MemoryMapBuffer(file);
 
                 case FileAccessMode.Memory:
-                    _database = new ArrayReader(file);
-                    break;
+                    return new ArrayBuffer(file);
 
                 default:
                     throw new ArgumentException("Unknown file access mode");
             }
-
-            InitMetaData();
         }
 
         /// <summary>
@@ -84,28 +83,18 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
         /// <exception cref="ArgumentNullException"></exception>
-        public Reader(Stream stream)
+        public Reader(Stream stream) : this(new ArrayBuffer(stream))
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
-            }
-            byte[] fileBytes;
+        }
 
-            using (var memoryStream = new MemoryStream())
-            {
-                stream.CopyTo(memoryStream);
-                fileBytes = memoryStream.ToArray();
-            }
-
-            if (fileBytes.Length == 0)
-            {
-                throw new InvalidDatabaseException(
-                    "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
-            }
-
-            _database = new ArrayReader(fileBytes);
-            InitMetaData();
+        private Reader(Buffer buffer)
+        {
+            _database = buffer;
+            var start = FindMetadataStart();
+            var metaDecode = new Decoder(_database, start);
+            long ignore;
+            Metadata = metaDecode.Decode<Metadata>(start, out ignore);
+            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
         /// <summary>
@@ -114,7 +103,7 @@ namespace MaxMind.Db
         /// <value>
         ///     The metadata.
         /// </value>
-        public Metadata Metadata { get; private set; }
+        public Metadata Metadata { get; }
 
         private int IPv4Start
         {
@@ -134,7 +123,7 @@ namespace MaxMind.Db
             }
         }
 
-        private Decoder Decoder { get; set; }
+        private Decoder Decoder { get; }
 
         /// <summary>
         ///     Release resources back to the system.
@@ -149,7 +138,7 @@ namespace MaxMind.Db
         ///     Release resources back to the system.
         /// </summary>
         /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
@@ -162,37 +151,19 @@ namespace MaxMind.Db
             _disposed = true;
         }
 
-        private void InitMetaData()
-        {
-            var start = FindMetadataStart();
-            var metaDecode = new Decoder(_database, start);
-            var result = metaDecode.Decode(start);
-            Metadata = Deserialize<Metadata>(result.Node);
-            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
-        }
-
         /// <summary>
         ///     Finds the data related to the specified address.
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
+        /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
-        public JToken Find(string ipAddress)
-        {
-            return Find(IPAddress.Parse(ipAddress));
-        }
-
-        /// <summary>
-        ///     Finds the data related to the specified address.
-        /// </summary>
-        /// <param name="ipAddress">The IP address.</param>
-        /// <returns>An object containing the IP related data</returns>
-        public JToken Find(IPAddress ipAddress)
+        public T Find<T>(IPAddress ipAddress, InjectableValues injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress);
-            return pointer == 0 ? null : ResolveDataPointer(pointer);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
         }
 
-        private JToken ResolveDataPointer(int pointer)
+        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables) where T : class
         {
             var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
 
@@ -203,7 +174,8 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            return Decoder.Decode(resolved).Node;
+            long ignore;
+            return Decoder.Decode<T>(resolved, out ignore, injectables);
         }
 
         private int FindAddressInTree(IPAddress address)
@@ -249,15 +221,6 @@ namespace MaxMind.Db
             return 0;
         }
 
-        private T Deserialize<T>(JToken value)
-        {
-            var serializer = new JsonSerializer();
-            using (var reader = new JTokenReader(value))
-            {
-                return serializer.Deserialize<T>(reader);
-            }
-        }
-
         private int FindMetadataStart()
         {
             var buffer = new byte[_metadataStartMarker.Length];
@@ -287,26 +250,22 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        var buffer = _database.Read(baseOffset + index * 3, 3);
-                        return Decoder.DecodeInteger(buffer);
+                        return _database.ReadInteger(0, baseOffset + index * 3, 3);
                     }
                 case 28:
                     {
                         var middle = _database.ReadOne(baseOffset + 3);
                         middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
 
-                        var buffer = _database.Read(baseOffset + index * 4, 3);
-                        return Decoder.DecodeInteger(middle, buffer);
+                        return _database.ReadInteger(middle, baseOffset + index * 4, 3);
                     }
                 case 32:
                     {
-                        var buffer = _database.Read(baseOffset + index * 4, 4);
-                        return Decoder.DecodeInteger(buffer);
+                        return _database.ReadInteger(0, baseOffset + index * 4, 4);
                     }
             }
 
-            throw new InvalidDatabaseException("Unknown record size: "
-                                               + size);
+            throw new InvalidDatabaseException($"Unknown record size: {size}");
         }
     }
 }
