@@ -236,9 +236,7 @@ namespace MaxMind.Db
             if (size != 8)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of double.");
-            var buffer = _database.Read(offset, size);
-            Array.Reverse(buffer);
-            return BitConverter.ToDouble(buffer, 0);
+            return _database.ReadDouble(offset);
         }
 
         /// <summary>
@@ -252,9 +250,7 @@ namespace MaxMind.Db
             if (size != 4)
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of float.");
-            var buffer = _database.Read(offset, size);
-            Array.Reverse(buffer);
-            return BitConverter.ToSingle(buffer, 0);
+            return _database.ReadFloat(offset);
         }
 
         /// <summary>

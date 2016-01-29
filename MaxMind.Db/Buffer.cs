@@ -45,6 +45,26 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        ///     Read a double from the buffer.
+        /// </summary>
+        internal double ReadDouble(long offset)
+        {
+            var buffer = Read(offset, 8);
+            Array.Reverse(buffer);
+            return BitConverter.ToDouble(buffer, 0);
+        }
+
+        /// <summary>
+        ///     Read a float from the buffer.
+        /// </summary>
+        internal float ReadFloat(long offset)
+        {
+            var buffer = Read(offset, 4);
+            Array.Reverse(buffer);
+            return BitConverter.ToSingle(buffer, 0);
+        }
+
+        /// <summary>
         ///     Read an integer from the buffer.
         /// </summary>
         internal int ReadInteger(int val, long offset, int size)

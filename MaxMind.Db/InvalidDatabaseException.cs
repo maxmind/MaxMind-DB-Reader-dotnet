@@ -17,7 +17,7 @@ namespace MaxMind.Db
         ///     Initializes a new instance of the <see cref="InvalidDatabaseException" /> class.
         /// </summary>
         /// <param name="message">A message that describes the error.</param>
-        internal InvalidDatabaseException(string message)
+        public InvalidDatabaseException(string message)
             : base(message)
         {
         }
@@ -31,7 +31,7 @@ namespace MaxMind.Db
         ///     <paramref name="innerException" /> parameter is not a null reference, the current exception is raised in a catch
         ///     block that handles the inner exception.
         /// </param>
-        private InvalidDatabaseException(string message, Exception innerException)
+        public InvalidDatabaseException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
