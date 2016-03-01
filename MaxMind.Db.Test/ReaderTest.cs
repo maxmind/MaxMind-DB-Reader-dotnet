@@ -283,8 +283,11 @@ namespace MaxMind.Db.Test
                     {"::2:0:57", "::2:0:50"},
                     {"::2:0:59", "::2:0:58"}
                 },
-                new[] { "1.1.1.33", "255.254.253.123", "89fa::" }
-                );
+                new[] { "1.1.1.33", "255.254.253.123", "89fa::" },
+                new Dictionary<string, int>
+                {
+                    {"::2:0:1", 122}
+                });
         }
 
         private void TestIPV4(Reader reader, string file)
@@ -302,11 +305,16 @@ namespace MaxMind.Db.Test
                     {"1.1.1.17", "1.1.1.16"},
                     {"1.1.1.31", "1.1.1.16"}
                 },
-                new[] { "1.1.1.33", "255.254.253.123" });
+                new[] { "1.1.1.33", "255.254.253.123" },
+                new Dictionary<string, int>
+                {
+                    {"1.1.1.3", 31},
+                    {"4.0.0.1", 6}                    
+                });
         }
 
         private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,
-            Dictionary<string, string> pairs, IEnumerable<string> nullAddresses)
+            Dictionary<string, string> pairs, IEnumerable<string> nullAddresses, Dictionary<string, int> prefixes)
         {
             foreach (var address in singleAddresses)
             {
@@ -326,6 +334,14 @@ namespace MaxMind.Db.Test
             {
                 Assert.That(reader.Find<object>(IPAddress.Parse(address)), Is.Null,
                     $"Did not find expected data record for {address} in {file}");
+            }
+
+            foreach (var address in prefixes.Keys)
+            {
+                int routingPrefix = -1;
+                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
+                Assert.That(routingPrefix, Is.EqualTo(prefixes[address]),
+                $"Invalid prefix for {address} in {file}");
             }
         }
 

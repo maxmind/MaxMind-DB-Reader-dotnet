@@ -26,3 +26,8 @@ using System.Diagnostics.CodeAnalysis;
     SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member",
         Target = "MaxMind.Db.ParameterAttribute.#.ctor(System.String,System.Boolean)")]
 [assembly: SuppressMessage("Microsoft.Usage", "CA2243:AttributeStringLiteralsShouldParseCorrectly")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "1#", Scope = "member", 
+    Target = "MaxMind.Db.Reader.#Find`1(System.Net.IPAddress,System.Int32&,MaxMind.Db.InjectableValues)")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member", 
+    Target = "MaxMind.Db.Reader.#Find`1(System.Net.IPAddress,System.Int32&,MaxMind.Db.InjectableValues)")]
+
