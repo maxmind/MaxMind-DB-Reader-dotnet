@@ -159,7 +159,15 @@ namespace MaxMind.Db
         /// <returns>An object containing the IP related data</returns>
         public T Find<T>(IPAddress ipAddress, InjectableValues injectables = null) where T : class
         {
-            var pointer = FindAddressInTree(ipAddress);
+            int routingPrefix = 0;
+            var pointer = FindAddressInTree(ipAddress, out routingPrefix);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
+        }
+
+        public T Find<T>(IPAddress ipAddress, out int routingPrefix, InjectableValues injectables = null) where T : class
+        {
+            routingPrefix = 0;
+            var pointer = FindAddressInTree(ipAddress, out routingPrefix);
             return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
         }
 
@@ -178,8 +186,9 @@ namespace MaxMind.Db
             return Decoder.Decode<T>(resolved, out ignore, injectables);
         }
 
-        private int FindAddressInTree(IPAddress address)
+        private int FindAddressInTree(IPAddress address, out int routingPrefix)
         {
+            routingPrefix = 0;
             var rawAddress = address.GetAddressBytes();
 
             var bitLength = rawAddress.Length * 8;
@@ -194,6 +203,7 @@ namespace MaxMind.Db
                 var b = rawAddress[i / 8];
                 var bit = 1 & (b >> 7 - (i % 8));
                 record = ReadNode(record, bit);
+                ++routingPrefix;
             }
             if (record == Metadata.NodeCount)
             {
