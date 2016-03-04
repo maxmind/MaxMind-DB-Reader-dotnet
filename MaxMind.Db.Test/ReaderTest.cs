@@ -309,7 +309,7 @@ namespace MaxMind.Db.Test
                 new Dictionary<string, int>
                 {
                     {"1.1.1.3", 31},
-                    {"4.0.0.1", 6}                    
+                    {"4.0.0.1", 6}
                 });
         }
 
@@ -338,7 +338,7 @@ namespace MaxMind.Db.Test
 
             foreach (var address in prefixes.Keys)
             {
-                int routingPrefix = -1;
+                int routingPrefix;
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
                 Assert.That(routingPrefix, Is.EqualTo(prefixes[address]),
                 $"Invalid prefix for {address} in {file}");
