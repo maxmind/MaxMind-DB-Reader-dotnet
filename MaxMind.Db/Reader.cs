@@ -159,15 +159,20 @@ namespace MaxMind.Db
         /// <returns>An object containing the IP related data</returns>
         public T Find<T>(IPAddress ipAddress, InjectableValues injectables = null) where T : class
         {
-            int routingPrefix = 0;
-            var pointer = FindAddressInTree(ipAddress, out routingPrefix);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
+            int prefixLength;
+            return Find<T>(ipAddress, out prefixLength, injectables);
         }
 
-        public T Find<T>(IPAddress ipAddress, out int routingPrefix, InjectableValues injectables = null) where T : class
+        /// <summary>
+        ///     Finds the data related to the specified address.
+        /// </summary>
+        /// <param name="ipAddress">The IP address.</param>
+        /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
+        /// <param name="injectables">Value to inject during deserialization</param>
+        /// <returns>An object containing the IP related data</returns>
+        public T Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues injectables = null) where T : class
         {
-            routingPrefix = 0;
-            var pointer = FindAddressInTree(ipAddress, out routingPrefix);
+            var pointer = FindAddressInTree(ipAddress, out prefixLength);
             return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
         }
 
@@ -186,24 +191,22 @@ namespace MaxMind.Db
             return Decoder.Decode<T>(resolved, out ignore, injectables);
         }
 
-        private int FindAddressInTree(IPAddress address, out int routingPrefix)
+        private int FindAddressInTree(IPAddress address, out int prefixLength)
         {
-            routingPrefix = 0;
             var rawAddress = address.GetAddressBytes();
 
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
 
-            for (var i = 0; i < bitLength; i++)
+            for (prefixLength = 0; prefixLength < bitLength; prefixLength++)
             {
                 if (record >= Metadata.NodeCount)
                 {
                     break;
                 }
-                var b = rawAddress[i / 8];
-                var bit = 1 & (b >> 7 - (i % 8));
+                var b = rawAddress[prefixLength / 8];
+                var bit = 1 & (b >> 7 - (prefixLength % 8));
                 record = ReadNode(record, bit);
-                ++routingPrefix;
             }
             if (record == Metadata.NodeCount)
             {

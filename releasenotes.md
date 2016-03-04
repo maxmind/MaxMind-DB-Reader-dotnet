@@ -1,5 +1,12 @@
 # Release Nodes #
 
+## 2.0.0 (2016-XX-XX)
+
+* The Reader class now has an overloaded method that takes an integer out
+  parameter. This parameter is set the the network prefix length for the
+  record containing the IP address in the database. Pull request by Ed Dorsey.
+  GitHub #22 & #23.
+
 ## 2.0.0-beta2 (2016-01-29) ##
 
 * Minor refactoring. No substantial changes since beta1.
