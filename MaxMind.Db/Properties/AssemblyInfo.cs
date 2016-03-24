@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MaxMind, Inc.")]
 [assembly: AssemblyProduct("MaxMind.Db")]
-[assembly: AssemblyCopyright("Copyright © 2015 MaxMind, Inc.")]
+[assembly: AssemblyCopyright("Copyright © 2013-2016 MaxMind, Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -44,7 +44,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("2.0.0")]
 [assembly: AssemblyFileVersion("2.0.0")]
-[assembly: AssemblyInformationalVersion("2.0.0-beta2")]
+[assembly: AssemblyInformationalVersion("2.0.0-beta3")]
 [assembly: InternalsVisibleTo("MaxMind.Db.Test,PublicKey=" +
                               "0024000004800000940000000602000000240000525341310004000001000100e30b6e4a9425b1" +
                               "617ffc8bdf79801e67a371f9f650db860dc0dfff92cb63258765a0955c6fcde1da78dbaf5bf84d" +

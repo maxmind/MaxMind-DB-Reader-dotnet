@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 2.0.0 (2016-XX-XX)
+## 2.0.0-beta3 (2016-03-24)
 
 * The Reader class now has an overloaded method that takes an integer out
   parameter. This parameter is set the the network prefix length for the
