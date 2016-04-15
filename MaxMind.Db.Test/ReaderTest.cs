@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Numerics;
+using System.Reflection;
 
 #endregion
 
@@ -17,7 +18,9 @@ namespace MaxMind.Db.Test
     [TestFixture]
     public class ReaderTest
     {
-        private readonly string _testDataRoot = Path.Combine("..", "..", "TestData", "MaxMind-DB", "test-data");
+        private readonly string _testDataRoot =
+            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "TestData",
+                "MaxMind-DB", "test-data");
 
         [Test]
         public void Test()
@@ -76,21 +79,21 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof(ArgumentNullException), ExpectedMessage = "The database stream must not be null.",
-            MatchType = MessageMatch.Contains)]
         public void NullStreamThrowsArgumentNullException()
         {
-            new Reader((Stream)null);
+            Assert.Throws(Is.TypeOf<ArgumentNullException>()
+                .And.Message.Contains("The database stream must not be null."),
+                () => new Reader((Stream)null));
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "zero bytes left in the stream",
-            MatchType = MessageMatch.Contains)]
         public void TestEmptyStream()
         {
             using (var stream = new MemoryStream())
             {
-                new Reader(stream);
+                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
+                    .And.Message.Contains("zero bytes left in the stream"),
+                    () => new Reader(stream));
             }
         }
 
@@ -235,35 +238,35 @@ namespace MaxMind.Db.Test
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "contains bad data",
-            MatchType = MessageMatch.Contains)]
         public void TestBrokenDatabase()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
-                reader.Find<object>(IPAddress.Parse("2001:220::"));
+                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
+                    .And.Message.Contains("contains bad data"),
+                    () => reader.Find<object>(IPAddress.Parse("2001:220::")));
             }
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "search tree is corrupt",
-            MatchType = MessageMatch.Contains)]
         public void TestBrokenSearchTreePointer()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                reader.Find<object>(IPAddress.Parse("1.1.1.32"));
+                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
+                    .And.Message.Contains("search tree is corrupt"),
+                    () => reader.Find<object>(IPAddress.Parse("1.1.1.32")));
             }
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidDatabaseException), ExpectedMessage = "data section contains bad data",
-            MatchType = MessageMatch.Contains)]
         public void TestBrokenDataPointer()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                reader.Find<object>(IPAddress.Parse("1.1.1.16"));
+                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
+                    .And.Message.Contains("data section contains bad data"),
+                    () => reader.Find<object>(IPAddress.Parse("1.1.1.16")));
             }
         }
 
@@ -341,7 +344,7 @@ namespace MaxMind.Db.Test
                 int routingPrefix;
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
                 Assert.That(routingPrefix, Is.EqualTo(prefixes[address]),
-                $"Invalid prefix for {address} in {file}");
+                    $"Invalid prefix for {address} in {file}");
             }
         }
 
