@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
 
 #endregion
@@ -15,6 +16,10 @@ namespace MaxMind.Db.Test
     [TestFixture]
     public class ThreadingTest
     {
+        private readonly string _testDatabase =
+            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..",
+                "TestData", "GeoLite2-City.mmdb");
+
         [Test]
         [TestCase(FileAccessMode.MemoryMapped)]
         [TestCase(FileAccessMode.Memory)]
@@ -23,7 +28,7 @@ namespace MaxMind.Db.Test
             var count = 0;
             var ipsAndResults = new Dictionary<IPAddress, string>();
             var rand = new Random();
-            using (var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode))
+            using (var reader = new Reader(_testDatabase, mode))
             {
                 while (count < 10000)
                 {
@@ -57,7 +62,7 @@ namespace MaxMind.Db.Test
         {
             Parallel.For(0, 50, i =>
             {
-                using (var reader = new Reader(Path.Combine("..", "..", "TestData", "GeoLite2-City.mmdb"), mode))
+                using (var reader = new Reader(_testDatabase, mode))
                 {
                     reader.Find<object>(IPAddress.Parse("1.1.1.1"));
                 }
