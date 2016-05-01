@@ -25,7 +25,7 @@ namespace MaxMind.Db
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
             ConstructorInfo constructor;
-            if (expectedType.IsInterface)
+            if (expectedType.GetTypeInfo().IsInterface)
             {
                 var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
                 ReflectionUtil.CheckType(expectedType, dictType);

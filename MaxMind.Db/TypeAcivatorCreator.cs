@@ -40,7 +40,7 @@ namespace MaxMind.Db
 
         static private object DefaultValue(Type type)
         {
-            if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)
+            if (type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(type) == null)
             {
                 return System.Activator.CreateInstance(type);
             }

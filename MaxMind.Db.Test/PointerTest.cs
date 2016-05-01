@@ -1,9 +1,9 @@
 ﻿#region
 
-using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using NUnit.Framework;
 
 #endregion
 
@@ -15,8 +15,8 @@ namespace MaxMind.Db.Test
         [Test]
         public void TestWithPointers()
         {
-            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                "..", "..", "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
+            var path = Path.Combine(Program.CurrentDirectory, "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
+
             using (var database = new ArrayBuffer(path))
             {
                 var decoder = new Decoder(database, 0);
