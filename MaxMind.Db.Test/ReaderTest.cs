@@ -1,7 +1,5 @@
 ﻿#region
 
-using MaxMind.Db.Test.Helper;
-using NUnit.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,6 +8,8 @@ using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Reflection;
+using MaxMind.Db.Test.Helper;
+using NUnit.Framework;
 
 #endregion
 
@@ -19,8 +19,7 @@ namespace MaxMind.Db.Test
     public class ReaderTest
     {
         private readonly string _testDataRoot =
-            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "TestData",
-                "MaxMind-DB", "test-data");
+            Path.Combine(Program.CurrentDirectory, "TestData", "MaxMind-DB", "test-data");
 
         [Test]
         public void Test()
@@ -58,7 +57,7 @@ namespace MaxMind.Db.Test
                 {
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    using (var streamReader = new StreamReader(file))
+                    using (var streamReader = File.OpenText(file))
                     {
                         using (var reader = new Reader(streamReader.BaseStream))
                         {

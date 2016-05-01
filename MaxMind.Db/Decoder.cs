@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Reflection;
 
 #endregion
 
@@ -284,11 +285,11 @@ namespace MaxMind.Db
             InjectableValues injectables)
         {
             var objDictType = typeof(Dictionary<string, object>);
-            if (!expectedType.IsGenericType && expectedType.IsAssignableFrom(objDictType))
+            if (!expectedType.GetTypeInfo().IsGenericType && expectedType.IsAssignableFrom(objDictType))
                 expectedType = objDictType;
 
             // Currently we don't support non-dict generic types
-            if (expectedType.IsGenericType)
+            if (expectedType.GetTypeInfo().IsGenericType)
             {
                 return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables);
             }

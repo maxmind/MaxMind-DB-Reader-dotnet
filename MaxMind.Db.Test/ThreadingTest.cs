@@ -1,6 +1,5 @@
 ﻿#region
 
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 #endregion
 
@@ -17,8 +17,7 @@ namespace MaxMind.Db.Test
     public class ThreadingTest
     {
         private readonly string _testDatabase =
-            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..",
-                "TestData", "GeoLite2-City.mmdb");
+            Path.Combine(Program.CurrentDirectory, "TestData", "GeoLite2-City.mmdb");
 
         [Test]
         [TestCase(FileAccessMode.MemoryMapped)]

@@ -31,15 +31,31 @@ namespace MaxMind.Db
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
+#if !NETSTANDARD1_4
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
+#else           // Note that PNSE is only required by .NetStandard1.0, see the subsequent comment for more context
+                catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
+#endif
                 {
-                    using (
-                        var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
-                            FileShare.Delete | FileShare.Read))
-                    {
-                        _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
+                    var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
+                                                FileShare.Delete | FileShare.Read);
+#if !NETSTANDARD1_4
+                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
                             MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
-                    }
+#else
+
+                    // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
+                    // When executed on unsupported platform, we get the PNSE. In which case, we consruct the memory map by
+                    // setting mapName to null.
+                    if (ex is PlatformNotSupportedException)
+                        mapName = null;
+
+                    // In NetStandard1.0 (docs: http://bit.ly/1TOKXEw) and since .Net46 (https://msdn.microsoft.com/en-us/library/dn804422.aspx)
+                    // CreateFromFile has a new overload with six arguments (modulo MemoryMappedFileSecurity). While the one with seven arguments
+                    // is still available in .Net46, that has been removed from netstandard1.0.
+                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
+                             MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+#endif
                 }
             }
 
@@ -55,7 +71,11 @@ namespace MaxMind.Db
 
         public override byte ReadOne(long offset) => _view.ReadByte(offset);
 
-        public override string ReadString(long offset, int count) => Encoding.UTF8.GetString(Read(offset, count));
+        public override string ReadString(long offset, int count)
+        {
+            var buffer = Read(offset, count);
+            return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+        }
 
         public override void Copy(long offset, byte[] bytes)
         {
@@ -63,7 +83,14 @@ namespace MaxMind.Db
             // reviewing the source code, these operations appear to
             // be thread safe as long as only read operations are
             // being done.
+#if !NETSTANDARD1_4
             _view.ReadArray(offset, bytes, 0, bytes.Length);
+#else       // FIXME: to be removed if/when this issue is resolved: https://github.com/dotnet/coreclr/issues/4799.
+            for (long j = 0, i = offset; j < bytes.Length; i++, ++j)
+            {
+                bytes[j] = _view.ReadByte(i);
+            }
+#endif
         }
 
         /// <summary>

@@ -1,0 +1,3 @@
+{
+  "projects": [ "MaxMind.Db", "MaxMind.Db.Benchmark", "MaxMind.Db.Test" ]
+}
