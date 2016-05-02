@@ -2,6 +2,10 @@
 [Bb]in/
 [Oo]bj/
 
+# dotnet CLI stuff
+.dotnetcli/
+scripts/
+
 # mstest test results
 TestResults
 
