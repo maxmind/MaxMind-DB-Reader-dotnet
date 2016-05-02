@@ -1,13 +1,71 @@
 ---
 version: '1.0.{build}'
-os: Visual Studio 2015 RC
-before_build:
-  - nuget restore -verbosity detailed
-  - git submodule update --init --recursive
+
+os: Visual Studio 2015
+
+environment:
+  matrix:
+    - CLI_VERSION: Latest
+      Configuration: Debug
+      Framework: net45
+    - CLI_VERSION: Latest
+      Configuration: Release
+      Framework: net45
+    - CLI_VERSION: Latest
+      Configuration: Debug
+      Framework: netcoreapp1.0
+    - CLI_VERSION: Latest
+      Configuration: Release
+      Framework: netcoreapp1.0
+
 install:
-  - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
-build:
-  verbosity: minimal
+  # Download install script to install .NET cli in .dotnet dir
+  - ps: |
+      mkdir -f scripts/ > $null
+
+      # Download install script from CLI repo
+      wget https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/install.ps1 -OutFile .\scripts\install.ps1
+
+      $DOTNET_INSTALL_DIR = "$pwd\.dotnetcli"
+
+      .\scripts\install.ps1 -Channel preview -version $env:CLI_VERSION -InstallDir "$DOTNET_INSTALL_DIR" -NoPath
+
+      # add dotnet to PATH
+      $env:Path = "$DOTNET_INSTALL_DIR;$env:Path"
+
+build_script:
+  - git submodule update --init --recursive
+  - ps: |
+      if (gcm dotnet -errorAction SilentlyContinue) {
+        echo "Using dotnet '$((gcm dotnet).Path)'"
+        dotnet --info
+      }
+      else {
+        echo "dotnet.exe not found"
+        exit 1
+      }
+
+      # dotnet restore
+      dotnet restore
+
+      if($env:Framework -eq "net45") {
+        $FrameworkLibsMoniker = "net45"
+      } else {
+        $FrameworkLibsMoniker = "netstandard1.4"
+      }
+
+      # Build projects 
+      dotnet build -c $env:Configuration -f $FrameworkLibsMoniker .\MaxMind.Db
+      dotnet build -c $env:Configuration -f $env:Framework .\MaxMind.Db.Benchmark
+      dotnet build -c $env:Configuration -f $env:Framework .\MaxMind.Db.Test
+
+test_script:
+  - ps: |
+      # Run tests
+      cd .\MaxMind.Db.Test
+
+      dotnet run -f $env:Framework
+
 notifications:
   - auth_token:
       secure: X+ymndzchVeC2LYsehzOt/GEMFfZJeTENeAU9lwNwTuCxBXFJNkuwZLd9joAtHgykHQoYqmEv/nH64+MA6nTlw==
