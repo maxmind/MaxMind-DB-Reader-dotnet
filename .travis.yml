@@ -1,13 +1,74 @@
 ---
 sudo: false
-language: csharp
-solution: MaxMind.Db.sln
+language: c++
+# dotnet cli require Ubuntu 14.04
+sudo: required
+dist: trusty
+
+# dotnet cli require OSX 10.10
+osx_image: xcode7.1
+
+addons:
+  apt:
+    packages:
+    - gettext
+    - libcurl4-openssl-dev
+    - libicu-dev
+    - libssl-dev
+    - libunwind8
+    - zlib1g
+
+os:
+  - osx
+  - linux
+
+env:
+  matrix:
+    - CLI_VERSION: Latest
+      Configuration: Debug
+      Framework: netcoreapp1.0
+    - CLI_VERSION: Latest
+      Configuration: Release
+      Framework: netcoreapp1.0
+
 before_install:
+  # Download script to install dotnet cli
+  - curl -L --create-dirs https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/install.sh -o ./scripts/install.sh
+
+  - export DOTNET_INSTALL_DIR="$PWD/.dotnetcli"
+
+  # Install the latest versio of dotnet CLI
+  - bash ./scripts/install.sh --channel "preview" --version "$CLI_VERSION" --install-dir "$DOTNET_INSTALL_DIR" --no-path
+
+  # Add dotnet to PATH
+  - export PATH="$DOTNET_INSTALL_DIR:$PATH"
+
+install:
   - git submodule update --init --recursive
-  - nuget install NUnit.Runners -Version 2.6.3 -o packages
+  - which dotnet;
+    if [ $? -eq 0 ]; then
+      echo "Using dotnet:";
+      dotnet --info;
+    else
+      echo "dotnet.exe not found"
+      exit 1;
+    fi
+
+  # Restore dependencies
+  - dotnet restore
+
+  - FrameworkLibsMoniker="netstandard1.4"
+
+  # Build projects 
+  - dotnet build -c $Configuration -f $FrameworkLibsMoniker ./MaxMind.Db
+  - dotnet build -c $Configuration -f $Framework ./MaxMind.Db.Benchmark
+  - dotnet build -c $Configuration -f $Framework ./MaxMind.Db.Test
+
 script:
-  - xbuild MaxMind.Db.sln
-  - mono --runtime=v4.0 packages/NUnit.Runners.2.6.3/tools/nunit-console.exe -exclude=BreaksMono ./MaxMind.Db.Test/bin/Debug/MaxMind.Db.Test.dll
+  # Run tests
+  - cd ./MaxMind.Db.Test
+  - dotnet run -f $Framework
+
 notifications:
   email:
     on_failure: always
