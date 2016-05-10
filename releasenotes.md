@@ -1,5 +1,10 @@
 # Release Nodes #
 
+## 2.1.0-beta1 (2016-05-10) ##
+
+* .NET Core support. Switched to `dotnet/cli` for building. Pull request by
+  Adeel Mujahid. GitHub #26 & #27.
+
 ## 2.0.0 (2016-04-15) ##
 
 * No changes since 2.0.0-beta3.
