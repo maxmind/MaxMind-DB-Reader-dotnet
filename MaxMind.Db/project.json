@@ -8,10 +8,6 @@
     "licenseUrl": "https://github.com/maxmind/MaxMind-DB-Reader-dotnet/blob/v2.0.0/LICENSE",
     "copyright": "Copyright © 2013-2016"
   },
-
-  "dependencies": {
-    "Newtonsoft.Json": "8.0.3"
-  },
   "frameworks": {
     "net45": {
       "frameworkAssemblies": {
