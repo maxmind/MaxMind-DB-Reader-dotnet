@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.1.0-beta2 (2016-05-10) ##
+
+* Remove unnecessary Newtonsoft.Json dependency.
+
 ## 2.1.0-beta1 (2016-05-10) ##
 
 * .NET Core support. Switched to `dotnet/cli` for building. Pull request by
