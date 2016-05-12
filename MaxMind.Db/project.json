@@ -2,11 +2,14 @@
   "version": "2.1.0-*",
   "description": ".NET reader for the MaxMind DB file format",
   "packOptions": {
-    "authors": [ "MaxMind, Inc." ],
-    "tags": [ "" ],
+    "authors": ["MaxMind, Inc."],
+    "tags": [""],
     "projectUrl": "https://github.com/maxmind/MaxMind-DB-Reader-dotnet",
     "licenseUrl": "https://github.com/maxmind/MaxMind-DB-Reader-dotnet/blob/v2.0.0/LICENSE",
     "copyright": "Copyright © 2013-2016"
+  },
+  "buildOptions": {
+    "keyFile": "../MaxMind.snk",
   },
   "frameworks": {
     "net45": {

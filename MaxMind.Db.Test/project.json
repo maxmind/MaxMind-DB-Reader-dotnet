@@ -13,7 +13,8 @@
     "test": "MaxMind.Db.Test"
   },
   "buildOptions": {
-    "emitEntryPoint": true
+    "emitEntryPoint": true,
+    "keyFile": "../MaxMind.snk"
   },
   "dependencies": {
     "MaxMind.Db": "2.1.0-*",

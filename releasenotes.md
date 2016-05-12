@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.1.0-beta3 (2016-05-12) ##
+
+* The assemblies are now signed again.
+
 ## 2.1.0-beta2 (2016-05-10) ##
 
 * Remove unnecessary Newtonsoft.Json dependency.
