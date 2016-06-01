@@ -12,20 +12,19 @@
   "buildOptions": {
     "emitEntryPoint": true
   },
+
   "dependencies": {
     "MaxMind.Db": "2.1.0-*"
   },
+
   "frameworks": {
     "net45": {},
     "netcoreapp1.0": {
-      "imports": "dnxcore50",
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
-          "version": "1.0.0-rc2-3002543"
-        },
-        "Microsoft.CSharp": "4.0.1-rc3-24026-00",
-        "System.Console": "4.0.0-rc3-24026-00",
+          "version": "1.0.0-rc2-3002702"
+        }
       }
     }
   }
