@@ -14,7 +14,9 @@
   },
 
   "dependencies": {
-    "MaxMind.Db": "2.1.0-*"
+    "MaxMind.Db": {
+      "target": "project"
+    },
   },
 
   "frameworks": {
