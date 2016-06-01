@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.1.1-beta1 (2016-06-01) ##
+
+* Re-release of `2.1.0-beta4` to skip bad `2.1.0` release on NuGet.
+
 ## 2.1.0-beta4 (2016-06-01) ##
 
 * Update for .NET Core RC2. Pull request by Adeel Mujahid. GitHub #28.
