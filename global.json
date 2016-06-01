@@ -1,3 +1,10 @@
 {
-  "projects": [ "MaxMind.Db", "MaxMind.Db.Benchmark", "MaxMind.Db.Test" ]
+  "projects": [
+    "MaxMind.Db",
+    "MaxMind.Db.Benchmark",
+    "MaxMind.Db.Test"
+  ],
+  "sdk": {
+    "version": "1.0.0-preview1-002702"
+  }
 }
