@@ -2,9 +2,10 @@
 
 set -e
 set -u
-set -x
 
 shopt -s extglob
+
+PROJECT_JSON="MaxMind.Db/project.json"
 
 VERSION=$(perl -MFile::Slurp::Tiny=read_file -MDateTime <<EOF
 use v5.16;
@@ -19,18 +20,32 @@ EOF
 
 TAG="v$VERSION"
 
-VERSION_SUFFIX=${VERSION//+([0-9])\.+([0-9])\.+([0-9])?(-)/}
-
 if [ -n "$(git status --porcelain)" ]; then
     echo ". is not clean." >&2
     exit 1
 fi
 
+jq ".version=\"$VERSION\"" "$PROJECT_JSON"| sponge "$PROJECT_JSON"
+
+git diff
+
+read -e -p "Continue (and commit above)? " SHOULD_COMMIT
+
+if [ "$SHOULD_COMMIT" != "y" ]; then
+    echo "Aborting"
+    exit 1
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+    git add "$PROJECT_JSON"
+    git commit -m "Prepare for $VERSION"
+fi
+
 pushd MaxMind.Db
 
 dotnet restore
-dotnet build -c Release --version-suffix "$VERSION_SUFFIX"
-dotnet pack -c Release --version-suffix "$VERSION_SUFFIX"
+dotnet build -c Release
+dotnet pack -c Release
 
 popd
 
