@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "2.0.0-*",
   "description": "Benchmark project to validate .NET reader for the MaxMind DB file format",
   "packOptions": {
@@ -16,7 +16,7 @@
   "dependencies": {
     "MaxMind.Db": {
       "target": "project"
-    },
+    }
   },
 
   "frameworks": {

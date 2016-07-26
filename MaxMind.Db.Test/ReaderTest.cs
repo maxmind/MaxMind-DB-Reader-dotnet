@@ -19,7 +19,7 @@ namespace MaxMind.Db.Test
     public class ReaderTest
     {
         private readonly string _testDataRoot =
-            Path.Combine(Program.CurrentDirectory, "TestData", "MaxMind-DB", "test-data");
+            Path.Combine(TestUtils.TestDirectory, "TestData", "MaxMind-DB", "test-data");
 
         [Test]
         public void Test()
