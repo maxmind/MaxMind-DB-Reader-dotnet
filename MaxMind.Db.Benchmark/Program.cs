@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 
 #endregion
@@ -35,13 +36,46 @@ namespace MaxMind.Db.Benchmark
         }
     }
 
-    internal class Program
+    public class Program
     {
         private static readonly int COUNT = 500000;
 
         private static void Main(string[] args)
         {
-            using (var reader = new Reader("GeoLite2-City.mmdb", FileAccessMode.Memory))
+            // first we check if the command-line argument is provided
+            string dbPath = args.Length > 0 ? args[0] : null;
+            if (dbPath != null)
+            {
+                if (!File.Exists(dbPath))
+                {
+                    throw new Exception("Path provided by command-line argument does not exist!");
+                }
+            }
+            else
+            {
+                // check if environment variable MAXMIND_BENCHMARK_DB is set
+                dbPath = Environment.GetEnvironmentVariable("MAXMIND_BENCHMARK_DB");
+
+                if (!string.IsNullOrEmpty(dbPath))
+                {
+                    if (!File.Exists(dbPath))
+                    {
+                        throw new Exception("Path set as environment variable MAXMIND_BENCHMARK_DB does not exist!");
+                    }
+                }
+                else
+                {
+                    // check if GeoLite2-City.mmdb exists in CWD
+                    dbPath = "GeoLite2-City.mmdb";
+
+                    if (!File.Exists(dbPath))
+                    {
+                        throw new Exception($"{dbPath} does not exist in current directory!");
+                    }
+                }
+            }
+
+            using (var reader = new Reader(dbPath, FileAccessMode.Memory))
             {
                 Bench("GeoIP2 class", ip => reader.Find<GeoIP2>(ip));
                 Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
