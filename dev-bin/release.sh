@@ -45,7 +45,11 @@ pushd MaxMind.Db
 
 dotnet restore
 dotnet build -c Release
-dotnet pack -c Release
+
+# We do not release from Linux as signing doesn't work properly. See:
+# https://github.com/dotnet/cli/issues/720 and
+#
+# dotnet pack -c Release
 
 popd
 
@@ -54,7 +58,7 @@ pushd MaxMind.Db.Test
 dotnet restore
 
 # netcoreapp1.0 only due to https://github.com/dotnet/cli/issues/3073
-dotnet test -f netcoreapp1.0
+dotnet test -c Release -f netcoreapp1.0
 
 popd
 
@@ -69,4 +73,6 @@ git tag "$TAG"
 git push
 git push --tags
 
-nuget push "MaxMind.Db/bin/Release/MaxMind.Db.$VERSION.nupkg"
+# nuget push "MaxMind.Db/bin/Release/MaxMind.Db.$VERSION.nupkg"
+
+echo "Currently, signing does not work properly from Linux. Please pack and release from Windows."
