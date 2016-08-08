@@ -1,5 +1,5 @@
 {
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": ".NET reader for the MaxMind DB file format",
   "packOptions": {
     "authors": [

@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.1.2 (2016-08-08) ##
+
+* Re-build of 2.1.1 to fix signing issue. No code changes.
+
 ## 2.1.1 (2016-08-01) ##
 
 * First non-beta release with .NET Core support.
