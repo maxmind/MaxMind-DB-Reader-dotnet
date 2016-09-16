@@ -63,4 +63,5 @@ Pop-Location
 & git push
 & git push --tags
 
-& nuget push "MaxMind.MinFraud/bin/Release/MaxMind.Db.$version.nupkg"
+& nuget push "MaxMind.MinFraud/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
+
