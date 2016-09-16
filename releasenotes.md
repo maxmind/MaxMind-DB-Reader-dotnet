@@ -1,12 +1,4 @@
-# Release Notes #
-
-## 2.2.0 (2016-XX-XX) ##
-
-* The memory mapped database is now loaded in the `Global\` namespace
-  with security set to allow all processes to read the mapping. This
-  fixes issues when using the database concurrently from separate
-  processes such as separate IIS application pools. Pull request by
-  Kevin Lewis. GitHub #33 & #34.
+# Release Nodes #
 
 ## 2.1.2 (2016-08-08) ##
 
