@@ -10,8 +10,8 @@
     "MaxMind.Db": {
       "target": "project"
     },
-    "NUnit": "3.4.0",
-    "dotnet-test-nunit": "3.4.0-beta-2",
+    "NUnit": "3.5.0",
+    "dotnet-test-nunit": "3.4.0-beta-3"
   },
 
   "testRunner": "nunit",
@@ -19,7 +19,7 @@
   "frameworks": {
     "net451": {
       "frameworkAssemblies": {
-        "System.Numerics": "4.0.0.0"
+        "System.Numerics": ""
       }
     },
     "netcoreapp1.0": {

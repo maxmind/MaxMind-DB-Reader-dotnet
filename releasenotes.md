@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.1.3 (2016-11-22) ##
+
+* Update for .NET Core 1.1.
+
 ## 2.1.2 (2016-08-08) ##
 
 * Re-build of 2.1.1 to fix signing issue. No code changes.
