@@ -32,10 +32,7 @@ if ((Read-Host -Prompt 'Continue? (y/n)') -ne 'y') {
     Write-Error 'Aborting'
 }
 
-if (-Not(& git status --porcelain)) {
-    & git add $projectJsonFile
-    & git commit -m "Prepare for $version"
-}
+& git commit -m "Prepare for $version" -a
 
 Push-Location MaxMind.Db
 
@@ -59,9 +56,7 @@ if ((Read-Host -Prompt 'Should push? (y/n)') -ne 'y') {
 & git push
 
 Pop-Location
-& git tag "$tag"
+& hub release create "$tag"
 & git push
-& git push --tags
 
 & nuget push "MaxMind.MinFraud/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
-
