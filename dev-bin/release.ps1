@@ -59,4 +59,4 @@ Pop-Location
 & hub release create "$tag"
 & git push
 
-& nuget push "MaxMind.MinFraud/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
+& nuget push "MaxMind.Db/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
