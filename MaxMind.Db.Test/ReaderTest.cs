@@ -8,20 +8,20 @@ using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Reflection;
+using FluentAssertions;
 using MaxMind.Db.Test.Helper;
-using NUnit.Framework;
+using Xunit;
 
 #endregion
 
 namespace MaxMind.Db.Test
 {
-    [TestFixture]
     public class ReaderTest
     {
         private readonly string _testDataRoot =
             Path.Combine(TestUtils.TestDirectory, "TestData", "MaxMind-DB", "test-data");
 
-        [Test]
+        [Fact]
         public void Test()
         {
             foreach (var recordSize in new long[] { 24, 28, 32 })
@@ -48,7 +48,7 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Test]
+        [Fact]
         public void TestStream()
         {
             foreach (var recordSize in new long[] { 24, 28, 32 })
@@ -77,36 +77,36 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Test]
+        [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
-            Assert.Throws(Is.TypeOf<ArgumentNullException>()
-                .And.Message.Contains("The database stream must not be null."),
-                () => new Reader((Stream)null));
+            ((Action)(() => new Reader((Stream)null)))
+                .ShouldThrow<ArgumentNullException>()
+                .WithMessage("The database stream must not be null.*");
         }
 
-        [Test]
+        [Fact]
         public void TestEmptyStream()
         {
             using (var stream = new MemoryStream())
             {
-                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
-                    .And.Message.Contains("zero bytes left in the stream"),
-                    () => new Reader(stream));
+                ((Action)(() => new Reader(stream)))
+                    .ShouldThrow<InvalidDatabaseException>()
+                    .WithMessage("*zero bytes left in the stream*");
             }
         }
 
-        [Test]
+        [Fact]
         public void NoIPV4SearchTree()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
             {
-                Assert.That(reader.Find<string>(IPAddress.Parse("1.1.1.1")), Is.EqualTo("::0/64"));
-                Assert.That(reader.Find<string>(IPAddress.Parse("192.1.1.1")), Is.EqualTo("::0/64"));
+                reader.Find<string>(IPAddress.Parse("1.1.1.1")).Should().Be("::0/64");
+                reader.Find<string>(IPAddress.Parse("192.1.1.1")).Should().Be("::0/64");
             }
         }
 
-        [Test]
+        [Fact]
         public void TestDecodingToDictionary()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
@@ -116,7 +116,7 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Test]
+        [Fact]
         public void TestDecodingToGenericIDictionary()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
@@ -126,7 +126,7 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Test]
+        [Fact]
         public void TestDecodingToConcurrentDictionary()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
@@ -138,42 +138,42 @@ namespace MaxMind.Db.Test
 
         public void TestDecodingTypes(IDictionary<string, object> record)
         {
-            Assert.That(record["boolean"], Is.True);
+            ((bool)record["boolean"]).Should().BeTrue();
 
-            Assert.That(record["bytes"], Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
+            ((byte[])record["bytes"]).Should().Equal(new byte[] { 0, 0, 0, 42 });
 
-            Assert.That(record["utf8_string"], Is.EqualTo("unicode! ☯ - ♫"));
+            record["utf8_string"].Should().Be("unicode! ☯ - ♫");
 
             var array = (List<object>)record["array"];
-            Assert.That(array.Count(), Is.EqualTo(3));
-            Assert.That(array[0], Is.EqualTo(1));
-            Assert.That(array[1], Is.EqualTo(2));
-            Assert.That(array[2], Is.EqualTo(3));
+            array.Should().HaveCount(3);
+            array[0].ShouldBeEquivalentTo(1);
+            array[1].ShouldBeEquivalentTo(2);
+            array[2].ShouldBeEquivalentTo(3);
 
             var map = (Dictionary<string, object>)record["map"];
-            Assert.That(map.Count(), Is.EqualTo(1));
+            map.Should().HaveCount(1);
 
             var mapX = (Dictionary<string, object>)map["mapX"];
-            Assert.That(mapX.Count(), Is.EqualTo(2));
-            Assert.That(mapX["utf8_stringX"], Is.EqualTo("hello"));
+            mapX.Should().HaveCount(2);
+            mapX["utf8_stringX"].Should().Be("hello");
 
             var arrayX = (List<object>)mapX["arrayX"];
-            Assert.That(arrayX.Count(), Is.EqualTo(3));
-            Assert.That(arrayX[0], Is.EqualTo(7));
-            Assert.That(arrayX[1], Is.EqualTo(8));
-            Assert.That(arrayX[2], Is.EqualTo(9));
+            arrayX.Should().HaveCount(3);
+            arrayX[0].ShouldBeEquivalentTo(7);
+            arrayX[1].ShouldBeEquivalentTo(8);
+            arrayX[2].ShouldBeEquivalentTo(9);
 
-            Assert.AreEqual(42.123456, (double)record["double"], 0.000000001);
-            Assert.AreEqual(1.1, (float)record["float"], 0.000001);
-            Assert.That(record["int32"], Is.EqualTo(-268435456));
-            Assert.That(record["uint16"], Is.EqualTo(100));
-            Assert.That(record["uint32"], Is.EqualTo(268435456));
-            Assert.That(record["uint64"], Is.EqualTo(1152921504606846976));
-            Assert.That(record["uint128"],
-                Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
+            ((double)record["double"]).Should().BeApproximately(42.123456, 0.000000001);
+            ((float)record["float"]).Should().BeApproximately(1.1F, 0.000001F);
+            record["int32"].ShouldBeEquivalentTo(-268435456);
+            record["uint16"].ShouldBeEquivalentTo(100);
+            record["uint32"].ShouldBeEquivalentTo(268435456);
+            record["uint64"].ShouldBeEquivalentTo(1152921504606846976);
+            record["uint128"].Should().Be(
+                BigInteger.Parse("1329227995784915872903807060280344576"));
         }
 
-        [Test]
+        [Fact]
         public void TestDecodingTypesToObject()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
@@ -182,90 +182,89 @@ namespace MaxMind.Db.Test
                 injectables.AddValue("injected", "injected string");
                 var record = reader.Find<TypeHolder>(IPAddress.Parse("::1.1.1.0"), injectables);
 
-                Assert.That(record.Boolean, Is.True);
-                Assert.That(record.Bytes, Is.EquivalentTo(new byte[] { 0, 0, 0, 42 }));
-                Assert.That(record.Utf8String, Is.EqualTo("unicode! ☯ - ♫"));
+                record.Boolean.Should().BeTrue();
+                record.Bytes.Should().Equal(new byte[] { 0, 0, 0, 42 });
+                record.Utf8String.Should().Be("unicode! ☯ - ♫");
 
-                Assert.That(record.Array, Is.EqualTo(new List<long> { 1, 2, 3 }));
+                record.Array.Should().Equal(new List<long> { 1, 2, 3 });
 
                 var mapX = record.Map.MapX;
-                Assert.That(mapX.Utf8StringX, Is.EqualTo("hello"));
+                mapX.Utf8StringX.Should().Be("hello");
 
-                Assert.That(mapX.ArrayX, Is.EqualTo(new List<long> { 7, 8, 9 }));
+                mapX.ArrayX.Should().Equal(new List<long> { 7, 8, 9 });
 
-                Assert.AreEqual(42.123456, record.Double, 0.000000001);
-                Assert.AreEqual(1.1, record.Float, 0.000001);
-                Assert.That(record.Int32, Is.EqualTo(-268435456));
-                Assert.That(record.Uint16, Is.EqualTo(100));
-                Assert.That(record.Uint32, Is.EqualTo(268435456));
-                Assert.That(record.Uint64, Is.EqualTo(1152921504606846976));
-                Assert.That(record.Uint128,
-                    Is.EqualTo(BigInteger.Parse("1329227995784915872903807060280344576")));
+                record.Double.Should().BeApproximately(42.123456, 0.000000001);
+                record.Float.Should().BeApproximately(1.1F, 0.000001F);
+                record.Int32.Should().Be(-268435456);
+                record.Uint16.Should().Be(100);
+                record.Uint32.Should().Be(268435456);
+                record.Uint64.Should().Be(1152921504606846976);
+                record.Uint128.Should().Be(BigInteger.Parse("1329227995784915872903807060280344576"));
 
-                Assert.That(record.Nonexistant.Injected, Is.EqualTo("injected string"));
-                Assert.That(record.Nonexistant.InnerNonexistant.Injected, Is.EqualTo("injected string"));
+                record.Nonexistant.Injected.Should().Be("injected string");
+                record.Nonexistant.InnerNonexistant.Injected.Should().Be("injected string");
             }
         }
 
-        [Test]
+        [Fact]
         public void TestZeros()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::"));
 
-                Assert.That(record["boolean"], Is.False);
+                ((bool)record["boolean"]).Should().BeFalse();
 
-                Assert.That(record["bytes"], Is.EquivalentTo(new byte[0]));
+                ((byte[])record["bytes"]).Should().BeEmpty();
 
-                Assert.That(record["utf8_string"], Is.EqualTo(""));
+                record["utf8_string"].ToString().Should().BeEmpty();
 
-                Assert.That(record["array"], Is.InstanceOf<List<object>>());
-                Assert.That(((List<object>)record["array"]).Count(), Is.EqualTo(0));
+                record["array"].Should().BeOfType<List<object>>();
+                ((List<object>)record["array"]).Should().BeEmpty();
 
-                Assert.That(record["map"], Is.InstanceOf<Dictionary<string, object>>());
-                Assert.That(((Dictionary<string, object>)record["map"]).Count(), Is.EqualTo(0));
+                record["map"].Should().BeOfType<Dictionary<string, object>>();
+                ((Dictionary<string, object>)record["map"]).Should().BeEmpty();
 
-                Assert.AreEqual(0, (double)record["double"], 0.000000001);
-                Assert.AreEqual(0, (float)record["float"], 0.000001);
-                Assert.That(record["int32"], Is.EqualTo(0));
-                Assert.That(record["uint16"], Is.EqualTo(0));
-                Assert.That(record["uint32"], Is.EqualTo(0));
-                Assert.That(record["uint64"], Is.EqualTo(0));
-                Assert.That(record["uint128"], Is.EqualTo(new BigInteger(0)));
+                ((double)record["double"]).Should().BeApproximately(0, 0.000000001);
+                ((float)record["float"]).Should().BeApproximately(0, 0.000001F);
+                record["int32"].Should().Be(0);
+                record["uint16"].Should().Be(0);
+                record["uint32"].ShouldBeEquivalentTo(0);
+                record["uint64"].ShouldBeEquivalentTo(0);
+                record["uint128"].Should().Be(new BigInteger(0));
             }
         }
 
-        [Test]
+        [Fact]
         public void TestBrokenDatabase()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
-                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
-                    .And.Message.Contains("contains bad data"),
-                    () => reader.Find<object>(IPAddress.Parse("2001:220::")));
+                ((Action)(() => reader.Find<object>(IPAddress.Parse("2001:220::"))))
+                    .ShouldThrow<InvalidDatabaseException>()
+                    .WithMessage("*contains bad data*");
             }
         }
 
-        [Test]
+        [Fact]
         public void TestBrokenSearchTreePointer()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
-                    .And.Message.Contains("search tree is corrupt"),
-                    () => reader.Find<object>(IPAddress.Parse("1.1.1.32")));
+                ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.32"))))
+                    .ShouldThrow<InvalidDatabaseException>()
+                    .WithMessage("*search tree is corrupt*");
             }
         }
 
-        [Test]
+        [Fact]
         public void TestBrokenDataPointer()
         {
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
-                Assert.Throws(Is.TypeOf<InvalidDatabaseException>()
-                    .And.Message.Contains("data section contains bad data"),
-                    () => reader.Find<object>(IPAddress.Parse("1.1.1.16")));
+                ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.16"))))
+                    .ShouldThrow<InvalidDatabaseException>()
+                    .WithMessage("*data section contains bad data*");
             }
         }
 
@@ -320,21 +319,21 @@ namespace MaxMind.Db.Test
         {
             foreach (var address in singleAddresses)
             {
-                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"],
-                    Is.EqualTo(address),
+                (reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"].Should().Be(
+                    new string(address.ToArray()),
                     $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in pairs.Keys)
             {
-                Assert.That((reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"],
-                    Is.EqualTo(pairs[address]),
+                (reader.Find<Dictionary<string, object>>(IPAddress.Parse(address)))["ip"].Should().Be(
+                    pairs[address],
                     $"Did not find expected data record for {address} in {file}");
             }
 
             foreach (var address in nullAddresses)
             {
-                Assert.That(reader.Find<object>(IPAddress.Parse(address)), Is.Null,
+                reader.Find<object>(IPAddress.Parse(address)).Should().BeNull(
                     $"Did not find expected data record for {address} in {file}");
             }
 
@@ -342,7 +341,7 @@ namespace MaxMind.Db.Test
             {
                 int routingPrefix;
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
-                Assert.That(routingPrefix, Is.EqualTo(prefixes[address]),
+                routingPrefix.Should().Be(prefixes[address],
                     $"Invalid prefix for {address} in {file}");
             }
         }
@@ -351,14 +350,14 @@ namespace MaxMind.Db.Test
         {
             var metadata = reader.Metadata;
 
-            Assert.That(metadata.BinaryFormatMajorVersion, Is.EqualTo(2));
-            Assert.That(metadata.BinaryFormatMinorVersion, Is.EqualTo(0));
-            Assert.That(metadata.IPVersion, Is.EqualTo(ipVersion));
-            Assert.That(metadata.DatabaseType, Is.EqualTo("Test"));
-            Assert.That(metadata.Languages[0], Is.EqualTo("en"));
-            Assert.That(metadata.Languages[1], Is.EqualTo("zh"));
-            Assert.That(metadata.Description["en"], Is.EqualTo("Test Database"));
-            Assert.That(metadata.Description["zh"], Is.EqualTo("Test Database Chinese"));
+            metadata.BinaryFormatMajorVersion.Should().Be(2);
+            metadata.BinaryFormatMinorVersion.Should().Be(0);
+            metadata.IPVersion.Should().Be(ipVersion);
+            metadata.DatabaseType.Should().Be("Test");
+            metadata.Languages.Should().HaveElementSucceeding("en", "zh");
+            metadata.Description.Should().Contain("en", "Test Database");
+            metadata.Description.Should().Contain("zh", "Test Database Chinese");
+            metadata.Description.Should().NotContain("gibberish", "Lorem ipsum dolor sit amet");
         }
     }
 }

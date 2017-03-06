@@ -1,18 +1,12 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26114.2
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B2E7C4C5-4E8E-4760-9231-1F8F26FEEFFE}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db", "MaxMind.Db\MaxMind.Db.csproj", "{923441A3-A9A9-425F-9ABD-73DF13E0A053}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MaxMind.Db", "MaxMind.Db\MaxMind.Db.xproj", "{923441A3-A9A9-425F-9ABD-73DF13E0A053}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db.Benchmark", "MaxMind.Db.Benchmark\MaxMind.Db.Benchmark.csproj", "{F1051D87-38BE-4E9C-B7B3-9FA2DFB4FB56}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MaxMind.Db.Test", "MaxMind.Db.Test\MaxMind.Db.Test.xproj", "{15A04FFF-BCC5-45F9-84E2-AB51B567E3E9}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MaxMind.Db.Benchmark", "MaxMind.Db.Benchmark\MaxMind.Db.Benchmark.xproj", "{F1051D87-38BE-4E9C-B7B3-9FA2DFB4FB56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MaxMind.Db.Test", "MaxMind.Db.Test\MaxMind.Db.Test.csproj", "{15A04FFF-BCC5-45F9-84E2-AB51B567E3E9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

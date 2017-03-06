@@ -1,29 +1,29 @@
 ---
 version: '1.0.{build}'
 
-os: Visual Studio 2015
+os: Visual Studio 2017
 
 environment:
   global:
-    MAXMIND_BENCHMARK_DB: MaxMind.Db.Benchmark/GeoLite2-City.mmdb
-    MAXMIND_TEST_BASE_DIR: MaxMind.Db.Test
+    MAXMIND_BENCHMARK_DB: $(APPVEYOR_BUILD_FOLDER)/MaxMind.Db.Benchmark/GeoLite2-City.mmdb
+    MAXMIND_TEST_BASE_DIR: $(APPVEYOR_BUILD_FOLDER)/MaxMind.Db.Test
   matrix:
     - CONFIGURATION: Debug
-      FRAMEWORK: net45
-      SECONDARYFRAMEWORK: net451
-      FrameworkLibsMoniker: net45
+      CONSOLE_FRAMEWORK: net45
+      LIB_FRAMEWORK: net45
+      TEST_FRAMEWORK: net452
     - CONFIGURATION: Release
-      FRAMEWORK: net45
-      SECONDARYFRAMEWORK: net451
-      FrameworkLibsMoniker: net45
+      CONSOLE_FRAMEWORK: net45
+      TEST_FRAMEWORK: net452
+      LIB_FRAMEWORK: net45
     - CONFIGURATION: Debug
-      FRAMEWORK: netcoreapp1.0
-      SECONDARYFRAMEWORK: netcoreapp1.0
-      FrameworkLibsMoniker: netstandard1.4
+      CONSOLE_FRAMEWORK: netcoreapp1.0
+      LIB_FRAMEWORK: netstandard1.4
+      TEST_FRAMEWORK: netcoreapp1.0
     - CONFIGURATION: Release
-      FRAMEWORK: netcoreapp1.0
-      SECONDARYFRAMEWORK: netcoreapp1.0
-      FrameworkLibsMoniker: netstandard1.4
+      CONSOLE_FRAMEWORK: netcoreapp1.0
+      LIB_FRAMEWORK: netstandard1.4
+      TEST_FRAMEWORK: netcoreapp1.0
 
 before_build:
   - git submodule update --init --recursive
@@ -43,16 +43,16 @@ build_script:
       dotnet restore
 
       # Build Projects
-      dotnet build -c $env:CONFIGURATION -f $env:FrameworkLibsMoniker .\MaxMind.Db
-      dotnet build -c $env:CONFIGURATION -f $env:FRAMEWORK .\MaxMind.Db.Benchmark
-      dotnet build -c $env:CONFIGURATION -f $env:SECONDARYFRAMEWORK .\MaxMind.Db.Test
+      dotnet build -c $env:CONFIGURATION -f $env:LIB_FRAMEWORK .\MaxMind.Db
+      dotnet build -c $env:CONFIGURATION -f $env:CONSOLE_FRAMEWORK .\MaxMind.Db.Benchmark
+      dotnet build -c $env:CONFIGURATION -f $env:TEST_FRAMEWORK .\MaxMind.Db.Test
 
 test_script:
   # Run Benchmark
-  - dotnet run -f %FRAMEWORK% -c %CONFIGURATION% -p MaxMind.Db.Benchmark
+  - dotnet run -f %CONSOLE_FRAMEWORK% -c %CONFIGURATION% -p MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
 
   # Run Unit Tests
-  - dotnet test -f %SECONDARYFRAMEWORK% -c %CONFIGURATION% MaxMind.Db.Test
+  - dotnet test -f %TEST_FRAMEWORK% -c %CONFIGURATION% MaxMind.Db.Test/MaxMind.Db.Test.csproj
 
 after_test:
   # Run Unit Tests

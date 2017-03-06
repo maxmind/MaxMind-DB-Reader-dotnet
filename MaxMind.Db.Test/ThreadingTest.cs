@@ -8,21 +8,20 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using MaxMind.Db.Test.Helper;
-using NUnit.Framework;
+using Xunit;
 
 #endregion
 
 namespace MaxMind.Db.Test
 {
-    [TestFixture]
     public class ThreadingTest
     {
         private readonly string _testDatabase =
             Path.Combine(TestUtils.TestDirectory, "TestData", "GeoLite2-City.mmdb");
 
-        [Test]
-        [TestCase(FileAccessMode.MemoryMapped)]
-        [TestCase(FileAccessMode.Memory)]
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.Memory)]
         public void TestParallelFor(FileAccessMode mode)
         {
             var count = 0;
@@ -54,10 +53,10 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Test]
-        [TestCase(FileAccessMode.MemoryMapped)]
-        [TestCase(FileAccessMode.Memory)]
-        [Category("BreaksMono")]
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.Memory)]
+        [Trait("Category", "BreaksMono")]
         public void TestManyOpens(FileAccessMode mode)
         {
             Parallel.For(0, 50, i =>
