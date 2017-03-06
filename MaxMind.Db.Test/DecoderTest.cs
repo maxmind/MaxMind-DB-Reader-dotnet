@@ -4,17 +4,54 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-using NUnit.Framework;
+using FluentAssertions;
+using Xunit;
 
 #endregion
 
 namespace MaxMind.Db.Test
 {
-    [TestFixture]
     public class DecoderTest
     {
-        [Test]
-        public void TestUInt16()
+        [Theory]
+        [MemberData(nameof(TestUInt16))]
+        [MemberData(nameof(TestUInt32))]
+        [MemberData(nameof(TestInt32s))]
+        [MemberData(nameof(TestInt64s))]
+        [MemberData(nameof(TestBigIntegers))]
+        [MemberData(nameof(TestDoubles))]
+        [MemberData(nameof(TestFloats))]
+        [MemberData(nameof(TestPointers))]
+        [MemberData(nameof(TestStrings))]
+        [MemberData(nameof(TestBooleans))]
+        [MemberData(nameof(TestBytes))]
+        [MemberData(nameof(TestMaps))]
+        [MemberData(nameof(TestArrays))]
+        public static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests, bool useShouldBe = false) where T : class
+        {
+            foreach (var entry in tests)
+            {
+                var expect = entry.Key;
+                var input = entry.Value;
+
+                using (var database = new ArrayBuffer(input))
+                {
+                    var decoder = new Decoder(database, 0, false);
+                    long offset;
+                    var val = decoder.Decode<T>(0, out offset);
+                    if (useShouldBe)
+                    {
+                        val.Should().Be(expect);
+                    }
+                    else
+                    {
+                        val.ShouldBeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<object> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
             {
@@ -25,11 +62,10 @@ namespace MaxMind.Db.Test
                 {ushort.MaxValue, new[] {(byte) 0xa2, (byte) 0xff, (byte) 0xff}}
             };
 
-            TestTypeDecoding(uint16s);
+            yield return new object[] { uint16s };
         }
 
-        [Test]
-        public void TestUInt32()
+        private static IEnumerable<object> TestUInt32()
         {
             var uint32s = new Dictionary<object, byte[]>
             {
@@ -42,11 +78,10 @@ namespace MaxMind.Db.Test
                 {uint.MaxValue, new[] {(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}}
             };
 
-            TestTypeDecoding(uint32s);
+            yield return new object[] { uint32s };
         }
 
-        [Test]
-        public void TestInt32s()
+        private static IEnumerable<object> TestInt32s()
         {
             var int32s = new Dictionary<object, byte[]>
             {
@@ -64,11 +99,10 @@ namespace MaxMind.Db.Test
                 {-int.MaxValue, new byte[] {0x4, 0x1, 0x80, 0x0, 0x0, 0x1}}
             };
 
-            TestTypeDecoding(int32s);
+            yield return new object[] { int32s };
         }
 
-        [Test]
-        public void TestInt64s()
+        private static IEnumerable<object> TestInt64s()
         {
             var int64s = new Dictionary<object, byte[]>
             {
@@ -92,7 +126,7 @@ namespace MaxMind.Db.Test
                 int64s.Add(key, value);
             }
 
-            TestTypeDecoding(int64s);
+            yield return new object[] { int64s };
         }
 
         private static long Int64Pow(long x, int pow)
@@ -108,8 +142,7 @@ namespace MaxMind.Db.Test
             return ret;
         }
 
-        [Test]
-        public void TestBigIntegers()
+        private static IEnumerable<object> TestBigIntegers()
         {
             var bigInts = new Dictionary<object, byte[]>
             {
@@ -133,11 +166,10 @@ namespace MaxMind.Db.Test
                 bigInts.Add(key, value);
             }
 
-            TestTypeDecoding(bigInts);
+            yield return new object[] { bigInts, /*useShouldBe*/ true };
         }
 
-        [Test]
-        public void TestDoubles()
+        private static IEnumerable<object> TestDoubles()
         {
             var doubles = new Dictionary<object, byte[]>
             {
@@ -151,11 +183,10 @@ namespace MaxMind.Db.Test
                 {-1073741824.12457, new byte[] {0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4}}
             };
 
-            TestTypeDecoding(doubles);
+            yield return new object[] { doubles };
         }
 
-        [Test]
-        public void TestFloats()
+        private static IEnumerable<object> TestFloats()
         {
             var floats = new Dictionary<object, byte[]>
             {
@@ -170,11 +201,10 @@ namespace MaxMind.Db.Test
                 {(float) -9999.99, new byte[] {0x4, 0x8, 0xC6, 0x1C, 0x3F, 0xF6}}
             };
 
-            TestTypeDecoding(floats);
+            yield return new object[] { floats };
         }
 
-        [Test]
-        public void TestPointers()
+        private static IEnumerable<object> TestPointers()
         {
             var pointers = new Dictionary<object, byte[]>
             {
@@ -190,13 +220,12 @@ namespace MaxMind.Db.Test
                 {(((long) 1) << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
             };
 
-            TestTypeDecoding(pointers);
+            yield return new object[] { pointers };
         }
 
-        [Test]
-        public void TestStrings()
+        private static IEnumerable<object> TestStrings()
         {
-            TestTypeDecoding(Strings());
+            yield return new object[] { Strings() };
         }
 
         private static Dictionary<string, byte[]> Strings()
@@ -233,8 +262,7 @@ namespace MaxMind.Db.Test
             tests.Add(str, bytes);
         }
 
-        [Test]
-        public void TestBooleans()
+        private static IEnumerable<object> TestBooleans()
         {
             var booleans = new Dictionary<object, byte[]>
             {
@@ -242,11 +270,10 @@ namespace MaxMind.Db.Test
                 {true, new byte[] {0x1, 0x7}}
             };
 
-            TestTypeDecoding(booleans);
+            yield return new object[] { booleans };
         }
 
-        [Test]
-        public void TestBytes()
+        private static IEnumerable<object> TestBytes()
         {
             var bytes = new Dictionary<byte[], byte[]>();
 
@@ -260,11 +287,10 @@ namespace MaxMind.Db.Test
                 bytes.Add(Encoding.UTF8.GetBytes(s), ba);
             }
 
-            TestTypeDecoding(bytes);
+            yield return new object[] { bytes };
         }
 
-        [Test]
-        public void TestMaps()
+        private static IEnumerable<object> TestMaps()
         {
             var maps = new Dictionary<Dictionary<string, object>, byte[]>();
 
@@ -322,11 +348,10 @@ namespace MaxMind.Db.Test
                 0x42, 0x7a, 0x68
             });
 
-            TestTypeDecoding(maps);
+            yield return new object[] { maps };
         }
 
-        [Test]
-        public void TestArrays()
+        private static IEnumerable<object> TestArrays()
         {
             var arrays = new Dictionary<List<object>, byte[]>();
 
@@ -351,24 +376,7 @@ namespace MaxMind.Db.Test
             var empty = new List<object>();
             arrays.Add(empty, new byte[] { 0x0, 0x4 });
 
-            TestTypeDecoding(arrays);
-        }
-
-        private static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests) where T : class
-        {
-            foreach (var entry in tests)
-            {
-                var expect = entry.Key;
-                var input = entry.Value;
-
-                using (var database = new ArrayBuffer(input))
-                {
-                    var decoder = new Decoder(database, 0, false);
-                    long offset;
-                    var val = decoder.Decode<T>(0, out offset);
-                    Assert.That(val, Is.EqualTo(expect));
-                }
-            }
+            yield return new object[] { arrays };
         }
     }
 }

@@ -6,6 +6,13 @@ if [ -n "$DOTNETCORE" ]; then
 
   echo Using .NET CLI
 
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    # This is due to: https://github.com/NuGet/Home/issues/2163#issue-135917905
+    echo "current ulimit is: `ulimit -n`..."
+    ulimit -n 1024
+    echo "new limit: `ulimit -n`"
+  fi
+
   dotnet restore
 
   # Building the dependent projects such as MaxMind.Db.Benchmark
@@ -13,21 +20,19 @@ if [ -n "$DOTNETCORE" ]; then
   # build it explicitly (with dotnet-build command).
 
   # Running Benchmark
-  dotnet run -f netcoreapp1.0 -c $CONFIGURATION -p ./MaxMind.Db.Benchmark
+  dotnet run -f netcoreapp1.0 -c $CONFIGURATION -p ./MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
 
   # Running Unit Tests
-  dotnet test -f netcoreapp1.0 -c $CONFIGURATION ./MaxMind.Db.Test
+  dotnet test -f netcoreapp1.0 -c $CONFIGURATION ./MaxMind.Db.Test/MaxMind.Db.Test.csproj
 
 else
 
   echo Using Mono
 
-  cd mono
-
   nuget restore
 
-  xbuild /p:Configuration=$CONFIGURATION
+  xbuild /p:Configuration=$CONFIGURATION mono/MaxMind.Db.Mono.sln
 
-  mono ../mono/packages/NUnit.ConsoleRunner.3.4.1/tools/nunit3-console.exe --where "cat != BreaksMono" ./bin/$CONFIGURATION/MaxMind.Db.Test.dll
+  mono ./packages/xunit.runner.console.2.2.0/tools/xunit.console.exe ./mono/bin/$CONFIGURATION/MaxMind.Db.Test.dll -notrait "Category=BreaksMono"
 
 fi
