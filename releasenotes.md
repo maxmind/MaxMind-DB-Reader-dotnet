@@ -1,5 +1,11 @@
 # Release Nodes #
 
+## 2.2.0 (2017-05-08) ##
+
+* Switch to the updated MSBuild .NET Core build system. Pull request by Adeel
+  Mujahid. GitHub #35.
+* Move tests from  NUnit to xUnit.net. GitHub #35.
+
 ## 2.1.3 (2016-11-22) ##
 
 * Update for .NET Core 1.1.
