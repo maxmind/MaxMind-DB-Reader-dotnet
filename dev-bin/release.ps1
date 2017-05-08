@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $DebugPreference = 'Continue'
 
-$projectJsonFile=(Get-Item "MaxMind.Db/project.json").FullName
+$projectFile=(Get-Item "MaxMind.Db\MaxMind.Db.csproj").FullName
 $matches = (Get-Content -Encoding UTF8 releasenotes.md) ` |
             Select-String '(\d+\.\d+\.\d+(?:-\w+)?) \((\d{4}-\d{2}-\d{2})\)' `
 
@@ -19,11 +19,9 @@ if (& git status --porcelain) {
     Write-Error '. is not clean'
 }
 
-# Not using Powershell's built-in JSON support as that
-# reformats the file.
-(Get-Content -Encoding UTF8 $projectJsonFile) `
-    -replace '(?<=version"\s*:\s*")[^"]+', $version ` |
-  Out-File -Encoding UTF8 $projectJsonFile
+(Get-Content -Encoding UTF8 $projectFile) `
+    -replace '(?<=<VersionPrefix>)[^<]+', $version ` |
+  Out-File -Encoding UTF8 $projectFile
 
 
 & git diff
