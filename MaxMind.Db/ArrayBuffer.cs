@@ -31,8 +31,18 @@ namespace MaxMind.Db
             {
                 throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
             }
-            byte[] bytes;
 
+            byte[] bytes;
+            
+            // If the stream is within "int" max size, we can read it at once without requiring MemoryStream
+            if (stream.CanSeek && stream.Length <= int.MaxValue)
+            {
+                bytes = new byte[stream.Length];
+                stream.Read(bytes, 0, (int)stream.Length);
+                return bytes;
+            }
+
+            // Else, use MemoryStream
             using (var memoryStream = new MemoryStream())
             {
                 stream.CopyTo(memoryStream);
@@ -44,6 +54,7 @@ namespace MaxMind.Db
                 throw new InvalidDatabaseException(
                     "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
+            
             return bytes;
         }
 
