@@ -38,15 +38,16 @@ namespace MaxMind.Db
             if (stream.CanSeek && stream.Length <= int.MaxValue)
             {
                 bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, (int)stream.Length);
-                return bytes;
+                stream.Read(bytes, 0, (int) stream.Length);
             }
-
-            // Else, use MemoryStream
-            using (var memoryStream = new MemoryStream())
+            else
             {
-                stream.CopyTo(memoryStream);
-                bytes = memoryStream.ToArray();
+                // Else, use MemoryStream
+                using (var memoryStream = new MemoryStream())
+                {
+                    stream.CopyTo(memoryStream);
+                    bytes = memoryStream.ToArray();
+                }
             }
 
             if (bytes.Length == 0)
