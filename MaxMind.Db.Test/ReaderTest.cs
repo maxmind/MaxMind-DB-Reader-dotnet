@@ -78,6 +78,36 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public void TestNonSeekableStream()
+        {
+            foreach (var recordSize in new long[] { 24, 28, 32 })
+            {
+                foreach (var ipVersion in new[] { 4, 6 })
+                {
+                    var file = Path.Combine(_testDataRoot,
+                        "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    
+                    using (var stream = new NonSeekableStreamWrapper(File.OpenRead(file)))
+                    {
+                        using (var reader = new Reader(stream))
+                        {
+                            TestMetadata(reader, ipVersion);
+
+                            if (ipVersion == 4)
+                            {
+                                TestIPV4(reader, file);
+                            }
+                            else
+                            {
+                                TestIPV6(reader, file);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
             ((Action)(() => new Reader((Stream)null)))
