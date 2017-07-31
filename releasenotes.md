@@ -1,5 +1,10 @@
 # Release Nodes #
 
+## 2.2.1
+
+* Reduce the number of allocations when creating a `MaxMind.Db.Reader` from
+  a seekable stream. Pull request by Maarten Balliauw. GitHub #38.
+
 ## 2.2.0 (2017-05-08) ##
 
 * Switch to the updated MSBuild .NET Core build system. Pull request by Adeel
