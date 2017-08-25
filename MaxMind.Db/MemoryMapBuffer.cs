@@ -31,7 +31,7 @@ namespace MaxMind.Db
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
-#if !NETSTANDARD1_4
+#if !NETSTANDARD1_4 && !NETSTANDARD2_0
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
 #else           // Note that PNSE is only required by .NetStandard1.0, see the subsequent comment for more context
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
@@ -39,7 +39,7 @@ namespace MaxMind.Db
                 {
                     var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                                 FileShare.Delete | FileShare.Read);
-#if !NETSTANDARD1_4
+#if !NETSTANDARD1_4 && !NETSTANDARD2_0
                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
                             MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
 #else
