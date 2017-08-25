@@ -17,13 +17,17 @@ environment:
       TEST_FRAMEWORK: net452
       LIB_FRAMEWORK: net45
     - CONFIGURATION: Debug
-      CONSOLE_FRAMEWORK: netcoreapp1.0
-      LIB_FRAMEWORK: netstandard1.4
-      TEST_FRAMEWORK: netcoreapp1.0
+      CONSOLE_FRAMEWORK: netcoreapp2.0
+      LIB_FRAMEWORK: netstandard2.0
+      TEST_FRAMEWORK: netcoreapp2.0
     - CONFIGURATION: Release
       CONSOLE_FRAMEWORK: netcoreapp1.0
       LIB_FRAMEWORK: netstandard1.4
       TEST_FRAMEWORK: netcoreapp1.0
+    - CONFIGURATION: Release
+      CONSOLE_FRAMEWORK: netcoreapp2.0
+      LIB_FRAMEWORK: netstandard2.0
+      TEST_FRAMEWORK: netcoreapp2.0
 
 before_build:
   - git submodule update --init --recursive
