@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 2.2.1
+## 2.3.0 (2017-10-27) ##
 
 * Reduce the number of allocations when creating a `MaxMind.Db.Reader` from
   a seekable stream. Pull request by Maarten Balliauw. GitHub #38.
