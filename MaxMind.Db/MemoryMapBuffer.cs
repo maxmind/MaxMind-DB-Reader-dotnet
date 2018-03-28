@@ -16,15 +16,17 @@ namespace MaxMind.Db
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;
 
-        internal MemoryMapBuffer(string file) : this(file, new FileInfo(file))
+        internal MemoryMapBuffer(string file, bool useGlobalNamespace) : this(file, useGlobalNamespace, new FileInfo(file))
         {
         }
 
-        private MemoryMapBuffer(string file, FileInfo fileInfo) : base((int)fileInfo.Length)
+        private MemoryMapBuffer(string file, bool useGlobalNamespace, FileInfo fileInfo) : base((int)fileInfo.Length)
         {
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
-            var mapName = $"{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            var objectNamespace = useGlobalNamespace ? "Global" : "Local";
+
+            var mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
             lock (FileLocker)
             {
                 try
@@ -40,8 +42,15 @@ namespace MaxMind.Db
                     var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                                 FileShare.Delete | FileShare.Read);
 #if !NETSTANDARD1_4 && !NETSTANDARD2_0
+                    var security = new MemoryMappedFileSecurity();
+                    security.AddAccessRule(
+                        new System.Security.AccessControl.AccessRule<MemoryMappedFileRights>(
+                            new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.WorldSid, null),
+                            MemoryMappedFileRights.Read,
+                            System.Security.AccessControl.AccessControlType.Allow));
+
                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
-                            MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
+                            MemoryMappedFileAccess.Read, security, HandleInheritability.None, false);
 #else
 
                     // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
