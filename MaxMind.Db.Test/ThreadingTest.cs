@@ -21,6 +21,7 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.MemoryMappedGlobal)]
         [InlineData(FileAccessMode.Memory)]
         public void TestParallelFor(FileAccessMode mode)
         {
@@ -55,6 +56,7 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.MemoryMappedGlobal)]
         [InlineData(FileAccessMode.Memory)]
         [Trait("Category", "BreaksMono")]
         public void TestManyOpens(FileAccessMode mode)
