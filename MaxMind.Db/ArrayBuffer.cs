@@ -47,27 +47,11 @@ namespace MaxMind.Db
             }
 
             byte[] bytes;
-            
-            // If the stream is within "int" max size, we can read it at once without requiring MemoryStream
-            if (stream.CanSeek && stream.Length <= int.MaxValue)
-            {
-                bytes = new byte[stream.Length];
-                var bytesRead = stream.Read(bytes, 0, (int) stream.Length);
 
-                if (bytesRead != stream.Length)
-                {
-                    throw new InvalidDatabaseException(
-                        $"Failed to read all bytes from the stream (expected {stream.Length}, got {bytesRead}).");
-                }
-            }
-            else
+            using (var memoryStream = new MemoryStream())
             {
-                // Else, use MemoryStream
-                using (var memoryStream = new MemoryStream())
-                {
-                    stream.CopyTo(memoryStream);
-                    bytes = memoryStream.ToArray();
-                }
+                stream.CopyTo(memoryStream);
+                bytes = memoryStream.ToArray();
             }
 
             if (bytes.Length == 0)
@@ -75,7 +59,7 @@ namespace MaxMind.Db
                 throw new InvalidDatabaseException(
                     "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
-            
+
             return bytes;
         }
 
@@ -88,26 +72,10 @@ namespace MaxMind.Db
 
             byte[] bytes;
 
-            // If the stream is within "int" max size, we can read it at once without requiring MemoryStream
-            if (stream.CanSeek && stream.Length <= int.MaxValue)
+            using (var memoryStream = new MemoryStream())
             {
-                bytes = new byte[stream.Length];
-                var bytesRead = await stream.ReadAsync(bytes, 0, (int)stream.Length).ConfigureAwait(false);
-
-                if (bytesRead != stream.Length)
-                {
-                    throw new InvalidDatabaseException(
-                        $"Failed to read all bytes from the stream (expected {stream.Length}, got {bytesRead}).");
-                }
-            }
-            else
-            {
-                // Else, use MemoryStream
-                using (var memoryStream = new MemoryStream())
-                {
-                    await stream.CopyToAsync(memoryStream).ConfigureAwait(false);
-                    bytes = memoryStream.ToArray();
-                }
+                await stream.CopyToAsync(memoryStream).ConfigureAwait(false);
+                bytes = memoryStream.ToArray();
             }
 
             if (bytes.Length == 0)
