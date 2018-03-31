@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 
 #endregion
 
@@ -109,9 +110,17 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="file">The MaxMind DB file.</param>
         /// <param name="mode">The mode by which to access the DB file.</param>
-        public Reader(string file, FileAccessMode mode) : this(BufferForMode(file, mode))
+        public Reader(string file, FileAccessMode mode) : this(BufferForMode(file, mode), file)
         {
-            _fileName = file;
+        }
+
+        /// <summary>
+        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by loading the specified file into memory.
+        /// </summary>
+        /// <param name="file">The file.</param>
+        public static async Task<Reader> CreateAsync(string file)
+        {
+            return new Reader(await ArrayBuffer.CreateAsync(file).ConfigureAwait(false), file);
         }
 
         private static Buffer BufferForMode(string file, FileAccessMode mode)
@@ -137,12 +146,23 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
         /// <exception cref="ArgumentNullException"></exception>
-        public Reader(Stream stream) : this(new ArrayBuffer(stream))
+        public Reader(Stream stream) : this(new ArrayBuffer(stream), null)
         {
         }
 
-        private Reader(Buffer buffer)
+        /// <summary>
+        ///     Asynchronously initialize with Stream.
+        /// </summary>
+        /// <param name="stream">The stream to use. It will be used from its current position. </param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static async Task<Reader> CreateAsync(Stream stream)
         {
+            return new Reader(await ArrayBuffer.CreateAsync(stream).ConfigureAwait(false), null);
+        }
+
+        private Reader(Buffer buffer, string file)
+        {
+            _fileName = file;
             _database = buffer;
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
@@ -369,8 +389,7 @@ namespace MaxMind.Db
             }
 
             throw new InvalidDatabaseException(
-                "Could not find a MaxMind Db metadata marker in this file ("
-                + _fileName + "). Is this a valid MaxMind Db file?");
+                $"Could not find a MaxMind Db metadata marker in this file ({_fileName}). Is this a valid MaxMind Db file?");
         }
 
         private int ReadNode(int nodeNumber, int index)
