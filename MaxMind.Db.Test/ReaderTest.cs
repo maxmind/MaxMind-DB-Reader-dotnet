@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Reflection;
+using System.Threading.Tasks;
 using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using Xunit;
@@ -49,6 +50,33 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public async Task TestAsync()
+        {
+            foreach (var recordSize in new long[] { 24, 28, 32 })
+            {
+                foreach (var ipVersion in new[] { 4, 6 })
+                {
+                    var file = Path.Combine(_testDataRoot,
+                        "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    var reader = await Reader.CreateAsync(file).ConfigureAwait(false);
+                    using (reader)
+                    {
+                        TestMetadata(reader, ipVersion);
+
+                        if (ipVersion == 4)
+                        {
+                            TestIPV4(reader, file);
+                        }
+                        else
+                        {
+                            TestIPV6(reader, file);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void TestStream()
         {
             foreach (var recordSize in new long[] { 24, 28, 32 })
@@ -60,6 +88,35 @@ namespace MaxMind.Db.Test
                     using (var streamReader = File.OpenText(file))
                     {
                         using (var reader = new Reader(streamReader.BaseStream))
+                        {
+                            TestMetadata(reader, ipVersion);
+
+                            if (ipVersion == 4)
+                            {
+                                TestIPV4(reader, file);
+                            }
+                            else
+                            {
+                                TestIPV6(reader, file);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestStreamAsync()
+        {
+            foreach (var recordSize in new long[] { 24, 28, 32 })
+            {
+                foreach (var ipVersion in new[] { 4, 6 })
+                {
+                    var file = Path.Combine(_testDataRoot,
+                        "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+                    using (var streamReader = File.OpenText(file))
+                    {
+                        using (var reader = await Reader.CreateAsync(streamReader.BaseStream).ConfigureAwait(false))
                         {
                             TestMetadata(reader, ipVersion);
 
@@ -108,9 +165,47 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public async Task TestNonSeekableStreamAsync()
+        {
+            foreach (var recordSize in new long[] { 24, 28, 32 })
+            {
+                foreach (var ipVersion in new[] { 4, 6 })
+                {
+                    var file = Path.Combine(_testDataRoot,
+                        "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
+
+                    using (var stream = new NonSeekableStreamWrapper(File.OpenRead(file)))
+                    {
+                        using (var reader = await Reader.CreateAsync(stream).ConfigureAwait(false))
+                        {
+                            TestMetadata(reader, ipVersion);
+
+                            if (ipVersion == 4)
+                            {
+                                TestIPV4(reader, file);
+                            }
+                            else
+                            {
+                                TestIPV6(reader, file);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
             ((Action)(() => new Reader((Stream)null)))
+                .ShouldThrow<ArgumentNullException>()
+                .WithMessage("The database stream must not be null.*");
+        }
+
+        [Fact]
+        public void NullStreamThrowsArgumentNullExceptionAsync()
+        {
+            ((Func<Task>)(async () => { await Reader.CreateAsync((Stream)null).ConfigureAwait(false); }))
                 .ShouldThrow<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
@@ -121,6 +216,17 @@ namespace MaxMind.Db.Test
             using (var stream = new MemoryStream())
             {
                 ((Action)(() => new Reader(stream)))
+                    .ShouldThrow<InvalidDatabaseException>()
+                    .WithMessage("*zero bytes left in the stream*");
+            }
+        }
+
+        [Fact]
+        public void TestEmptyStreamAsync()
+        {
+            using (var stream = new MemoryStream())
+            {
+                ((Func<Task>)(async () => { await Reader.CreateAsync(stream).ConfigureAwait(false); }))
                     .ShouldThrow<InvalidDatabaseException>()
                     .WithMessage("*zero bytes left in the stream*");
             }
