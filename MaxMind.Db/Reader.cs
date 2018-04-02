@@ -20,9 +20,17 @@ namespace MaxMind.Db
         MemoryMapped,
 
         /// <summary>
+        ///     Open the file in global memory mapped mode. Requires the 'create global objects' right. Does not load into real memory.
+        /// </summary>
+        /// <remarks>
+        ///     For information on the 'create global objects' right, see: https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-global-objects
+        /// </remarks>
+        MemoryMappedGlobal,
+
+        /// <summary>
         ///     Load the file into memory.
         /// </summary>
-        Memory
+        Memory,
     }
 
     /// <summary>
@@ -68,7 +76,10 @@ namespace MaxMind.Db
             switch (mode)
             {
                 case FileAccessMode.MemoryMapped:
-                    return new MemoryMapBuffer(file);
+                    return new MemoryMapBuffer(file, false);
+
+                case FileAccessMode.MemoryMappedGlobal:
+                    return new MemoryMapBuffer(file, true);
 
                 case FileAccessMode.Memory:
                     return new ArrayBuffer(file);
