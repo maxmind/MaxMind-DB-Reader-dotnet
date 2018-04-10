@@ -1,5 +1,11 @@
 # Release Nodes #
 
+## 2.4.0 (2018-04-11) ##
+
+* Added `FileAccessMode.MemoryMappedGlobal`. When used, this will open the file
+  in global memory map mode. This requires the "create global objects" right.
+  Pull request by David Warner. GitHub #43.
+
 ## 2.3.0 (2017-10-27) ##
 
 * Reduce the number of allocations when creating a `MaxMind.Db.Reader` from
