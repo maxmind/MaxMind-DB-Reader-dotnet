@@ -111,7 +111,7 @@ namespace MaxMind.Db.Test
         public void NullStreamThrowsArgumentNullException()
         {
             ((Action)(() => new Reader((Stream)null)))
-                .ShouldThrow<ArgumentNullException>()
+                .Should().Throw<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
 
@@ -121,7 +121,7 @@ namespace MaxMind.Db.Test
             using (var stream = new MemoryStream())
             {
                 ((Action)(() => new Reader(stream)))
-                    .ShouldThrow<InvalidDatabaseException>()
+                    .Should().Throw<InvalidDatabaseException>()
                     .WithMessage("*zero bytes left in the stream*");
             }
         }
@@ -176,9 +176,9 @@ namespace MaxMind.Db.Test
 
             var array = (List<object>)record["array"];
             array.Should().HaveCount(3);
-            array[0].ShouldBeEquivalentTo(1);
-            array[1].ShouldBeEquivalentTo(2);
-            array[2].ShouldBeEquivalentTo(3);
+            array[0].Should().BeEquivalentTo(1);
+            array[1].Should().BeEquivalentTo(2);
+            array[2].Should().BeEquivalentTo(3);
 
             var map = (Dictionary<string, object>)record["map"];
             map.Should().HaveCount(1);
@@ -189,16 +189,16 @@ namespace MaxMind.Db.Test
 
             var arrayX = (List<object>)mapX["arrayX"];
             arrayX.Should().HaveCount(3);
-            arrayX[0].ShouldBeEquivalentTo(7);
-            arrayX[1].ShouldBeEquivalentTo(8);
-            arrayX[2].ShouldBeEquivalentTo(9);
+            arrayX[0].Should().BeEquivalentTo(7);
+            arrayX[1].Should().BeEquivalentTo(8);
+            arrayX[2].Should().BeEquivalentTo(9);
 
             ((double)record["double"]).Should().BeApproximately(42.123456, 0.000000001);
             ((float)record["float"]).Should().BeApproximately(1.1F, 0.000001F);
-            record["int32"].ShouldBeEquivalentTo(-268435456);
-            record["uint16"].ShouldBeEquivalentTo(100);
-            record["uint32"].ShouldBeEquivalentTo(268435456);
-            record["uint64"].ShouldBeEquivalentTo(1152921504606846976);
+            record["int32"].Should().BeEquivalentTo(-268435456);
+            record["uint16"].Should().BeEquivalentTo(100);
+            record["uint32"].Should().BeEquivalentTo(268435456);
+            record["uint64"].Should().BeEquivalentTo(1152921504606846976);
             record["uint128"].Should().Be(
                 BigInteger.Parse("1329227995784915872903807060280344576"));
         }
@@ -259,8 +259,8 @@ namespace MaxMind.Db.Test
                 ((float)record["float"]).Should().BeApproximately(0, 0.000001F);
                 record["int32"].Should().Be(0);
                 record["uint16"].Should().Be(0);
-                record["uint32"].ShouldBeEquivalentTo(0);
-                record["uint64"].ShouldBeEquivalentTo(0);
+                record["uint32"].Should().BeEquivalentTo(0);
+                record["uint64"].Should().BeEquivalentTo(0);
                 record["uint128"].Should().Be(new BigInteger(0));
             }
         }
@@ -271,7 +271,7 @@ namespace MaxMind.Db.Test
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
             {
                 ((Action)(() => reader.Find<object>(IPAddress.Parse("2001:220::"))))
-                    .ShouldThrow<InvalidDatabaseException>()
+                    .Should().Throw<InvalidDatabaseException>()
                     .WithMessage("*contains bad data*");
             }
         }
@@ -282,7 +282,7 @@ namespace MaxMind.Db.Test
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
                 ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.32"))))
-                    .ShouldThrow<InvalidDatabaseException>()
+                    .Should().Throw<InvalidDatabaseException>()
                     .WithMessage("*search tree is corrupt*");
             }
         }
@@ -293,7 +293,7 @@ namespace MaxMind.Db.Test
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
             {
                 ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.16"))))
-                    .ShouldThrow<InvalidDatabaseException>()
+                    .Should().Throw<InvalidDatabaseException>()
                     .WithMessage("*data section contains bad data*");
             }
         }
