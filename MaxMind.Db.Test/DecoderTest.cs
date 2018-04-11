@@ -45,13 +45,13 @@ namespace MaxMind.Db.Test
                     }
                     else
                     {
-                        val.ShouldBeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
+                        val.Should().BeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
                     }
                 }
             }
         }
 
-        private static IEnumerable<object> TestUInt16()
+        public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
             {
@@ -65,7 +65,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { uint16s };
         }
 
-        private static IEnumerable<object> TestUInt32()
+        public static IEnumerable<object[]> TestUInt32()
         {
             var uint32s = new Dictionary<object, byte[]>
             {
@@ -81,7 +81,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { uint32s };
         }
 
-        private static IEnumerable<object> TestInt32s()
+        public static IEnumerable<object[]> TestInt32s()
         {
             var int32s = new Dictionary<object, byte[]>
             {
@@ -102,7 +102,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { int32s };
         }
 
-        private static IEnumerable<object> TestInt64s()
+        public static IEnumerable<object[]> TestInt64s()
         {
             var int64s = new Dictionary<object, byte[]>
             {
@@ -129,7 +129,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { int64s };
         }
 
-        private static long Int64Pow(long x, int pow)
+        public static long Int64Pow(long x, int pow)
         {
             long ret = 1;
             while (pow != 0)
@@ -142,7 +142,7 @@ namespace MaxMind.Db.Test
             return ret;
         }
 
-        private static IEnumerable<object> TestBigIntegers()
+        public static IEnumerable<object[]> TestBigIntegers()
         {
             var bigInts = new Dictionary<object, byte[]>
             {
@@ -169,7 +169,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { bigInts, /*useShouldBe*/ true };
         }
 
-        private static IEnumerable<object> TestDoubles()
+        public static IEnumerable<object[]> TestDoubles()
         {
             var doubles = new Dictionary<object, byte[]>
             {
@@ -186,7 +186,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { doubles };
         }
 
-        private static IEnumerable<object> TestFloats()
+        public static IEnumerable<object[]> TestFloats()
         {
             var floats = new Dictionary<object, byte[]>
             {
@@ -204,7 +204,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { floats };
         }
 
-        private static IEnumerable<object> TestPointers()
+        public static IEnumerable<object[]> TestPointers()
         {
             var pointers = new Dictionary<object, byte[]>
             {
@@ -223,7 +223,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { pointers };
         }
 
-        private static IEnumerable<object> TestStrings()
+        public static IEnumerable<object[]> TestStrings()
         {
             yield return new object[] { Strings() };
         }
@@ -262,7 +262,7 @@ namespace MaxMind.Db.Test
             tests.Add(str, bytes);
         }
 
-        private static IEnumerable<object> TestBooleans()
+        public static IEnumerable<object[]> TestBooleans()
         {
             var booleans = new Dictionary<object, byte[]>
             {
@@ -273,7 +273,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { booleans };
         }
 
-        private static IEnumerable<object> TestBytes()
+        public static IEnumerable<object[]> TestBytes()
         {
             var bytes = new Dictionary<byte[], byte[]>();
 
@@ -290,7 +290,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { bytes };
         }
 
-        private static IEnumerable<object> TestMaps()
+        public static IEnumerable<object[]> TestMaps()
         {
             var maps = new Dictionary<Dictionary<string, object>, byte[]>();
 
@@ -351,7 +351,7 @@ namespace MaxMind.Db.Test
             yield return new object[] { maps };
         }
 
-        private static IEnumerable<object> TestArrays()
+        public static IEnumerable<object[]> TestArrays()
         {
             var arrays = new Dictionary<List<object>, byte[]>();
 
