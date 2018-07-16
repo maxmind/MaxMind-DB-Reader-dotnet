@@ -262,7 +262,7 @@ namespace MaxMind.Db
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                                yield return new ReaderIteratorNode(ipAddress, node.Bit, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
