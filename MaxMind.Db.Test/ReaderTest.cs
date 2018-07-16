@@ -188,7 +188,7 @@ namespace MaxMind.Db.Test
                     count++;
                 }
             }
-            count.Should().Equals(269);
+            count.Should().Be(269);
         }
 
         private void TestDecodingTypes(IDictionary<string, object> record)
