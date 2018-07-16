@@ -254,7 +254,16 @@ namespace MaxMind.Db
                         {
                             // data node, we are done with this branch
                             Dictionary<string, object> data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null);
-                            yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                            IPAddress ipAddress = new IPAddress(node.IPBytes);
+                            if (ipAddress.IsIPv4MappedToIPv6)
+                            {
+                                IPAddress ip4 = ipAddress.MapToIPv4();
+                                yield return new ReaderIteratorNode(ip4, node.Bit - 96, data);
+                            }
+                            else
+                            {
+                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                            }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
                         break;
