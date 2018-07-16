@@ -12,6 +12,7 @@ using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using Xunit;
 using NetTools;
+using System.Diagnostics;
 
 #endregion
 
@@ -192,14 +193,27 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public void TestEnumerateDatabaseSpeed()
+        public void TestEnumerateCitiesDatabaseSpeed()
         {
+            Stopwatch timer = Stopwatch.StartNew();
+            int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
+            using (var enumerator = reader.GetEnumerator(int.MaxValue))
             {
-                foreach (Reader.ReaderIteratorNode node in reader)
-                {
-                }
+                while (enumerator.MoveNext()) { count++; }
             }
+            count.Should().Be(12971146);
+
+#if DEBUG
+
+            timer.Elapsed.TotalMinutes.Should().BeLessThan(1.5);
+
+#else
+
+            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.75);
+
+#endif
+
         }
 
         private void TestDecodingTypes(IDictionary<string, object> record)

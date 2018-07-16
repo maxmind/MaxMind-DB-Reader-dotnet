@@ -220,15 +220,16 @@ namespace MaxMind.Db
         /// <summary>
         /// Get an enumerator that iterates all data nodes in the database
         /// </summary>
+        /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator()
+        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator(int cacheSize)
         {
             int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
             int prefixMax = byteCount * 8;
             List<NetNode> nodes = new List<NetNode>();
             NetNode root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
-            Dictionary<int, Dictionary<string, object>> dataCache = new Dictionary<int, Dictionary<string, object>>();
+            CachedDictionary<int, Dictionary<string, object>> dataCache = new CachedDictionary<int, Dictionary<string, object>>(cacheSize, null);
             while (nodes.Count > 0)
             {
                 NetNode node = nodes[nodes.Count - 1];
@@ -256,7 +257,7 @@ namespace MaxMind.Db
                             // data node, we are done with this branch
                             if (!dataCache.TryGetValue(node.Pointer, out Dictionary<string, object> data))
                             {
-                                dataCache[node.Pointer] = data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null);
+                                dataCache.Add(node.Pointer, data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null));
                             }
                             IPAddress ipAddress = new IPAddress(node.IPBytes);
                             if (ipAddress.IsIPv4MappedToIPv6)
@@ -277,12 +278,21 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        /// Get an enumerator that iterates all data nodes in the database
+        /// </summary>
+        /// <returns>Enumerator for all data nodes</returns>
+        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator()
+        {
+            return this.GetEnumerator(16384);
+        }
+
+        /// <summary>
         /// IEnumerator interface
         /// </summary>
         /// <returns>IEnumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return this.GetEnumerator(16384);
         }
 
         /// <summary>
