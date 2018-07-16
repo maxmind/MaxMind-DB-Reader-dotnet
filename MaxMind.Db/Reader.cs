@@ -259,15 +259,29 @@ namespace MaxMind.Db
                             {
                                 dataCache.Add(node.Pointer, data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null));
                             }
-                            IPAddress ipAddress = new IPAddress(node.IPBytes);
-                            if (ipAddress.IsIPv4MappedToIPv6)
+                            bool isIPV4 = true;
+                            for (int i = 0; i < node.IPBytes.Length - 4; i++)
                             {
-                                IPAddress ip4 = ipAddress.MapToIPv4();
-                                yield return new ReaderIteratorNode(ip4, node.Bit - 96, data);
+                                if (node.IPBytes[i] != 0)
+                                {
+                                    isIPV4 = false;
+                                    break;
+                                }
+                            }
+                            if (isIPV4)
+                            {
+                                if (node.IPBytes.Length == 4)
+                                {
+                                    yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                                }
+                                else
+                                {
+                                    yield return new ReaderIteratorNode(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
+                                }
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode(ipAddress, node.Bit, data);
+                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
