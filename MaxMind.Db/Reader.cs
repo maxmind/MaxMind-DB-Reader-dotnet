@@ -1,6 +1,8 @@
 ﻿#region
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -36,8 +38,91 @@ namespace MaxMind.Db
     /// <summary>
     ///     Given a MaxMind DB file, this class will retrieve information about an IP address
     /// </summary>
-    public sealed class Reader : IDisposable
+    public sealed class Reader : IDisposable, IEnumerable<Reader.ReaderIteratorNode>
     {
+        private static class Bits
+        {
+            public static byte[] Not(byte[] bytes)
+            {
+                var result = (byte[])bytes.Clone();
+                for (var i = 0; i < result.Length; i++)
+                {
+                    result[i] = (byte)~result[i];
+                }
+                return result;
+                //return bytes.Select(b => (byte)~b).ToArray();
+            }
+
+            public static byte[] And(byte[] A, byte[] B)
+            {
+                var result = (byte[])A.Clone();
+                for (var i = 0; i < A.Length; i++)
+                {
+                    result[i] &= B[i];
+                }
+                return result;
+                //return A.Zip(B, (a, b) => (byte)(a & b)).ToArray();
+            }
+
+            public static byte[] Or(byte[] A, byte[] B)
+            {
+                var result = (byte[])A.Clone();
+                for (var i = 0; i < A.Length; i++)
+                {
+                    result[i] |= B[i];
+                }
+                return result;
+                //return A.Zip(B, (a, b) => (byte)(a | b)).ToArray();
+            }
+
+            public static byte[] GetBitMask(int sizeOfBuff, int bitLen)
+            {
+                var maskBytes = new byte[sizeOfBuff];
+                var bytesLen = bitLen / 8;
+                var bitsLen = bitLen % 8;
+                for (var i = 0; i < bytesLen; i++)
+                {
+                    maskBytes[i] = 0xff;
+                }
+                if (bitsLen > 0) maskBytes[bytesLen] = (byte)~Enumerable.Range(1, 8 - bitsLen).Select(n => 1 << n - 1).Aggregate((a, b) => a | b);
+                return maskBytes;
+            }
+        }
+
+        /// <summary>
+        /// A node from the reader iterator
+        /// </summary>
+        public struct ReaderIteratorNode
+        {
+            /// <summary>
+            /// Internal constructor
+            /// </summary>
+            /// <param name="start">Start ip</param>
+            /// <param name="prefixLength">Prefix length</param>
+            /// <param name="data">Data</param>
+            internal ReaderIteratorNode(IPAddress start, int prefixLength, object data)
+            {
+                Start = start;
+                PrefixLength = prefixLength;
+                Data = data;
+            }
+
+            /// <summary>
+            /// Start ip address
+            /// </summary>
+            public IPAddress Start { get; private set; }
+
+            /// <summary>
+            /// Prefix length
+            /// </summary>
+            public int PrefixLength { get; private set; }
+
+            /// <summary>
+            /// Data, cast to appropriate type
+            /// </summary>
+            public object Data { get; private set; }
+        }
+
         private const int DataSectionSeparatorSize = 16;
         private readonly Buffer _database;
         private readonly string _fileName;
@@ -172,6 +257,79 @@ namespace MaxMind.Db
         {
             int prefixLength;
             return Find<T>(ipAddress, out prefixLength, injectables);
+        }
+
+        /// <summary>
+        /// Get an enumerator that iterates all data nodes in the database
+        /// </summary>
+        /// <returns>Enumerator for all data nodes</returns>
+        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator()
+        {
+            IPAddress start = IPAddress.Parse("0.0.0.0");
+            int prefixLength;
+            int i = 0;
+            while (true)
+            {
+                Dictionary<string, object> item = Find<Dictionary<string, object>>(start, out prefixLength);
+                if (item != null)
+                {
+                    yield return new ReaderIteratorNode(start, prefixLength, item);
+                }
+                start = GetEndIPAddress(start, prefixLength);
+                if (!TryIncrement(start, out start))
+                {
+                    if (i == 0)
+                    {
+                        i++;
+                        start = IPAddress.Parse("0000:0000:0000:0000:0001:0000:0000:0000");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private static IPAddress GetEndIPAddress(IPAddress start, int prefixLength)
+        {
+            var baseAdrBytes = start.GetAddressBytes();
+            if (baseAdrBytes.Length * 8 < prefixLength) throw new FormatException();
+            var maskBytes = Bits.GetBitMask(baseAdrBytes.Length, prefixLength);
+            baseAdrBytes = Bits.And(baseAdrBytes, maskBytes);
+            return new IPAddress(Bits.Or(baseAdrBytes, Bits.Not(maskBytes)));
+        }
+
+        private static bool TryIncrement(IPAddress ipAddress, out IPAddress result)
+        {
+            byte[] bytes = ipAddress.GetAddressBytes();
+
+            for (int k = bytes.Length - 1; k >= 0; k--)
+            {
+                if (bytes[k] == byte.MaxValue)
+                {
+                    bytes[k] = 0;
+                    continue;
+                }
+
+                bytes[k]++;
+
+                result = new IPAddress(bytes);
+                return true;
+            }
+
+            // all bytes are already max values, no increment possible
+            result = ipAddress;
+            return false;
+        }
+
+        /// <summary>
+        /// IEnumerator interface
+        /// </summary>
+        /// <returns>IEnumerator</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
 
         /// <summary>

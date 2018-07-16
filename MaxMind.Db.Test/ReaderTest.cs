@@ -166,7 +166,21 @@ namespace MaxMind.Db.Test
             }
         }
 
-        public void TestDecodingTypes(IDictionary<string, object> record)
+        [Fact]
+        public void TestEnumerateDatabase()
+        {
+            int count = 0;
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
+            {
+                foreach (Reader.ReaderIteratorNode node in reader)
+                {
+                    count++;
+                }
+            }
+            count.Should().Equals(259);
+        }
+
+        private void TestDecodingTypes(IDictionary<string, object> record)
         {
             ((bool)record["boolean"]).Should().BeTrue();
 
