@@ -216,6 +216,30 @@ namespace MaxMind.Db.Test
 
         }
 
+        [Fact]
+        public void TestEnumerateCountriesDatabaseSpeed()
+        {
+            Stopwatch timer = Stopwatch.StartNew();
+            int count = 0;
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-Country.mmdb"), FileAccessMode.Memory))
+            using (var enumerator = reader.GetEnumerator(int.MaxValue))
+            {
+                while (enumerator.MoveNext()) { count++; }
+            }
+            count.Should().Be(1282101);
+
+#if DEBUG
+
+            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.5);
+
+#else
+
+            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.25);
+
+#endif
+
+        }
+
         private void TestDecodingTypes(IDictionary<string, object> record)
         {
             ((bool)record["boolean"]).Should().BeTrue();
