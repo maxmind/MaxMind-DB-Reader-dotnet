@@ -74,7 +74,7 @@ namespace MaxMind.Db
             public Dictionary<string, object> Data { get; private set; }
         }
 
-        private class NetNode
+        private struct NetNode
         {
             public byte[] IPBytes { get; set; }
             public int Bit { get; set; }
@@ -228,6 +228,7 @@ namespace MaxMind.Db
             List<NetNode> nodes = new List<NetNode>();
             NetNode root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
+            Dictionary<int, Dictionary<string, object>> dataCache = new Dictionary<int, Dictionary<string, object>>();
             while (nodes.Count > 0)
             {
                 NetNode node = nodes[nodes.Count - 1];
@@ -253,7 +254,10 @@ namespace MaxMind.Db
                         if (node.Pointer > Metadata.NodeCount)
                         {
                             // data node, we are done with this branch
-                            Dictionary<string, object> data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null);
+                            if (!dataCache.TryGetValue(node.Pointer, out Dictionary<string, object> data))
+                            {
+                                dataCache[node.Pointer] = data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null);
+                            }
                             IPAddress ipAddress = new IPAddress(node.IPBytes);
                             if (ipAddress.IsIPv4MappedToIPv6)
                             {

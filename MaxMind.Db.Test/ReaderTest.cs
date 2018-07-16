@@ -191,6 +191,17 @@ namespace MaxMind.Db.Test
             count.Should().Be(269);
         }
 
+        [Fact]
+        public void TestEnumerateDatabaseSpeed()
+        {
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
+            {
+                foreach (Reader.ReaderIteratorNode node in reader)
+                {
+                }
+            }
+        }
+
         private void TestDecodingTypes(IDictionary<string, object> record)
         {
             ((bool)record["boolean"]).Should().BeTrue();
