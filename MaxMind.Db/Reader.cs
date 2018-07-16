@@ -268,20 +268,13 @@ namespace MaxMind.Db
                                     break;
                                 }
                             }
-                            if (isIPV4)
+                            if (!isIPV4 || node.IPBytes.Length == 4)
                             {
-                                if (node.IPBytes.Length == 4)
-                                {
-                                    yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
-                                }
-                                else
-                                {
-                                    yield return new ReaderIteratorNode(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
-                                }
+                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
