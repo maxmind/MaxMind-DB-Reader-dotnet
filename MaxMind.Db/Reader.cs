@@ -40,55 +40,6 @@ namespace MaxMind.Db
     /// </summary>
     public sealed class Reader : IDisposable, IEnumerable<Reader.ReaderIteratorNode>
     {
-        private static class Bits
-        {
-            public static byte[] Not(byte[] bytes)
-            {
-                var result = (byte[])bytes.Clone();
-                for (var i = 0; i < result.Length; i++)
-                {
-                    result[i] = (byte)~result[i];
-                }
-                return result;
-                //return bytes.Select(b => (byte)~b).ToArray();
-            }
-
-            public static byte[] And(byte[] A, byte[] B)
-            {
-                var result = (byte[])A.Clone();
-                for (var i = 0; i < A.Length; i++)
-                {
-                    result[i] &= B[i];
-                }
-                return result;
-                //return A.Zip(B, (a, b) => (byte)(a & b)).ToArray();
-            }
-
-            public static byte[] Or(byte[] A, byte[] B)
-            {
-                var result = (byte[])A.Clone();
-                for (var i = 0; i < A.Length; i++)
-                {
-                    result[i] |= B[i];
-                }
-                return result;
-                //return A.Zip(B, (a, b) => (byte)(a | b)).ToArray();
-            }
-
-            public static byte[] GetBitMask(int sizeOfBuff, int bitLen)
-            {
-                var maskBytes = new byte[sizeOfBuff];
-                var bytesLen = bitLen / 8;
-                var bitsLen = bitLen % 8;
-                for (var i = 0; i < bytesLen; i++)
-                {
-                    maskBytes[i] = 0xff;
-                }
-                if (bitsLen > 0) maskBytes[bytesLen] = (byte)~Enumerable.Range(1, 8 - bitsLen).Select(n => 1 << n - 1).Aggregate((a, b) => a | b);
-                return maskBytes;
-            }
-        }
-
         /// <summary>
         /// A node from the reader iterator
         /// </summary>
@@ -100,7 +51,7 @@ namespace MaxMind.Db
             /// <param name="start">Start ip</param>
             /// <param name="prefixLength">Prefix length</param>
             /// <param name="data">Data</param>
-            internal ReaderIteratorNode(IPAddress start, int prefixLength, object data)
+            internal ReaderIteratorNode(IPAddress start, int prefixLength, Dictionary<string, object> data)
             {
                 Start = start;
                 PrefixLength = prefixLength;
@@ -113,14 +64,21 @@ namespace MaxMind.Db
             public IPAddress Start { get; private set; }
 
             /// <summary>
-            /// Prefix length
+            /// Prefix/mask length
             /// </summary>
             public int PrefixLength { get; private set; }
 
             /// <summary>
-            /// Data, cast to appropriate type
+            /// Data
             /// </summary>
-            public object Data { get; private set; }
+            public Dictionary<string, object> Data { get; private set; }
+        }
+
+        private class NetNode
+        {
+            public byte[] IPBytes { get; set; }
+            public int Bit { get; set; }
+            public int Pointer { get; set; }
         }
 
         private const int DataSectionSeparatorSize = 16;
@@ -265,62 +223,44 @@ namespace MaxMind.Db
         /// <returns>Enumerator for all data nodes</returns>
         public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator()
         {
-            IPAddress start = IPAddress.Parse("0.0.0.0");
-            int prefixLength;
-            int i = 0;
-            while (true)
+            int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
+            int prefixMax = byteCount * 8;
+            List<NetNode> nodes = new List<NetNode>();
+            NetNode root = new NetNode { IPBytes = new byte[byteCount] };
+            nodes.Add(root);
+            while (nodes.Count > 0)
             {
-                Dictionary<string, object> item = Find<Dictionary<string, object>>(start, out prefixLength);
-                if (item != null)
+                NetNode node = nodes[nodes.Count - 1];
+                nodes.RemoveAt(nodes.Count - 1);
+                while (true)
                 {
-                    yield return new ReaderIteratorNode(start, prefixLength, item);
-                }
-                start = GetEndIPAddress(start, prefixLength);
-                if (!TryIncrement(start, out start))
-                {
-                    if (i == 0)
+                    if (node.Pointer < Metadata.NodeCount)
                     {
-                        i++;
-                        start = IPAddress.Parse("0000:0000:0000:0000:0001:0000:0000:0000");
+                        byte[] ipRight = new byte[byteCount];
+                        Array.Copy(node.IPBytes, ipRight, ipRight.Length);
+                        if (ipRight.Length <= (node.Bit >> 3))
+                        {
+                            throw new InvalidDataException("Invalid search tree, bad bit " + node.Bit);
+                        }
+                        ipRight[node.Bit >> 3] |= (byte)(1 << (7 - (node.Bit % 8)));
+                        int rightPointer = ReadNode(node.Pointer, 1);
+                        node.Bit++;
+                        nodes.Add(new NetNode { Pointer = rightPointer, IPBytes = ipRight, Bit = node.Bit });
+                        node.Pointer = ReadNode(node.Pointer, 0);
                     }
                     else
                     {
+                        if (node.Pointer > Metadata.NodeCount)
+                        {
+                            // data node, we are done with this branch
+                            Dictionary<string, object> data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null);
+                            yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                        }
+                        // else node is an empty node (terminator node), we are done with this branch
                         break;
                     }
                 }
             }
-        }
-
-        private static IPAddress GetEndIPAddress(IPAddress start, int prefixLength)
-        {
-            var baseAdrBytes = start.GetAddressBytes();
-            if (baseAdrBytes.Length * 8 < prefixLength) throw new FormatException();
-            var maskBytes = Bits.GetBitMask(baseAdrBytes.Length, prefixLength);
-            baseAdrBytes = Bits.And(baseAdrBytes, maskBytes);
-            return new IPAddress(Bits.Or(baseAdrBytes, Bits.Not(maskBytes)));
-        }
-
-        private static bool TryIncrement(IPAddress ipAddress, out IPAddress result)
-        {
-            byte[] bytes = ipAddress.GetAddressBytes();
-
-            for (int k = bytes.Length - 1; k >= 0; k--)
-            {
-                if (bytes[k] == byte.MaxValue)
-                {
-                    bytes[k] = 0;
-                    continue;
-                }
-
-                bytes[k]++;
-
-                result = new IPAddress(bytes);
-                return true;
-            }
-
-            // all bytes are already max values, no increment possible
-            result = ipAddress;
-            return false;
         }
 
         /// <summary>

@@ -11,6 +11,7 @@ using System.Reflection;
 using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using Xunit;
+using NetTools;
 
 #endregion
 
@@ -167,17 +168,27 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public void TestEnumerateDatabase()
+        public void TestEnumerateCountryDatabase()
         {
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
             {
                 foreach (Reader.ReaderIteratorNode node in reader)
                 {
+                    // ensure start ip and prefix length are valid, will throw if not
+                    IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
+
+                    // ensure a lookup back into the db produces correct results
+                    var find = reader.Find<Dictionary<string, object>>(range.Begin);
+                    find.Should().NotBeNull();
+                    var find2 = reader.Find<Dictionary<string, object>>(node.Start);
+                    find2.Should().NotBeNull();
+                    find.Should().BeEquivalentTo(find2);
+                    find.Should().BeEquivalentTo(node.Data);
                     count++;
                 }
             }
-            count.Should().Equals(259);
+            count.Should().Equals(269);
         }
 
         private void TestDecodingTypes(IDictionary<string, object> record)
@@ -387,6 +398,19 @@ namespace MaxMind.Db.Test
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
                 routingPrefix.Should().Be(prefixes[address],
                     $"Invalid prefix for {address} in {file}");
+            }
+
+            foreach (Reader.ReaderIteratorNode node in reader)
+            {
+                // ensure start ip and prefix length are valid, will throw if not
+                IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
+
+                // ensure a lookup back into the db produces correct results
+                var find = reader.Find<Dictionary<string, object>>(node.Start);
+                find.Should().NotBeNull();
+                var find2 = reader.Find<Dictionary<string, object>>(range.Begin);
+                find2.Should().NotBeNull();
+                find2.Should().BeEquivalentTo(find);
             }
         }
 
