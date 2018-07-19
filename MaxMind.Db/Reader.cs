@@ -213,8 +213,7 @@ namespace MaxMind.Db
         /// <returns>An object containing the IP related data</returns>
         public T Find<T>(IPAddress ipAddress, InjectableValues injectables = null) where T : class
         {
-            int prefixLength;
-            return Find<T>(ipAddress, out prefixLength, injectables);
+            return Find<T>(ipAddress, out _, injectables);
         }
 
         /// <summary>
