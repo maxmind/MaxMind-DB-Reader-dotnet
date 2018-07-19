@@ -168,24 +168,31 @@ namespace MaxMind.Db.Test
             }
         }
 
+        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node)
+        {
+            // ensure start ip and prefix length are valid, will throw if not
+            IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
+
+            // ensure a lookup back into the db produces correct results
+            var find = reader.Find<Dictionary<string, object>>(range.Begin);
+            find.Should().NotBeNull();
+            var find2 = reader.Find<Dictionary<string, object>>(node.Start);
+            find2.Should().NotBeNull();
+            find.Should().BeEquivalentTo(find2);
+            find.Should().BeEquivalentTo(node.Data);
+        }
+
         [Fact]
         public void TestEnumerateCountryDatabase()
         {
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
+            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>())
             {
-                foreach (Reader.ReaderIteratorNode node in reader)
+                while (enumerator.MoveNext())
                 {
-                    // ensure start ip and prefix length are valid, will throw if not
-                    IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
-
-                    // ensure a lookup back into the db produces correct results
-                    var find = reader.Find<Dictionary<string, object>>(range.Begin);
-                    find.Should().NotBeNull();
-                    var find2 = reader.Find<Dictionary<string, object>>(node.Start);
-                    find2.Should().NotBeNull();
-                    find.Should().BeEquivalentTo(find2);
-                    find.Should().BeEquivalentTo(node.Data);
+                    var node = enumerator.Current;
+                    TestNode(reader, node);
                     count++;
                 }
             }
@@ -198,7 +205,7 @@ namespace MaxMind.Db.Test
             Stopwatch timer = Stopwatch.StartNew();
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
-            using (var enumerator = reader.GetEnumerator(int.MaxValue))
+            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>(int.MaxValue))
             {
                 while (enumerator.MoveNext()) { count++; }
             }
@@ -222,7 +229,7 @@ namespace MaxMind.Db.Test
             Stopwatch timer = Stopwatch.StartNew();
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-Country.mmdb"), FileAccessMode.Memory))
-            using (var enumerator = reader.GetEnumerator(int.MaxValue))
+            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>(int.MaxValue))
             {
                 while (enumerator.MoveNext()) { count++; }
             }
@@ -449,17 +456,12 @@ namespace MaxMind.Db.Test
                     $"Invalid prefix for {address} in {file}");
             }
 
-            foreach (Reader.ReaderIteratorNode node in reader)
+            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>())
             {
-                // ensure start ip and prefix length are valid, will throw if not
-                IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
-
-                // ensure a lookup back into the db produces correct results
-                var find = reader.Find<Dictionary<string, object>>(node.Start);
-                find.Should().NotBeNull();
-                var find2 = reader.Find<Dictionary<string, object>>(range.Begin);
-                find2.Should().NotBeNull();
-                find2.Should().BeEquivalentTo(find);
+                while (enumerator.MoveNext())
+                {
+                    TestNode(reader, enumerator.Current);
+                }
             }
         }
 

@@ -38,12 +38,12 @@ namespace MaxMind.Db
     /// <summary>
     ///     Given a MaxMind DB file, this class will retrieve information about an IP address
     /// </summary>
-    public sealed class Reader : IDisposable, IEnumerable<Reader.ReaderIteratorNode>
+    public sealed class Reader : IDisposable
     {
         /// <summary>
         /// A node from the reader iterator
         /// </summary>
-        public struct ReaderIteratorNode
+        public struct ReaderIteratorNode<T>
         {
             /// <summary>
             /// Internal constructor
@@ -51,7 +51,7 @@ namespace MaxMind.Db
             /// <param name="start">Start ip</param>
             /// <param name="prefixLength">Prefix length</param>
             /// <param name="data">Data</param>
-            internal ReaderIteratorNode(IPAddress start, int prefixLength, Dictionary<string, object> data)
+            internal ReaderIteratorNode(IPAddress start, int prefixLength, T data)
             {
                 Start = start;
                 PrefixLength = prefixLength;
@@ -71,7 +71,7 @@ namespace MaxMind.Db
             /// <summary>
             /// Data
             /// </summary>
-            public Dictionary<string, object> Data { get; private set; }
+            public T Data { get; private set; }
         }
 
         private struct NetNode
@@ -222,14 +222,14 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator(int cacheSize)
+        public IEnumerator<Reader.ReaderIteratorNode<T>> GetEnumerator<T>(int cacheSize) where T : class
         {
             int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
             int prefixMax = byteCount * 8;
             List<NetNode> nodes = new List<NetNode>();
             NetNode root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
-            CachedDictionary<int, Dictionary<string, object>> dataCache = new CachedDictionary<int, Dictionary<string, object>>(cacheSize, null);
+            CachedDictionary<int, T> dataCache = new CachedDictionary<int, T>(cacheSize, null);
             while (nodes.Count > 0)
             {
                 NetNode node = nodes[nodes.Count - 1];
@@ -255,9 +255,10 @@ namespace MaxMind.Db
                         if (node.Pointer > Metadata.NodeCount)
                         {
                             // data node, we are done with this branch
-                            if (!dataCache.TryGetValue(node.Pointer, out Dictionary<string, object> data))
+                            if (!dataCache.TryGetValue(node.Pointer, out T data))
                             {
-                                dataCache.Add(node.Pointer, data = ResolveDataPointer<Dictionary<string, object>>(node.Pointer, null));
+                                data = ResolveDataPointer<T>(node.Pointer, null);
+                                dataCache.Add(node.Pointer, data);
                             }
                             bool isIPV4 = true;
                             for (int i = 0; i < node.IPBytes.Length - 4; i++)
@@ -270,11 +271,11 @@ namespace MaxMind.Db
                             }
                             if (!isIPV4 || node.IPBytes.Length == 4)
                             {
-                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes), node.Bit, data);
+                                yield return new ReaderIteratorNode<T>(new IPAddress(node.IPBytes), node.Bit, data);
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
+                                yield return new ReaderIteratorNode<T>(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
@@ -288,18 +289,9 @@ namespace MaxMind.Db
         /// Get an enumerator that iterates all data nodes in the database
         /// </summary>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerator<Reader.ReaderIteratorNode> GetEnumerator()
+        public IEnumerator<Reader.ReaderIteratorNode<T>> GetEnumerator<T>() where T : class
         {
-            return this.GetEnumerator(16384);
-        }
-
-        /// <summary>
-        /// IEnumerator interface
-        /// </summary>
-        /// <returns>IEnumerator</returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator(16384);
+            return this.GetEnumerator<T>(16384);
         }
 
         /// <summary>
