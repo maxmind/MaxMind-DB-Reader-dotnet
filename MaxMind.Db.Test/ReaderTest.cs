@@ -187,14 +187,10 @@ namespace MaxMind.Db.Test
         {
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
-            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>())
+            foreach (var node in reader.FindAll<Dictionary<string, object>>())
             {
-                while (enumerator.MoveNext())
-                {
-                    var node = enumerator.Current;
-                    TestNode(reader, node);
-                    count++;
-                }
+                TestNode(reader, node);
+                count++;
             }
             count.Should().Be(269);
         }
@@ -205,9 +201,9 @@ namespace MaxMind.Db.Test
             Stopwatch timer = Stopwatch.StartNew();
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
-            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>(int.MaxValue))
+            foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
             {
-                while (enumerator.MoveNext()) { count++; }
+                count++;
             }
             count.Should().Be(12971146);
 
@@ -229,9 +225,9 @@ namespace MaxMind.Db.Test
             Stopwatch timer = Stopwatch.StartNew();
             int count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-Country.mmdb"), FileAccessMode.Memory))
-            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>(int.MaxValue))
+            foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
             {
-                while (enumerator.MoveNext()) { count++; }
+                count++;
             }
             count.Should().Be(1282101);
 
@@ -450,18 +446,14 @@ namespace MaxMind.Db.Test
 
             foreach (var address in prefixes.Keys)
             {
-                int routingPrefix;
-                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
+                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out int routingPrefix);
                 routingPrefix.Should().Be(prefixes[address],
                     $"Invalid prefix for {address} in {file}");
             }
 
-            using (var enumerator = reader.GetEnumerator<Dictionary<string, object>>())
+            foreach (var node in reader.FindAll<Dictionary<string, object>>())
             {
-                while (enumerator.MoveNext())
-                {
-                    TestNode(reader, enumerator.Current);
-                }
+                TestNode(reader, node);
             }
         }
 

@@ -146,8 +146,7 @@ namespace MaxMind.Db
             _database = buffer;
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
-            long ignore;
-            Metadata = metaDecode.Decode<Metadata>(start, out ignore);
+            Metadata = metaDecode.Decode<Metadata>(start, out long ignore);
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
@@ -221,7 +220,7 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerator<Reader.ReaderIteratorNode<T>> GetEnumerator<T>(int cacheSize) where T : class
+        public IEnumerable<Reader.ReaderIteratorNode<T>> FindAll<T>(int cacheSize = 16384) where T : class
         {
             int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
             int prefixMax = byteCount * 8;
@@ -285,15 +284,6 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Get an enumerator that iterates all data nodes in the database
-        /// </summary>
-        /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerator<Reader.ReaderIteratorNode<T>> GetEnumerator<T>() where T : class
-        {
-            return this.GetEnumerator<T>(16384);
-        }
-
-        /// <summary>
         ///     Finds the data related to the specified address.
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>
@@ -317,8 +307,7 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            long ignore;
-            return Decoder.Decode<T>(resolved, out ignore, injectables);
+            return Decoder.Decode<T>(resolved, out long ignore, injectables);
         }
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)
