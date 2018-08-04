@@ -1,4 +1,14 @@
-﻿using System;
+﻿/*
+Copyright 2010 Digital Ruby, LLC - http://www.digitalruby.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,13 +56,6 @@ namespace MaxMind.Db
                 KeyValuePair<TKey, TValue> removed = priorityList.Last.Value;
                 dictionary.Remove(priorityList.Last.Value.Key);
                 priorityList.RemoveLast();
-
-                OnCachedValueRemoved(removed.Key, removed.Value);
-                if (CachedItemRemoved != null)
-                {
-                    CachedItemRemoved(this, removed.Key, removed.Value);
-                }
-
             }
             priorityList.AddFirst(new KeyValuePair<TKey, TValue>(key, value));
             dictionary.Add(key, priorityList.First);
@@ -111,27 +114,7 @@ namespace MaxMind.Db
             return false;
         }
 
-        /// <summary>
-        /// Fires when an item is removed from the cache because it was the least used item. 
-        /// The key will have already been normalized. This implementation does nothing.
-        /// </summary>
-        /// <param name="key">Key</param>
-        /// <param name="value">Value</param>
-        protected virtual void OnCachedValueRemoved(TKey key, TValue value) { }
-
         #endregion Protected methods
-
-        #region Protected properties
-
-        /// <summary>
-        /// The first node in the priority list
-        /// </summary>
-        protected LinkedListNode<KeyValuePair<TKey, TValue>> FirstNode
-        {
-            get { return priorityList.First; }
-        }
-
-        #endregion Protected properties
 
         #region Public methods
 
@@ -166,47 +149,6 @@ namespace MaxMind.Db
         }
 
         #endregion Public methods
-
-        #region Public properties
-
-        /// <summary>
-        /// Current comparer
-        /// </summary>
-        public IEqualityComparer<TKey> Comparer
-        {
-            get { return comparer; }
-        }
-
-        /// <summary>
-        /// The maximum number of values that can be in memory
-        /// </summary>
-        public int MaxCount
-        {
-            get { return maxCount; }
-        }
-
-        /// <summary>
-        /// A list of all the items in the internal dictionary. The first item in the list is the most recently added item.
-        /// </summary>
-        public ICollection<KeyValuePair<TKey, TValue>> List
-        {
-            get { return priorityList; }
-        }
-
-        /// <summary>
-        /// The least most accessed item in the dictionary
-        /// </summary>
-        public KeyValuePair<TKey, TValue> Last
-        {
-            get { return priorityList.Last.Value; }
-        }
-
-        /// <summary>
-        /// Event for when cached items are removed because the max size of the dictionary was reached
-        /// </summary>
-        public event CachedItemRemovedDelegate<TKey, TValue> CachedItemRemoved;
-
-        #endregion Public properties
 
         #region IDictionary<TKey,TValue> Members
 

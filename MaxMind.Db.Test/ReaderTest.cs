@@ -168,15 +168,15 @@ namespace MaxMind.Db.Test
             }
         }
 
-        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node)
+        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues injectables = null) where T : class
         {
             // ensure start ip and prefix length are valid, will throw if not
             IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
 
             // ensure a lookup back into the db produces correct results
-            var find = reader.Find<Dictionary<string, object>>(range.Begin);
+            var find = reader.Find<T>(range.Begin, injectables);
             find.Should().NotBeNull();
-            var find2 = reader.Find<Dictionary<string, object>>(node.Start);
+            var find2 = reader.Find<T>(node.Start, injectables);
             find2.Should().NotBeNull();
             find.Should().BeEquivalentTo(find2);
             find.Should().BeEquivalentTo(node.Data);
@@ -196,51 +196,19 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public void TestEnumerateCitiesDatabaseSpeed()
+        public void TestEnumerateDecoderDatabase()
         {
-            Stopwatch timer = Stopwatch.StartNew();
             int count = 0;
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
-            foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
+            InjectableValues injectables = new InjectableValues();
+            injectables.AddValue("injectable", "injectable_value");
+            injectables.AddValue("injected", "injected_value");
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            foreach (var node in reader.FindAll<TypeHolder>(injectables))
             {
+                TestNode(reader, node, injectables);
                 count++;
             }
-            count.Should().Be(12971146);
-
-#if DEBUG
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(1.5);
-
-#else
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.75);
-
-#endif
-
-        }
-
-        [Fact]
-        public void TestEnumerateCountriesDatabaseSpeed()
-        {
-            Stopwatch timer = Stopwatch.StartNew();
-            int count = 0;
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-Country.mmdb"), FileAccessMode.Memory))
-            foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
-            {
-                count++;
-            }
-            count.Should().Be(1282101);
-
-#if DEBUG
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.5);
-
-#else
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.25);
-
-#endif
-
+            count.Should().Be(22);
         }
 
         private void TestDecodingTypes(IDictionary<string, object> record)

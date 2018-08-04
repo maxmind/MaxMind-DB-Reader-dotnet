@@ -216,11 +216,12 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Get an enumerator that iterates all data nodes in the database
+        /// Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.
         /// </summary>
+        /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerable<Reader.ReaderIteratorNode<T>> FindAll<T>(int cacheSize = 16384) where T : class
+        public IEnumerable<Reader.ReaderIteratorNode<T>> FindAll<T>(InjectableValues injectables = null, int cacheSize = 16384) where T : class
         {
             int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
             int prefixMax = byteCount * 8;
@@ -255,7 +256,7 @@ namespace MaxMind.Db
                             // data node, we are done with this branch
                             if (!dataCache.TryGetValue(node.Pointer, out T data))
                             {
-                                data = ResolveDataPointer<T>(node.Pointer, null);
+                                data = ResolveDataPointer<T>(node.Pointer, injectables);
                                 dataCache.Add(node.Pointer, data);
                             }
                             bool isIPV4 = true;
