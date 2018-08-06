@@ -82,56 +82,6 @@ namespace MaxMind.Db.Benchmark
             }
         }
 
-        // TODO: Consider including this in the benchmark
-        /*
-        private static void TestEnumerateCitiesDatabaseSpeed()
-        {
-            Stopwatch timer = Stopwatch.StartNew();
-            int count = 0;
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-City.mmdb"), FileAccessMode.Memory))
-                foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
-                {
-                    count++;
-                }
-            count.Should().Be(12971146);
-
-#if DEBUG
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(1.5);
-
-#else
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.75);
-
-#endif
-
-        }
-
-        private static void TestEnumerateCountriesDatabaseSpeed()
-        {
-            Stopwatch timer = Stopwatch.StartNew();
-            int count = 0;
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "../../GeoLite2-Country.mmdb"), FileAccessMode.Memory))
-            foreach (var node in reader.FindAll<Dictionary<string, object>>(int.MaxValue))
-            {
-                count++;
-            }
-            count.Should().Be(1282101);
-
-#if DEBUG
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.5);
-
-#else
-
-            timer.Elapsed.TotalMinutes.Should().BeLessThan(0.25);
-
-#endif
-
-        }
-
-        */
-
         private static void Bench(string name, Action<IPAddress> op)
         {
             var rand = new Random(1);
