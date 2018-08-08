@@ -76,8 +76,7 @@ namespace MaxMind.Db
 
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
         {
-            int size;
-            var type = CtrlData(offset, out size, out offset);
+            var type = CtrlData(offset, out int size, out offset);
             return DecodeByType(expectedType, type, offset, size, out outOffset, injectables);
         }
 
@@ -378,8 +377,7 @@ namespace MaxMind.Db
 
         private byte[] DecodeKey(long offset, out long outOffset)
         {
-            int size;
-            var type = CtrlData(offset, out size, out offset);
+            var type = CtrlData(offset, out int size, out offset);
             switch (type)
             {
                 case ObjectType.Pointer:
@@ -401,8 +399,7 @@ namespace MaxMind.Db
             {
                 return offset;
             }
-            int size;
-            var type = CtrlData(offset, out size, out offset);
+            var type = CtrlData(offset, out int size, out offset);
             switch (type)
             {
                 case ObjectType.Pointer:

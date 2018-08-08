@@ -37,8 +37,7 @@ namespace MaxMind.Db.Test
                 using (var database = new ArrayBuffer(input))
                 {
                     var decoder = new Decoder(database, 0, false);
-                    long offset;
-                    var val = decoder.Decode<T>(0, out offset);
+                    var val = decoder.Decode<T>(0, out long offset);
                     if (useShouldBe)
                     {
                         val.Should().Be(expect);
