@@ -11,6 +11,8 @@ using System.Reflection;
 using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using Xunit;
+using NetTools;
+using System.Diagnostics;
 
 #endregion
 
@@ -166,7 +168,50 @@ namespace MaxMind.Db.Test
             }
         }
 
-        public void TestDecodingTypes(IDictionary<string, object> record)
+        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues injectables = null) where T : class
+        {
+            // ensure start ip and prefix length are valid, will throw if not
+            IPAddressRange range = new IPAddressRange(node.Start, node.PrefixLength);
+
+            // ensure a lookup back into the db produces correct results
+            var find = reader.Find<T>(range.Begin, injectables);
+            find.Should().NotBeNull();
+            var find2 = reader.Find<T>(node.Start, injectables);
+            find2.Should().NotBeNull();
+            find.Should().BeEquivalentTo(find2);
+            find.Should().BeEquivalentTo(node.Data);
+        }
+
+        [Fact]
+        public void TestEnumerateCountryDatabase()
+        {
+            int count = 0;
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
+            foreach (var node in reader.FindAll<Dictionary<string, object>>())
+            {
+                TestNode(reader, node);
+                count++;
+            }
+            count.Should().Be(269);
+        }
+
+        [Fact]
+        public void TestEnumerateDecoderDatabase()
+        {
+            int count = 0;
+            InjectableValues injectables = new InjectableValues();
+            injectables.AddValue("injectable", "injectable_value");
+            injectables.AddValue("injected", "injected_value");
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            foreach (var node in reader.FindAll<TypeHolder>(injectables))
+            {
+                TestNode(reader, node, injectables);
+                count++;
+            }
+            count.Should().Be(22);
+        }
+
+        private void TestDecodingTypes(IDictionary<string, object> record)
         {
             ((bool)record["boolean"]).Should().BeTrue();
 
@@ -369,10 +414,14 @@ namespace MaxMind.Db.Test
 
             foreach (var address in prefixes.Keys)
             {
-                int routingPrefix;
-                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out routingPrefix);
+                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out int routingPrefix);
                 routingPrefix.Should().Be(prefixes[address],
                     $"Invalid prefix for {address} in {file}");
+            }
+
+            foreach (var node in reader.FindAll<Dictionary<string, object>>())
+            {
+                TestNode(reader, node);
             }
         }
 

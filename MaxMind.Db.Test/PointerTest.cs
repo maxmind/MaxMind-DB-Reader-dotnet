@@ -22,8 +22,7 @@ namespace MaxMind.Db.Test
             {
                 var decoder = new Decoder(database, 0);
 
-                long offset;
-                var node = decoder.Decode<Dictionary<string, object>>(0, out offset);
+                var node = decoder.Decode<Dictionary<string, object>>(0, out long offset);
                 node["long_key"].Should().Be("long_value1");
 
                 node = decoder.Decode<Dictionary<string, object>>(22, out offset);
