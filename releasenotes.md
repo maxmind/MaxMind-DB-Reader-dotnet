@@ -1,5 +1,11 @@
 # Release Nodes #
 
+## 2.5.0 () ##
+
+* A `FindAll` method was added to the `MaxMind.Db.Reader` class. This returns
+  an enumerator that enumerates over the MaxMind DB database. Pull request by
+  Jeff Johnson. GitHub #47.
+
 ## 2.4.0 (2018-04-11) ##
 
 * Added `FileAccessMode.MemoryMappedGlobal`. When used, this will open the file
