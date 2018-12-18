@@ -5,6 +5,13 @@
 * A `FindAll` method was added to the `MaxMind.Db.Reader` class. This returns
   an enumerator that enumerates over the MaxMind DB database. Pull request by
   Jeff Johnson. GitHub #47.
+* A `CreateAsync` static method was added to asynchronously created a
+  `MaxMind.Db.Reader` object from database file. Pull request by David
+  Warner. GitHub #44.
+* As part of #44, the optimization to reduce allocations when loading from
+  a seekable stream was removed. The optimization could cause poor
+  performance in some instances and its behavior with regard to the stream
+  position differed from the documented behavior.
 
 ## 2.4.0 (2018-04-11) ##
 
