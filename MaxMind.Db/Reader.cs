@@ -142,9 +142,13 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Initialize with Stream.
+        ///     Initialize with <c>Stream</c>. The current position of the
+        ///     string must point to the start of the database. The content
+        ///     between the current position and the end of the stream must
+        ///     be a valid MaxMind DB.
         /// </summary>
-        /// <param name="stream">The stream to use. It will be used from its current position. </param>
+        /// <param name="stream">The stream to use. It will be used from its
+        ///                      current position. </param>
         /// <exception cref="ArgumentNullException"></exception>
         public Reader(Stream stream) : this(new ArrayBuffer(stream), null)
         {
