@@ -34,7 +34,7 @@ which maps the file to virtual memory. This often provides performance
 comparable to loading the file into real memory with the `Memory`  mode while
 using significantly less memory.
 
-To look up an IP address, pass a `string` representing the IP address to the
+To look up an IP address, pass a `System.Net.IPAddress` object to the
 `Find<T>` method on `Reader`. This method will return the result as type `T`.
 `T` may either be a generic collection or a class using the
 `[MaxMind.Db.Constructor]` attribute to declare which constructor to use
@@ -51,7 +51,8 @@ read in metadata for the file.
 
 using (var reader = new Reader("GeoIP2-City.mmdb"))
 {
-    var data = reader.Find<Dictionary<string, object>>("24.24.24.24");
+    var ip = IPAddress.Parse("24.24.24.24");
+    var data = reader.Find<Dictionary<string, object>>(ip);
     ...
 }
 ```
