@@ -30,7 +30,7 @@ namespace MaxMind.Db.Test
             var rand = new Random();
             using (var reader = new Reader(_testDatabase, mode))
             {
-                while (count < 10000)
+                for (var i = 0; i < 10000; i++)
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
                     var resp = reader.Find<object>(ip);
@@ -65,7 +65,7 @@ namespace MaxMind.Db.Test
             {
                 using (var reader = new Reader(_testDatabase, mode))
                 {
-                    reader.Find<object>(IPAddress.Parse("1.1.1.1"));
+                    reader.Find<object>(IPAddress.Parse("175.16.199.0"));
                 }
             });
         }
