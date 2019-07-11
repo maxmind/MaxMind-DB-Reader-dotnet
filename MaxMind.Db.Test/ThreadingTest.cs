@@ -17,7 +17,7 @@ namespace MaxMind.Db.Test
     public class ThreadingTest
     {
         private readonly string _testDatabase =
-            Path.Combine(TestUtils.TestDirectory, "TestData", "GeoLite2-City.mmdb");
+            Path.Combine(TestUtils.TestDirectory, "TestData", "MaxMind-DB", "test-data", "GeoIP2-City-Test.mmdb");
 
         [Theory]
         [InlineData(FileAccessMode.MemoryMapped)]
