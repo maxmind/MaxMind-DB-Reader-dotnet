@@ -37,7 +37,7 @@ namespace MaxMind.Db.Test
                 using (var database = new ArrayBuffer(input))
                 {
                     var decoder = new Decoder(database, 0, false);
-                    var val = decoder.Decode<T>(0, out long offset);
+                    var val = decoder.Decode<T>(0, out _);
                     if (useShouldBe)
                     {
                         val.Should().Be(expect);
@@ -215,8 +215,8 @@ namespace MaxMind.Db.Test
                 {(1 << 19) - 5, new byte[] {0x2f, 0xf7, 0xfb}},
                 {(1 << 19) + (1 << 11) - 1, new byte[] {0x2f, 0xff, 0xff}},
                 {(1 << 27) - 2, new byte[] {0x37, 0xf7, 0xf7, 0xfe}},
-                {(((long) 1) << 27) + (1 << 19) + (1 << 11) - 1, new byte[] {0x37, 0xff, 0xff, 0xff}},
-                {(((long) 1) << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
+                {((long) 1 << 27) + (1 << 19) + (1 << 11) - 1, new byte[] {0x37, 0xff, 0xff, 0xff}},
+                {((long) 1 << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
             };
 
             yield return new object[] { pointers };

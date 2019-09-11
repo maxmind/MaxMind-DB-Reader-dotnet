@@ -16,9 +16,6 @@ limitations under the License.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MaxMind.Db
 {
@@ -43,7 +40,6 @@ namespace MaxMind.Db
         private Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>> dictionary;
         private LinkedList<KeyValuePair<TKey, TValue>> priorityList;
         private int maxCount;
-        private IEqualityComparer<TKey> comparer;
 
         #endregion Private variables
 
@@ -59,7 +55,6 @@ namespace MaxMind.Db
         {
             if (dictionary.Count == maxCount)
             {
-                KeyValuePair<TKey, TValue> removed = priorityList.Last.Value;
                 dictionary.Remove(priorityList.Last.Value.Key);
                 priorityList.RemoveLast();
             }
@@ -69,16 +64,12 @@ namespace MaxMind.Db
 
         private bool InternalRemove(TKey key)
         {
-            if (dictionary.TryGetValue(key, out LinkedListNode<KeyValuePair<TKey, TValue>> node))
-            {
-                priorityList.Remove(node);
-                dictionary.Remove(key);
-                return true;
-            }
-            else
-            {
+            if (!dictionary.TryGetValue(key, out var node))
                 return OnRemoveExternalKey(key);
-            }
+            priorityList.Remove(node);
+            dictionary.Remove(key);
+            return true;
+
         }
 
         #endregion Private methods
@@ -95,7 +86,7 @@ namespace MaxMind.Db
         /// <returns>True if found from external source, false if not</returns>
         protected virtual bool OnGetExternalKeyValue(ref TKey key, out TValue value)
         {
-            value = default(TValue);
+            value = default;
             return false;
         }
 
@@ -105,7 +96,6 @@ namespace MaxMind.Db
         /// <param name="comparer">New comparer</param>
         protected void SetComparer(IEqualityComparer<TKey> comparer)
         {
-            this.comparer = comparer;
             dictionary = new Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>(comparer);
             priorityList = new LinkedList<KeyValuePair<TKey, TValue>>();
         }
@@ -151,7 +141,6 @@ namespace MaxMind.Db
             dictionary = null;
             priorityList = null;
             maxCount = 0;
-            comparer = null;
         }
 
         #endregion Public methods
@@ -176,7 +165,7 @@ namespace MaxMind.Db
         /// <returns>True if in dictionary, false if not</returns>
         public bool ContainsKey(TKey key)
         {
-            return TryGetValue(key, out TValue value);
+            return TryGetValue(key, out _);
         }
 
         /// <summary>
@@ -213,19 +202,20 @@ namespace MaxMind.Db
         /// <returns>True if found, false if not</returns>
         public bool TryGetValueRef(ref TKey key, out TValue value)
         {
-            if (dictionary.TryGetValue(key, out LinkedListNode<KeyValuePair<TKey, TValue>> node))
+            if (dictionary.TryGetValue(key, out var node))
             {
                 MoveToFront(node);
                 value = node.Value.Value;
                 key = node.Value.Key;
                 return true;
             }
-            else if (OnGetExternalKeyValue(ref key, out value))
+
+            if (OnGetExternalKeyValue(ref key, out value))
             {
                 Add(key, value);
                 return true;
             }
-            value = default(TValue);
+            value = default;
             return false;
         }
 
@@ -236,18 +226,15 @@ namespace MaxMind.Db
         /// <returns>N/A</returns>
         public TValue this[TKey key]
         {
-            get { throw new NotSupportedException("Use TryGetValue instead"); }
-            set { throw new NotSupportedException("Use Add instead"); }
+            get => throw new NotSupportedException("Use TryGetValue instead");
+            set => throw new NotSupportedException("Use Add instead");
         }
 
 
         /// <summary>
         /// Gets all the keys that are in memory
         /// </summary>
-        public ICollection<TKey> Keys
-        {
-            get { return dictionary.Keys; }
-        }
+        public ICollection<TKey> Keys => dictionary.Keys;
 
         /// <summary>
         /// Gets all of the values that are in memory, external values are not returned
@@ -256,8 +243,8 @@ namespace MaxMind.Db
         {
             get
             {
-                List<TValue> values = new List<TValue>(dictionary.Values.Count);
-                foreach (LinkedListNode<KeyValuePair<TKey, TValue>> node in dictionary.Values)
+                var values = new List<TValue>(dictionary.Values.Count);
+                foreach (var node in dictionary.Values)
                 {
                     values.Add(node.Value.Value);
                 }
@@ -305,7 +292,7 @@ namespace MaxMind.Db
         /// <param name="arrayIndex">Start index to copy into array</param>
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            foreach (KeyValuePair<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>> keyValue in dictionary)
+            foreach (var keyValue in dictionary)
             {
                 array[arrayIndex++] = new KeyValuePair<TKey, TValue>(keyValue.Key, keyValue.Value.Value.Value);
             }
@@ -314,18 +301,12 @@ namespace MaxMind.Db
         /// <summary>
         /// Number of items in the in memory dictionary
         /// </summary>
-        public int Count
-        {
-            get { return dictionary.Count; }
-        }
+        public int Count => dictionary.Count;
 
         /// <summary>
         /// Always false
         /// </summary>
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public bool IsReadOnly => false;
 
         /// <summary>
         /// Removes an item from the in memory dictionary
@@ -347,7 +328,7 @@ namespace MaxMind.Db
         /// <returns>Enumerator</returns>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            foreach (LinkedListNode<KeyValuePair<TKey, TValue>> node in dictionary.Values)
+            foreach (var node in dictionary.Values)
             {
                 yield return node.Value;
             }

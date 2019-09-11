@@ -41,7 +41,7 @@ namespace MaxMind.Db
         private readonly Buffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
-        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
+        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + (1 << 11), 0 };
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
@@ -76,7 +76,7 @@ namespace MaxMind.Db
 
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
         {
-            var type = CtrlData(offset, out int size, out offset);
+            var type = CtrlData(offset, out var size, out offset);
             return DecodeByType(expectedType, type, offset, size, out outOffset, injectables);
         }
 
@@ -155,8 +155,8 @@ namespace MaxMind.Db
                     {
                         return pointer;
                     }
-                    long ignore;
-                    var result = Decode(expectedType, Convert.ToInt32(pointer), out ignore, injectables);
+
+                    var result = Decode(expectedType, Convert.ToInt32(pointer), out _, injectables);
                     return result;
 
                 case ObjectType.Map:
@@ -351,14 +351,13 @@ namespace MaxMind.Db
         {
             foreach (var param in constructor.AlwaysCreatedParameters)
             {
-                if (parameters[param.Position] == null)
-                {
-                    var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
-                    var cstorParams = activator.DefaultParameters();
-                    SetInjectables(activator, cstorParams, injectables);
-                    SetAlwaysCreatedParams(activator, cstorParams, injectables);
-                    parameters[param.Position] = activator.Activator(cstorParams);
-                }
+                if (parameters[param.Position] != null) continue;
+
+                var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                var cstorParams = activator.DefaultParameters();
+                SetInjectables(activator, cstorParams, injectables);
+                SetAlwaysCreatedParams(activator, cstorParams, injectables);
+                parameters[param.Position] = activator.Activator(cstorParams);
             }
         }
 
@@ -377,7 +376,7 @@ namespace MaxMind.Db
 
         private byte[] DecodeKey(long offset, out long outOffset)
         {
-            var type = CtrlData(offset, out int size, out offset);
+            var type = CtrlData(offset, out var size, out offset);
             switch (type)
             {
                 case ObjectType.Pointer:
@@ -395,33 +394,38 @@ namespace MaxMind.Db
 
         private long NextValueOffset(long offset, int numberToSkip)
         {
-            if (numberToSkip == 0)
+            while (true)
             {
-                return offset;
+                if (numberToSkip == 0)
+                {
+                    return offset;
+                }
+
+                var type = CtrlData(offset, out var size, out offset);
+                switch (type)
+                {
+                    case ObjectType.Pointer:
+                        DecodePointer(offset, size, out offset);
+                        break;
+
+                    case ObjectType.Map:
+                        numberToSkip += 2 * size;
+                        break;
+
+                    case ObjectType.Array:
+                        numberToSkip += size;
+                        break;
+
+                    case ObjectType.Boolean:
+                        break;
+
+                    default:
+                        offset += size;
+                        break;
+                }
+
+                numberToSkip = numberToSkip - 1;
             }
-            var type = CtrlData(offset, out int size, out offset);
-            switch (type)
-            {
-                case ObjectType.Pointer:
-                    DecodePointer(offset, size, out offset);
-                    break;
-
-                case ObjectType.Map:
-                    numberToSkip += 2 * size;
-                    break;
-
-                case ObjectType.Array:
-                    numberToSkip += size;
-                    break;
-
-                case ObjectType.Boolean:
-                    break;
-
-                default:
-                    offset += size;
-                    break;
-            }
-            return NextValueOffset(offset, numberToSkip - 1);
         }
 
         /// <summary>

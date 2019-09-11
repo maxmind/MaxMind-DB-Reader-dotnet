@@ -43,9 +43,9 @@ namespace MaxMind.Db
 
         internal static void CheckType(Type expected, Type from)
         {
-            if (!expected.IsAssignableFrom(@from))
+            if (!expected.IsAssignableFrom(from))
             {
-                throw new DeserializationException($"Could not convert '{@from}' to '{expected}'.");
+                throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
             }
         }
     }
