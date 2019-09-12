@@ -66,18 +66,18 @@ threads.
 ## Format ##
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to
-records. See [the specification]
-(https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
+records. See
+[the specification](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
 for more information on the format.
 
 ## Bug Tracker ##
 
-Please report all issues with this code using the [GitHub issue tracker]
-(https://github.com/maxmind/MaxMind-DB-Reader-dotnet/issues).
+Please report all issues with this code using the
+[GitHub issue tracker](https://github.com/maxmind/MaxMind-DB-Reader-dotnet/issues).
 
 If you are having an issue with a MaxMind database or service that is not
-specific to this reader, please [contact MaxMind support]
-(http://www.maxmind.com/en/support).
+specific to this reader, please
+[contact MaxMind support](http://www.maxmind.com/en/support).
 
 ## Contributing ##
 
