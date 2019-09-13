@@ -70,7 +70,7 @@ namespace MaxMind.Db.Benchmark
 
                     if (!File.Exists(dbPath))
                     {
-                        throw new Exception($"{dbPath} does not exist in current directory!");
+                        throw new Exception($"{dbPath} does not exist in current directory ({Directory.GetCurrentDirectory()})!");
                     }
                 }
             }
