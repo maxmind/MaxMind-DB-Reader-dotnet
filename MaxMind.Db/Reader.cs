@@ -240,6 +240,8 @@ namespace MaxMind.Db
 
         /// <summary>
         /// Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.
+        /// 
+        /// Note that due to caching, the Network attribute on constructor parameters will be ignored.
         /// </summary>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
@@ -278,7 +280,7 @@ namespace MaxMind.Db
                             // data node, we are done with this branch
                             if (!dataCache.TryGetValue(node.Pointer, out var data))
                             {
-                                data = ResolveDataPointer<T>(node.Pointer, injectables);
+                                data = ResolveDataPointer<T>(node.Pointer, injectables, null);
                                 dataCache.Add(node.Pointer, data);
                             }
                             var isIPV4 = true;
@@ -315,10 +317,11 @@ namespace MaxMind.Db
         public T Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
+            var network = new Network(ipAddress, prefixLength);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
         }
 
-        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables) where T : class
+        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables, Network network) where T : class
         {
             var resolved = pointer - Metadata.NodeCount + Metadata.SearchTreeSize;
 
@@ -329,7 +332,7 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            return Decoder.Decode<T>(resolved, out _, injectables);
+            return Decoder.Decode<T>(resolved, out _, injectables, network);
         }
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)

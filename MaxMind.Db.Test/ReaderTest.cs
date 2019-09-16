@@ -410,12 +410,13 @@ namespace MaxMind.Db.Test
             injectables.AddValue("injectable", "injectable_value");
             injectables.AddValue("injected", "injected_value");
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
-                foreach (var node in reader.FindAll<TypeHolder>(injectables))
+            {
+                foreach (var node in reader.FindAll<NoNetworkTypeHolder>(injectables))
                 {
                     TestNode(reader, node, injectables);
                     count++;
                 }
-
+            }
             count.Should().Be(26);
         }
 
@@ -463,7 +464,7 @@ namespace MaxMind.Db.Test
             {
                 var injectables = new InjectableValues();
                 injectables.AddValue("injected", "injected string");
-                var record = reader.Find<TypeHolder>(IPAddress.Parse("::1.1.1.0"), injectables);
+                var record = reader.Find<TypeHolder>(IPAddress.Parse("1.1.1.1"), injectables);
 
                 record.Boolean.Should().BeTrue();
                 record.Bytes.Should().Equal(0, 0, 0, 42);
@@ -473,8 +474,8 @@ namespace MaxMind.Db.Test
 
                 var mapX = record.Map.MapX;
                 mapX.Utf8StringX.Should().Be("hello");
-
                 mapX.ArrayX.Should().Equal(new List<long> { 7, 8, 9 });
+                mapX.Network.ToString().Should().Be("1.1.1.0/24");
 
                 record.Double.Should().BeApproximately(42.123456, 0.000000001);
                 record.Float.Should().BeApproximately(1.1F, 0.000001F);
@@ -485,7 +486,11 @@ namespace MaxMind.Db.Test
                 record.Uint128.Should().Be(BigInteger.Parse("1329227995784915872903807060280344576"));
 
                 record.Nonexistant.Injected.Should().Be("injected string");
+                record.Nonexistant.Network.ToString().Should().Be("1.1.1.0/24");
+                record.Nonexistant.Network2.ToString().Should().Be("1.1.1.0/24");
+
                 record.Nonexistant.InnerNonexistant.Injected.Should().Be("injected string");
+                record.Nonexistant.InnerNonexistant.Network.ToString().Should().Be("1.1.1.0/24");
             }
         }
 

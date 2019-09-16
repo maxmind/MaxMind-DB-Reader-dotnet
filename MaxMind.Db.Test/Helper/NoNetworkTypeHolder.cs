@@ -7,86 +7,71 @@ using System.Numerics;
 
 namespace MaxMind.Db.Test.Helper
 {
-    public class InnerMapX
+    public class NNInnerMapX
     {
         [Constructor]
-        public InnerMapX(
+        public NNInnerMapX(
             string utf8_stringX,
-            [Network] Network network,
             LinkedList<long> arrayX
             )
         {
             ArrayX = arrayX;
-            Network = network;
             Utf8StringX = utf8_stringX;
         }
 
         public LinkedList<long> ArrayX { get; set; }
 
-        public Network Network { get; set; }
-
         public string Utf8StringX { get; set; }
     }
 
-    public class InnerMap
+    public class NNInnerMap
     {
         [Constructor]
-        public InnerMap(InnerMapX mapX)
+        public NNInnerMap(NNInnerMapX mapX)
         {
             MapX = mapX;
         }
 
-        public InnerMapX MapX { get; set; }
+        public NNInnerMapX MapX { get; set; }
     }
 
-    public class InnerNonexistant
+    public class NNInnerNonexistant
     {
         [Constructor]
-        public InnerNonexistant(
-            // To test these are set even if the parent and grandparent
+        public NNInnerNonexistant(
+            // To test this is set even if the parent and grandparent
             // don't exist in the database.
-            [Inject("injected")] string injected,
-            [Network] Network network
+            [Inject("injected")] string injected
             )
         {
             Injected = injected;
-            Network = network;
         }
 
         public string Injected { get; set; }
-        public Network Network { get; }
     }
 
-    public class Nonexistant
+    public class NNNonexistant
     {
         [Constructor]
-        public Nonexistant(
-            [Parameter("innerNonexistant", true)] InnerNonexistant innerNonexistant,
-            // The next two test that they are set even if the parent map doesn't exist
+        public NNNonexistant(
+            [Parameter("innerNonexistant", true)] NNInnerNonexistant innerNonexistant,
+            // To test this is set even if the parent map doesn't exist
             // in the database.
-            [Inject("injected")] string injected,
-            [Network] Network network,
-            // Test that repeated network parameters work, or at least don't blow
-            // up. Not sure why you would want to do this.
-            [Network] Network network2
+            [Inject("injected")] string injected
             )
         {
             Injected = injected;
             InnerNonexistant = innerNonexistant;
-            Network = network;
-            Network2 = network2;
         }
 
         public string Injected { get; set; }
-        public InnerNonexistant InnerNonexistant { get; set; }
-        public Network Network { get; }
-        public Network Network2 { get; }
+        public NNInnerNonexistant InnerNonexistant { get; set; }
     }
 
-    public class TypeHolder
+    public class NoNetworkTypeHolder
     {
         [Constructor]
-        public TypeHolder(
+        public NoNetworkTypeHolder(
             string utf8_string,
             byte[] bytes,
             int uint16,
@@ -98,8 +83,8 @@ namespace MaxMind.Db.Test.Helper
             ICollection<long> array,
             [Parameter("double")] double mmDouble,
             [Parameter("float")] float mmFloat,
-            [Parameter("map")] InnerMap map,
-            [Parameter("nonexistant", true)] Nonexistant nonexistant
+            [Parameter("map")] NNInnerMap map,
+            [Parameter("nonexistant", true)] NNNonexistant nonexistant
             )
         {
             Array = array;
@@ -121,7 +106,7 @@ namespace MaxMind.Db.Test.Helper
             Nonexistant = nonexistant;
         }
 
-        public Nonexistant Nonexistant { get; set; }
+        public NNNonexistant Nonexistant { get; set; }
 
         public ICollection<long> Array { get; set; }
         public bool Boolean { get; set; }
@@ -131,7 +116,7 @@ namespace MaxMind.Db.Test.Helper
         public double Double { get; set; }
         public float Float { get; set; }
 
-        public InnerMap Map { get; set; }
+        public NNInnerMap Map { get; set; }
 
         public long Int32 { get; set; }
         public int Uint16 { get; set; }

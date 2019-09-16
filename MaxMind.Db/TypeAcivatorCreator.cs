@@ -18,12 +18,14 @@ namespace MaxMind.Db
         internal readonly object[] _defaultParameters;
         internal readonly Dictionary<byte[], ParameterInfo> DeserializationParameters;
         internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
+        internal readonly List<ParameterInfo> NetworkParameters;
         internal readonly Type[] ParameterTypes;
 
         internal TypeActivator(
             ObjectActivator activator,
             Dictionary<byte[], ParameterInfo> deserializationParameters,
             Dictionary<string, ParameterInfo> injectables,
+            List<ParameterInfo> networkParameters,
             List<ParameterInfo> alwaysCreatedParameters
             ) : this()
         {
@@ -31,6 +33,8 @@ namespace MaxMind.Db
             AlwaysCreatedParameters = alwaysCreatedParameters;
             DeserializationParameters = deserializationParameters;
             InjectableParameters = injectables;
+
+            NetworkParameters = networkParameters;
             ParameterTypes =
                 deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
             _defaultParameters = ParameterTypes.Select(DefaultValue).ToArray();
@@ -77,6 +81,7 @@ namespace MaxMind.Db
             var parameters = constructor.GetParameters();
             var paramNameTypes = new Dictionary<byte[], ParameterInfo>(new ByteArrayEqualityComparer());
             var injectables = new Dictionary<string, ParameterInfo>();
+            var networkParams = new List<ParameterInfo>();
             var alwaysCreated = new List<ParameterInfo>();
             foreach (var param in parameters)
             {
@@ -84,6 +89,11 @@ namespace MaxMind.Db
                 if (injectableAttribute != null)
                 {
                     injectables.Add(injectableAttribute.ParameterName, param);
+                }
+                var networkAttribute = param.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
+                if (networkAttribute != null)
+                {
+                    networkParams.Add(param);
                 }
                 var paramAttribute = param.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
                 string name;
@@ -98,7 +108,7 @@ namespace MaxMind.Db
                 paramNameTypes.Add(Encoding.UTF8.GetBytes(name), param);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
-            var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables, alwaysCreated);
+            var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables, networkParams, alwaysCreated);
             return clsConstructor;
         }
     }
