@@ -338,17 +338,15 @@ namespace MaxMind.Db
 
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
+            var nodeCount = Metadata.NodeCount;
 
-            for (prefixLength = 0; prefixLength < bitLength; prefixLength++)
+            var i = 0;
+            for (; i < bitLength && record < nodeCount; i++)
             {
-                if (record >= Metadata.NodeCount)
-                {
-                    break;
-                }
-                var b = rawAddress[prefixLength / 8];
-                var bit = 1 & (b >> 7 - (prefixLength % 8));
+                var bit = 1 & (rawAddress[i >> 3] >> (7 - (i % 8)));
                 record = ReadNode(record, bit);
             }
+            prefixLength = i;
             if (record == Metadata.NodeCount)
             {
                 // record is empty
