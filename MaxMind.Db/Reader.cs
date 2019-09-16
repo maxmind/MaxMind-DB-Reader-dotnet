@@ -404,7 +404,7 @@ namespace MaxMind.Db
                         var offset = baseOffset + index * 3;
                         return _database.ReadOne(offset) << 16 |
                             _database.ReadOne(offset + 1) << 8 |
-                            _database.ReadOne(offset  + 2);
+                            _database.ReadOne(offset + 2);
                     }
                 case 28:
                     {

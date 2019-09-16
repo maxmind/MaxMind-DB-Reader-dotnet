@@ -12,7 +12,7 @@ namespace MaxMind.Db.Test.Helper
         {
             _wrappedStream = wrappedStream;
         }
-        
+
         public override void Flush()
         {
             _wrappedStream.Flush();
@@ -44,7 +44,7 @@ namespace MaxMind.Db.Test.Helper
         }
 
         public override bool CanRead => _wrappedStream.CanRead;
-        public override bool CanSeek =>false;
+        public override bool CanSeek => false;
         public override bool CanWrite => _wrappedStream.CanWrite;
         public override long Length => throw new NotSupportedException();
 
