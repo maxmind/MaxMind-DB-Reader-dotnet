@@ -403,18 +403,32 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        return _database.ReadInteger(0, baseOffset + index * 3, 3);
+                        var offset = baseOffset + index * 3;
+                        return _database.ReadOne(offset) << 16 |
+                            _database.ReadOne(offset + 1) << 8 |
+                            _database.ReadOne(offset  + 2);
                     }
                 case 28:
                     {
-                        var middle = _database.ReadOne(baseOffset + 3);
-                        middle = index == 0 ? (byte)(middle >> 4) : (byte)(0x0F & middle);
-
-                        return _database.ReadInteger(middle, baseOffset + index * 4, 3);
+                        if (index == 0)
+                        {
+                            return ((_database.ReadOne(baseOffset + 3) & 0xF0) << 20) |
+                                    (_database.ReadOne(baseOffset) << 16) |
+                                    (_database.ReadOne(baseOffset + 1) << 8) |
+                                    _database.ReadOne(baseOffset + 2);
+                        }
+                        return ((_database.ReadOne(baseOffset + 3) & 0x0F) << 24) |
+                                (_database.ReadOne(baseOffset + 4) << 16) |
+                                (_database.ReadOne(baseOffset + 5) << 8) |
+                                _database.ReadOne(baseOffset + 6);
                     }
                 case 32:
                     {
-                        return _database.ReadInteger(0, baseOffset + index * 4, 4);
+                        var offset = baseOffset + index * 4;
+                        return _database.ReadOne(offset) << 24 |
+                               _database.ReadOne(offset + 1) << 16 |
+                               _database.ReadOne(offset + 2) << 8 |
+                               _database.ReadOne(offset + 3);
                     }
             }
 
