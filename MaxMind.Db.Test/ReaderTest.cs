@@ -297,7 +297,7 @@ namespace MaxMind.Db.Test
                     count++;
                 }
 
-            count.Should().Be(269);
+            count.Should().Be(297);
         }
 
         [Fact]
@@ -314,7 +314,7 @@ namespace MaxMind.Db.Test
                     count++;
                 }
 
-            count.Should().Be(22);
+            count.Should().Be(26);
         }
 
         private void TestDecodingTypes(IDictionary<string, object> record)
