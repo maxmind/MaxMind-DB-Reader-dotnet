@@ -8,6 +8,10 @@
 * A `CreateAsync` static method was added to asynchronously created a
   `MaxMind.Db.Reader` object from database file. Pull request by David
   Warner. GitHub #44.
+* When deserializing to a class, you may now instruct the reader to set a
+  constructor parameter to be the network associated with the record. To do
+  this, use the `Network` attribute. The parameter must be of type
+  `MaxMind.Db.Network`. GitHub #56.
 * As part of #44, the optimization to reduce allocations when loading from
   a seekable stream was removed. The optimization could cause poor
   performance in some instances and its behavior with regard to the stream
