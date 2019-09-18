@@ -38,12 +38,12 @@ namespace MaxMind.Db.Benchmark
 
     public class Program
     {
-        private static readonly int COUNT = 500000;
+        private const int Count = 500000;
 
         private static void Main(string[] args)
         {
             // first we check if the command-line argument is provided
-            string dbPath = args.Length > 0 ? args[0] : null;
+            var dbPath = args.Length > 0 ? args[0] : null;
             if (dbPath != null)
             {
                 if (!File.Exists(dbPath))
@@ -70,7 +70,7 @@ namespace MaxMind.Db.Benchmark
 
                     if (!File.Exists(dbPath))
                     {
-                        throw new Exception($"{dbPath} does not exist in current directory!");
+                        throw new Exception($"{dbPath} does not exist in current directory ({Directory.GetCurrentDirectory()})!");
                     }
                 }
             }
@@ -86,7 +86,7 @@ namespace MaxMind.Db.Benchmark
         {
             var rand = new Random(1);
             var s = Stopwatch.StartNew();
-            for (var i = 0; i < COUNT; i++)
+            for (var i = 0; i < Count; i++)
             {
                 var ip = new IPAddress(rand.Next(int.MaxValue));
                 op(ip);
@@ -94,7 +94,7 @@ namespace MaxMind.Db.Benchmark
                     Console.WriteLine(i + " " + ip);
             }
             s.Stop();
-            Console.WriteLine("{0}: {1:N0} queries per second", name, COUNT / s.Elapsed.TotalSeconds);
+            Console.WriteLine("{0}: {1:N0} queries per second", name, Count / s.Elapsed.TotalSeconds);
         }
     }
 }

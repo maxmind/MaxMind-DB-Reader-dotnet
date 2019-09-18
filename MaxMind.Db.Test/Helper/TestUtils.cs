@@ -11,7 +11,7 @@ namespace MaxMind.Db.Test.Helper
         private static string GetTestDirectory()
         {
             // check if environment variable MAXMIND_TEST_BASE_DIR is set
-            string dbPath = Environment.GetEnvironmentVariable("MAXMIND_TEST_BASE_DIR");
+            var dbPath = Environment.GetEnvironmentVariable("MAXMIND_TEST_BASE_DIR");
 
             if (!string.IsNullOrEmpty(dbPath))
             {

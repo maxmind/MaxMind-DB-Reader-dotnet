@@ -62,8 +62,8 @@ namespace MaxMind.Db
                     // In NetStandard1.0 (docs: http://bit.ly/1TOKXEw) and since .Net46 (https://msdn.microsoft.com/en-us/library/dn804422.aspx)
                     // CreateFromFile has a new overload with six arguments (modulo MemoryMappedFileSecurity). While the one with seven arguments
                     // is still available in .Net46, that has been removed from netstandard1.0.
-                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
-                             MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
+                            MemoryMappedFileAccess.Read, HandleInheritability.None, false);
 #endif
                 }
             }

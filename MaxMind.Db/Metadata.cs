@@ -53,12 +53,12 @@ namespace MaxMind.Db
         /// <summary>
         ///     The major version number for the MaxMind DB binary format used by the database.
         /// </summary>
-        public int BinaryFormatMajorVersion { get; private set; }
+        public int BinaryFormatMajorVersion { get; }
 
         /// <summary>
         ///     The minor version number for the MaxMind DB binary format used by the database.
         /// </summary>
-        public int BinaryFormatMinorVersion { get; private set; }
+        public int BinaryFormatMinorVersion { get; }
 
         internal ulong BuildEpoch { get; }
 

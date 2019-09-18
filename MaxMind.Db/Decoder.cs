@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 
@@ -41,7 +42,7 @@ namespace MaxMind.Db
         private readonly Buffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
-        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + ((1) << 11), 0 };
+        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + (1 << 11), 0 };
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
@@ -68,16 +69,17 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset</param>
         /// <param name="injectables"></param>
+        /// <param name="network"></param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal T Decode<T>(long offset, out long outOffset, InjectableValues injectables = null) where T : class
+        internal T Decode<T>(long offset, out long outOffset, InjectableValues injectables = null, Network network = default) where T : class
         {
-            return Decode(typeof(T), offset, out outOffset, injectables) as T;
+            return Decode(typeof(T), offset, out outOffset, injectables, network) as T;
         }
 
-        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null)
+        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null, Network network = null)
         {
-            var type = CtrlData(offset, out int size, out offset);
-            return DecodeByType(expectedType, type, offset, size, out outOffset, injectables);
+            var type = CtrlData(offset, out var size, out offset);
+            return DecodeByType(expectedType, type, offset, size, out outOffset, injectables, network);
         }
 
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
@@ -139,10 +141,18 @@ namespace MaxMind.Db
         /// <param name="size">The size.</param>
         /// <param name="outOffset">The out offset</param>
         /// <param name="injectables"></param>
+        /// <param name="network"></param>
         /// <returns></returns>
         /// <exception cref="Exception">Unable to handle type!</exception>
-        private object DecodeByType(Type expectedType, ObjectType type, long offset, int size, out long outOffset,
-            InjectableValues injectables)
+        private object DecodeByType(
+            Type expectedType,
+            ObjectType type,
+            long offset,
+            int size,
+            out long outOffset,
+            InjectableValues injectables,
+            Network network
+            )
         {
             outOffset = offset + size;
 
@@ -155,15 +165,15 @@ namespace MaxMind.Db
                     {
                         return pointer;
                     }
-                    long ignore;
-                    var result = Decode(expectedType, Convert.ToInt32(pointer), out ignore, injectables);
+
+                    var result = Decode(expectedType, Convert.ToInt32(pointer), out _, injectables, network);
                     return result;
 
                 case ObjectType.Map:
-                    return DecodeMap(expectedType, offset, size, out outOffset, injectables);
+                    return DecodeMap(expectedType, offset, size, out outOffset, injectables, network);
 
                 case ObjectType.Array:
-                    return DecodeArray(expectedType, size, offset, out outOffset, injectables);
+                    return DecodeArray(expectedType, size, offset, out outOffset, injectables, network);
 
                 case ObjectType.Boolean:
                     outOffset = offset;
@@ -279,9 +289,16 @@ namespace MaxMind.Db
         /// <param name="size">The size.</param>
         /// <param name="outOffset">The out offset.</param>
         /// <param name="injectables"></param>
+        /// <param name="network"></param>
         /// <returns></returns>
-        private object DecodeMap(Type expectedType, long offset, int size, out long outOffset,
-            InjectableValues injectables)
+        private object DecodeMap(
+            Type expectedType,
+            long offset,
+            int size,
+            out long outOffset,
+            InjectableValues injectables,
+            Network network
+            )
         {
             var objDictType = typeof(Dictionary<string, object>);
             if (!expectedType.GetTypeInfo().IsGenericType && expectedType.IsAssignableFrom(objDictType))
@@ -290,14 +307,14 @@ namespace MaxMind.Db
             // Currently we don't support non-dict generic types
             if (expectedType.GetTypeInfo().IsGenericType)
             {
-                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables);
+                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables, network);
             }
 
-            return DecodeMapToType(expectedType, offset, size, out outOffset, injectables);
+            return DecodeMapToType(expectedType, offset, size, out outOffset, injectables, network);
         }
 
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
-            InjectableValues injectables)
+            InjectableValues injectables, Network network)
         {
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
@@ -309,7 +326,7 @@ namespace MaxMind.Db
             for (var i = 0; i < size; i++)
             {
                 var key = Decode(genericArgs[0], offset, out offset);
-                var value = Decode(genericArgs[1], offset, out offset, injectables);
+                var value = Decode(genericArgs[1], offset, out offset, injectables, network);
                 obj.Add(key, value);
             }
 
@@ -318,8 +335,14 @@ namespace MaxMind.Db
             return obj;
         }
 
-        private object DecodeMapToType(Type expectedType, long offset, int size, out long outOffset,
-            InjectableValues injectables)
+        private object DecodeMapToType(
+            Type expectedType,
+            long offset,
+            int size,
+            out long outOffset,
+            InjectableValues injectables,
+            Network network
+            )
         {
             var constructor = _typeAcivatorCreator.GetActivator(expectedType);
             var parameters = constructor.DefaultParameters();
@@ -331,7 +354,7 @@ namespace MaxMind.Db
                 {
                     var param = constructor.DeserializationParameters[key];
                     var paramType = param.ParameterType;
-                    var value = Decode(paramType, offset, out offset, injectables);
+                    var value = Decode(paramType, offset, out offset, injectables, network);
                     parameters[param.Position] = value;
                 }
                 else
@@ -341,24 +364,30 @@ namespace MaxMind.Db
             }
 
             SetInjectables(constructor, parameters, injectables);
-            SetAlwaysCreatedParams(constructor, parameters, injectables);
+            SetNetwork(constructor, parameters, network);
+            SetAlwaysCreatedParams(constructor, parameters, injectables, network);
 
             outOffset = offset;
             return constructor.Activator(parameters);
         }
 
-        private void SetAlwaysCreatedParams(TypeActivator constructor, object[] parameters, InjectableValues injectables)
+        private void SetAlwaysCreatedParams(
+            TypeActivator constructor,
+            object[] parameters,
+            InjectableValues injectables,
+            Network network
+            )
         {
             foreach (var param in constructor.AlwaysCreatedParameters)
             {
-                if (parameters[param.Position] == null)
-                {
-                    var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
-                    var cstorParams = activator.DefaultParameters();
-                    SetInjectables(activator, cstorParams, injectables);
-                    SetAlwaysCreatedParams(activator, cstorParams, injectables);
-                    parameters[param.Position] = activator.Activator(cstorParams);
-                }
+                if (parameters[param.Position] != null) continue;
+
+                var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                var cstorParams = activator.DefaultParameters();
+                SetInjectables(activator, cstorParams, injectables);
+                SetNetwork(activator, cstorParams, network);
+                SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
+                parameters[param.Position] = activator.Activator(cstorParams);
             }
         }
 
@@ -373,11 +402,23 @@ namespace MaxMind.Db
             }
         }
 
+        private static void SetNetwork(TypeActivator constructor, object[] parameters, Network network)
+        {
+            foreach (var item in constructor.NetworkParameters)
+            {
+                // We don't check that we have a non-null network as we want to
+                // allow enumeration to use the same models as normal lookups. We
+                // cannot support the network field for enumeration as the objects
+                // are cached.
+                parameters[item.Position] = network;
+            }
+        }
+
         private readonly TypeAcivatorCreator _typeAcivatorCreator;
 
         private byte[] DecodeKey(long offset, out long outOffset)
         {
-            var type = CtrlData(offset, out int size, out offset);
+            var type = CtrlData(offset, out var size, out offset);
             switch (type)
             {
                 case ObjectType.Pointer:
@@ -395,33 +436,38 @@ namespace MaxMind.Db
 
         private long NextValueOffset(long offset, int numberToSkip)
         {
-            if (numberToSkip == 0)
+            while (true)
             {
-                return offset;
+                if (numberToSkip == 0)
+                {
+                    return offset;
+                }
+
+                var type = CtrlData(offset, out var size, out offset);
+                switch (type)
+                {
+                    case ObjectType.Pointer:
+                        DecodePointer(offset, size, out offset);
+                        break;
+
+                    case ObjectType.Map:
+                        numberToSkip += 2 * size;
+                        break;
+
+                    case ObjectType.Array:
+                        numberToSkip += size;
+                        break;
+
+                    case ObjectType.Boolean:
+                        break;
+
+                    default:
+                        offset += size;
+                        break;
+                }
+
+                numberToSkip = numberToSkip - 1;
             }
-            var type = CtrlData(offset, out int size, out offset);
-            switch (type)
-            {
-                case ObjectType.Pointer:
-                    DecodePointer(offset, size, out offset);
-                    break;
-
-                case ObjectType.Map:
-                    numberToSkip += 2 * size;
-                    break;
-
-                case ObjectType.Array:
-                    numberToSkip += size;
-                    break;
-
-                case ObjectType.Boolean:
-                    break;
-
-                default:
-                    offset += size;
-                    break;
-            }
-            return NextValueOffset(offset, numberToSkip - 1);
         }
 
         /// <summary>
@@ -442,9 +488,10 @@ namespace MaxMind.Db
         /// <param name="offset">The offset.</param>
         /// <param name="outOffset">The out offset.</param>
         /// <param name="injectables"></param>
+        /// <param name="network"></param>
         /// <returns></returns>
         private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
-            InjectableValues injectables)
+            InjectableValues injectables, Network network)
         {
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
@@ -453,7 +500,7 @@ namespace MaxMind.Db
             var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
-                var r = Decode(argType, offset, out offset, injectables);
+                var r = Decode(argType, offset, out offset, injectables, network);
                 interfaceType.GetMethod("Add").Invoke(array, new[] { r });
             }
 

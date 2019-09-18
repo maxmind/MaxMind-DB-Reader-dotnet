@@ -1,7 +1,6 @@
 ﻿#region
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,17 +61,17 @@ namespace MaxMind.Db
             /// <summary>
             /// Start ip address
             /// </summary>
-            public IPAddress Start { get; private set; }
+            public IPAddress Start { get; }
 
             /// <summary>
             /// Prefix/mask length
             /// </summary>
-            public int PrefixLength { get; private set; }
+            public int PrefixLength { get; }
 
             /// <summary>
             /// Data
             /// </summary>
-            public T Data { get; private set; }
+            public T Data { get; }
         }
 
         private struct NetNode
@@ -170,7 +169,7 @@ namespace MaxMind.Db
             _database = buffer;
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
-            Metadata = metaDecode.Decode<Metadata>(start, out long ignore);
+            Metadata = metaDecode.Decode<Metadata>(start, out _);
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
         }
 
@@ -241,34 +240,35 @@ namespace MaxMind.Db
 
         /// <summary>
         /// Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.
+        /// 
+        /// Note that due to caching, the Network attribute on constructor parameters will be ignored.
         /// </summary>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerable<Reader.ReaderIteratorNode<T>> FindAll<T>(InjectableValues injectables = null, int cacheSize = 16384) where T : class
+        public IEnumerable<ReaderIteratorNode<T>> FindAll<T>(InjectableValues injectables = null, int cacheSize = 16384) where T : class
         {
-            int byteCount = (Metadata.IPVersion == 6 ? 16 : 4);
-            int prefixMax = byteCount * 8;
-            List<NetNode> nodes = new List<NetNode>();
-            NetNode root = new NetNode { IPBytes = new byte[byteCount] };
+            var byteCount = Metadata.IPVersion == 6 ? 16 : 4;
+            var nodes = new List<NetNode>();
+            var root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
-            CachedDictionary<int, T> dataCache = new CachedDictionary<int, T>(cacheSize, null);
+            var dataCache = new CachedDictionary<int, T>(cacheSize, null);
             while (nodes.Count > 0)
             {
-                NetNode node = nodes[nodes.Count - 1];
+                var node = nodes[nodes.Count - 1];
                 nodes.RemoveAt(nodes.Count - 1);
                 while (true)
                 {
                     if (node.Pointer < Metadata.NodeCount)
                     {
-                        byte[] ipRight = new byte[byteCount];
+                        var ipRight = new byte[byteCount];
                         Array.Copy(node.IPBytes, ipRight, ipRight.Length);
-                        if (ipRight.Length <= (node.Bit >> 3))
+                        if (ipRight.Length <= node.Bit >> 3)
                         {
                             throw new InvalidDataException("Invalid search tree, bad bit " + node.Bit);
                         }
                         ipRight[node.Bit >> 3] |= (byte)(1 << (7 - (node.Bit % 8)));
-                        int rightPointer = ReadNode(node.Pointer, 1);
+                        var rightPointer = ReadNode(node.Pointer, 1);
                         node.Bit++;
                         nodes.Add(new NetNode { Pointer = rightPointer, IPBytes = ipRight, Bit = node.Bit });
                         node.Pointer = ReadNode(node.Pointer, 0);
@@ -278,19 +278,18 @@ namespace MaxMind.Db
                         if (node.Pointer > Metadata.NodeCount)
                         {
                             // data node, we are done with this branch
-                            if (!dataCache.TryGetValue(node.Pointer, out T data))
+                            if (!dataCache.TryGetValue(node.Pointer, out var data))
                             {
-                                data = ResolveDataPointer<T>(node.Pointer, injectables);
+                                data = ResolveDataPointer<T>(node.Pointer, injectables, null);
                                 dataCache.Add(node.Pointer, data);
                             }
-                            bool isIPV4 = true;
-                            for (int i = 0; i < node.IPBytes.Length - 4; i++)
+                            var isIPV4 = true;
+                            for (var i = 0; i < node.IPBytes.Length - 4; i++)
                             {
-                                if (node.IPBytes[i] != 0)
-                                {
-                                    isIPV4 = false;
-                                    break;
-                                }
+                                if (node.IPBytes[i] == 0) continue;
+
+                                isIPV4 = false;
+                                break;
                             }
                             if (!isIPV4 || node.IPBytes.Length == 4)
                             {
@@ -318,12 +317,13 @@ namespace MaxMind.Db
         public T Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables);
+            var network = new Network(ipAddress, prefixLength);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
         }
 
-        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables) where T : class
+        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables, Network network) where T : class
         {
-            var resolved = (pointer - Metadata.NodeCount) + Metadata.SearchTreeSize;
+            var resolved = pointer - Metadata.NodeCount + Metadata.SearchTreeSize;
 
             if (resolved >= _database.Length)
             {
@@ -332,7 +332,7 @@ namespace MaxMind.Db
                     + "contains pointer larger than the database.");
             }
 
-            return Decoder.Decode<T>(resolved, out long ignore, injectables);
+            return Decoder.Decode<T>(resolved, out _, injectables, network);
         }
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)
@@ -341,17 +341,15 @@ namespace MaxMind.Db
 
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
+            var nodeCount = Metadata.NodeCount;
 
-            for (prefixLength = 0; prefixLength < bitLength; prefixLength++)
+            var i = 0;
+            for (; i < bitLength && record < nodeCount; i++)
             {
-                if (record >= Metadata.NodeCount)
-                {
-                    break;
-                }
-                var b = rawAddress[prefixLength / 8];
-                var bit = 1 & (b >> 7 - (prefixLength % 8));
+                var bit = 1 & (rawAddress[i >> 3] >> (7 - (i % 8)));
                 record = ReadNode(record, bit);
             }
+            prefixLength = i;
             if (record == Metadata.NodeCount)
             {
                 // record is empty
@@ -382,7 +380,7 @@ namespace MaxMind.Db
         {
             var buffer = new byte[_metadataStartMarker.Length];
 
-            for (var i = (_database.Length - _metadataStartMarker.Length); i > 0; i--)
+            for (var i = _database.Length - _metadataStartMarker.Length; i > 0; i--)
             {
                 _database.Copy(i, buffer);
 
@@ -406,18 +404,32 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        return _database.ReadInteger(0, baseOffset + index * 3, 3);
+                        var offset = baseOffset + index * 3;
+                        return _database.ReadOne(offset) << 16 |
+                            _database.ReadOne(offset + 1) << 8 |
+                            _database.ReadOne(offset + 2);
                     }
                 case 28:
                     {
-                        var middle = _database.ReadOne(baseOffset + 3);
-                        middle = (index == 0) ? (byte)(middle >> 4) : (byte)(0x0F & middle);
-
-                        return _database.ReadInteger(middle, baseOffset + index * 4, 3);
+                        if (index == 0)
+                        {
+                            return ((_database.ReadOne(baseOffset + 3) & 0xF0) << 20) |
+                                    (_database.ReadOne(baseOffset) << 16) |
+                                    (_database.ReadOne(baseOffset + 1) << 8) |
+                                    _database.ReadOne(baseOffset + 2);
+                        }
+                        return ((_database.ReadOne(baseOffset + 3) & 0x0F) << 24) |
+                                (_database.ReadOne(baseOffset + 4) << 16) |
+                                (_database.ReadOne(baseOffset + 5) << 8) |
+                                _database.ReadOne(baseOffset + 6);
                     }
                 case 32:
                     {
-                        return _database.ReadInteger(0, baseOffset + index * 4, 4);
+                        var offset = baseOffset + index * 4;
+                        return _database.ReadOne(offset) << 24 |
+                               _database.ReadOne(offset + 1) << 16 |
+                               _database.ReadOne(offset + 2) << 8 |
+                               _database.ReadOne(offset + 3);
                     }
             }
 

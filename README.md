@@ -45,7 +45,7 @@ We recommend reusing the `Reader` object rather than creating a new one for
 each lookup. The creation of this object is relatively expensive as it must
 read in metadata for the file.
 
-## Example ##
+## Example Decoding to a Dictionary ##
 
 ```csharp
 
@@ -54,6 +54,56 @@ using (var reader = new Reader("GeoIP2-City.mmdb"))
     var ip = IPAddress.Parse("24.24.24.24");
     var data = reader.Find<Dictionary<string, object>>(ip);
     ...
+}
+```
+
+## Example Decoding to a Model Class ##
+
+```csharp
+using MaxMind.Db;
+using System.Net;
+
+namespace MyCode
+{
+    public class Asn
+    {
+        [Constructor]
+        public AsnResponse(
+            // The Parameter attribute tells the reader to map the database
+            // key to the specified constructor parameter.
+            [Parameter("autonomous_system_number")] long? autonomousSystemNumber,
+            [Parameter("autonomous_system_organization")] string autonomousSystemOrganization,
+
+            // The Inject attribute allows you to inject arbitrary values
+            // when deserializing.
+            [Inject("ip_address")] IPAddress ipAddress),
+
+            // The Network attribute tells the reader to set the constructor
+            // parameter to be the network associated with the record in the
+            // database.
+            [Network] Network network
+        {
+          ...
+        }
+
+        ...
+    }
+
+
+    public class Program
+    {
+        private static void Main(string[] args)
+        {
+            using (var reader = new Reader("GeoLite2-ASN.mmdb"))
+            {
+                var ip = IPAddress.Parse("24.24.24.24");
+                var injectables = new InjectableValues();
+                injectables.AddValue("ip_address", ip);
+                var data = reader.Find<Asn>(ip, injectables);
+                ...
+            }
+        }
+    }
 }
 ```
 
@@ -66,18 +116,18 @@ threads.
 ## Format ##
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to
-records. See [the specification]
-(https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
+records. See
+[the specification](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
 for more information on the format.
 
 ## Bug Tracker ##
 
-Please report all issues with this code using the [GitHub issue tracker]
-(https://github.com/maxmind/MaxMind-DB-Reader-dotnet/issues).
+Please report all issues with this code using the
+[GitHub issue tracker](https://github.com/maxmind/MaxMind-DB-Reader-dotnet/issues).
 
 If you are having an issue with a MaxMind database or service that is not
-specific to this reader, please [contact MaxMind support]
-(http://www.maxmind.com/en/support).
+specific to this reader, please
+[contact MaxMind support](http://www.maxmind.com/en/support).
 
 ## Contributing ##
 
@@ -90,6 +140,6 @@ The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2016 by MaxMind, Inc.
+This software is Copyright (c) 2013-2019 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.

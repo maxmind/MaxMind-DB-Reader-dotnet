@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using MaxMind.Db.Test.Helper;
 using Xunit;
@@ -25,7 +24,6 @@ namespace MaxMind.Db.Test
         [InlineData(FileAccessMode.Memory)]
         public void TestParallelFor(FileAccessMode mode)
         {
-            var count = 0;
             var ipsAndResults = new Dictionary<IPAddress, string>();
             var rand = new Random();
             using (var reader = new Reader(_testDatabase, mode))
@@ -34,11 +32,8 @@ namespace MaxMind.Db.Test
                 {
                     var ip = new IPAddress(rand.Next(int.MaxValue));
                     var resp = reader.Find<object>(ip);
-                    if (resp != null && !ipsAndResults.ContainsKey(ip))
-                    {
-                        ipsAndResults.Add(ip, resp.ToString());
-                        count++;
-                    }
+                    if (resp == null || ipsAndResults.ContainsKey(ip)) continue;
+                    ipsAndResults.Add(ip, resp.ToString());
                 }
 
                 var ips = ipsAndResults.Keys.ToArray();
