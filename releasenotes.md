@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 2.5.0 () ##
+## 2.5.0 (2019-11-21) ##
 
 * A `FindAll` method was added to the `MaxMind.Db.Reader` class. This returns
   an enumerator that enumerates over the MaxMind DB database. Pull request by
