@@ -11,19 +11,17 @@ env:
 matrix:
   include:
   - os: linux
-    dotnet: 2.2
+    dotnet: 3.0
     mono: none
     sudo: required
-    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp2.0
+    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.0
   - os: osx
-    dotnet: 2.2.402
+    dotnet: 3.0.101
     mono: none
-    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp2.0
+    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.0
   - os: linux
     mono: latest
     sudo: false
-  - os: osx
-    mono: latest
 
 install: git submodule update --init --recursive
 
