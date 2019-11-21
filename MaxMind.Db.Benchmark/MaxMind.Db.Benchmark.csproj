@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <PackageId>MaxMind.Db.Benchmark</PackageId>
     <PackageProjectUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet/blob/v2.0.0/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

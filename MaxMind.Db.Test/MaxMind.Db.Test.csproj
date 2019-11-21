@@ -9,6 +9,7 @@
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId>MaxMind.Db.Test</PackageId>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
