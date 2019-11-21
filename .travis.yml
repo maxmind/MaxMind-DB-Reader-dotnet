@@ -22,8 +22,6 @@ matrix:
   - os: linux
     mono: latest
     sudo: false
-  - os: osx
-    mono: latest
 
 install: git submodule update --init --recursive
 
