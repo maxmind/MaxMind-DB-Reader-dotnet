@@ -1,5 +1,8 @@
 ﻿#region
 
+using FluentAssertions;
+using MaxMind.Db.Test.Helper;
+using NetTools;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,10 +11,7 @@ using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Threading.Tasks;
-using FluentAssertions;
-using MaxMind.Db.Test.Helper;
 using Xunit;
-using NetTools;
 
 #endregion
 
