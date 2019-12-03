@@ -1,5 +1,10 @@
 # Release Nodes #
 
+## 2.6.0 ##
+
+* This library has been updated to support the nullable reference types
+  introduced in C# 8.0.
+
 ## 2.5.0 (2019-11-21) ##
 
 * A `FindAll` method was added to the `MaxMind.Db.Reader` class. This returns
