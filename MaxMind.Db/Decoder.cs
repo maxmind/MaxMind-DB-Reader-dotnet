@@ -3,7 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Net;
 using System.Numerics;
 using System.Reflection;
 
@@ -71,12 +70,17 @@ namespace MaxMind.Db
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns>An object containing the data read from the stream</returns>
-        internal T Decode<T>(long offset, out long outOffset, InjectableValues injectables = null, Network network = default) where T : class
+        internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
-            return Decode(typeof(T), offset, out outOffset, injectables, network) as T;
+            var decoded = Decode(typeof(T), offset, out outOffset, injectables, network) as T;
+            if (decoded == null)
+            {
+                throw new InvalidDatabaseException("The value cannot be decoded as " + typeof(T));
+            }
+            return decoded;
         }
 
-        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues injectables = null, Network network = null)
+        private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues? injectables = null, Network? network = null)
         {
             var type = CtrlData(offset, out var size, out offset);
             return DecodeByType(expectedType, type, offset, size, out outOffset, injectables, network);
@@ -150,8 +154,8 @@ namespace MaxMind.Db
             long offset,
             int size,
             out long outOffset,
-            InjectableValues injectables,
-            Network network
+            InjectableValues? injectables,
+            Network? network
             )
         {
             outOffset = offset + size;
@@ -296,8 +300,8 @@ namespace MaxMind.Db
             long offset,
             int size,
             out long outOffset,
-            InjectableValues injectables,
-            Network network
+            InjectableValues? injectables,
+            Network? network
             )
         {
             var objDictType = typeof(Dictionary<string, object>);
@@ -314,7 +318,7 @@ namespace MaxMind.Db
         }
 
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
-            InjectableValues injectables, Network network)
+            InjectableValues? injectables, Network? network)
         {
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
@@ -340,8 +344,8 @@ namespace MaxMind.Db
             long offset,
             int size,
             out long outOffset,
-            InjectableValues injectables,
-            Network network
+            InjectableValues? injectables,
+            Network? network
             )
         {
             var constructor = _typeAcivatorCreator.GetActivator(expectedType);
@@ -374,8 +378,8 @@ namespace MaxMind.Db
         private void SetAlwaysCreatedParams(
             TypeActivator constructor,
             object[] parameters,
-            InjectableValues injectables,
-            Network network
+            InjectableValues? injectables,
+            Network? network
             )
         {
             foreach (var param in constructor.AlwaysCreatedParameters)
@@ -391,7 +395,7 @@ namespace MaxMind.Db
             }
         }
 
-        private static void SetInjectables(TypeActivator constructor, object[] parameters, InjectableValues injectables)
+        private static void SetInjectables(TypeActivator constructor, object[] parameters, InjectableValues? injectables)
         {
             foreach (var item in constructor.InjectableParameters)
             {
@@ -402,7 +406,7 @@ namespace MaxMind.Db
             }
         }
 
-        private static void SetNetwork(TypeActivator constructor, object[] parameters, Network network)
+        private static void SetNetwork(TypeActivator constructor, object?[] parameters, Network? network)
         {
             foreach (var item in constructor.NetworkParameters)
             {
@@ -491,7 +495,7 @@ namespace MaxMind.Db
         /// <param name="network"></param>
         /// <returns></returns>
         private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
-            InjectableValues injectables, Network network)
+            InjectableValues? injectables, Network? network)
         {
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];

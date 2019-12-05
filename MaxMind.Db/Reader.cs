@@ -83,7 +83,7 @@ namespace MaxMind.Db
 
         private const int DataSectionSeparatorSize = 16;
         private readonly Buffer _database;
-        private readonly string _fileName;
+        private readonly string? _fileName;
 
         // The property getter was a hotspot during profiling.
 
@@ -163,7 +163,7 @@ namespace MaxMind.Db
             return new Reader(await ArrayBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
-        private Reader(Buffer buffer, string file)
+        private Reader(Buffer buffer, string? file)
         {
             _fileName = file;
             _database = buffer;
@@ -233,7 +233,7 @@ namespace MaxMind.Db
         /// <param name="ipAddress">The IP address.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
-        public T Find<T>(IPAddress ipAddress, InjectableValues injectables = null) where T : class
+        public T? Find<T>(IPAddress ipAddress, InjectableValues? injectables = null) where T : class
         {
             return Find<T>(ipAddress, out _, injectables);
         }
@@ -246,7 +246,7 @@ namespace MaxMind.Db
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
         /// <returns>Enumerator for all data nodes</returns>
-        public IEnumerable<ReaderIteratorNode<T>> FindAll<T>(InjectableValues injectables = null, int cacheSize = 16384) where T : class
+        public IEnumerable<ReaderIteratorNode<T>> FindAll<T>(InjectableValues? injectables = null, int cacheSize = 16384) where T : class
         {
             var byteCount = Metadata.IPVersion == 6 ? 16 : 4;
             var nodes = new List<NetNode>();
@@ -314,14 +314,14 @@ namespace MaxMind.Db
         /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
-        public T Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues injectables = null) where T : class
+        public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
             var network = new Network(ipAddress, prefixLength);
             return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
         }
 
-        private T ResolveDataPointer<T>(int pointer, InjectableValues injectables, Network network) where T : class
+        private T ResolveDataPointer<T>(int pointer, InjectableValues? injectables, Network? network) where T : class
         {
             var resolved = pointer - Metadata.NodeCount + Metadata.SearchTreeSize;
 

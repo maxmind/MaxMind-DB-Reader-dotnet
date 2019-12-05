@@ -26,7 +26,7 @@ namespace MaxMind.Db
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";
 
-            var mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            string? mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
             lock (FileLocker)
             {
                 try

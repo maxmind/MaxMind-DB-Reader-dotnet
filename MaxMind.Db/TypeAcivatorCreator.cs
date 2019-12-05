@@ -15,7 +15,7 @@ namespace MaxMind.Db
     {
         internal readonly ObjectActivator Activator;
         internal readonly List<ParameterInfo> AlwaysCreatedParameters;
-        internal readonly object[] _defaultParameters;
+        internal readonly object?[] _defaultParameters;
         internal readonly Dictionary<byte[], ParameterInfo> DeserializationParameters;
         internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
         internal readonly List<ParameterInfo> NetworkParameters;
@@ -42,7 +42,7 @@ namespace MaxMind.Db
 
         internal object[] DefaultParameters() => (object[])_defaultParameters.Clone();
 
-        private static object DefaultValue(Type type)
+        private static object? DefaultValue(Type type)
         {
             if (type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(type) == null)
             {

@@ -1,9 +1,9 @@
 ﻿#region
 
-using System.Collections.Generic;
-using System.IO;
 using FluentAssertions;
 using MaxMind.Db.Test.Helper;
+using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 #endregion

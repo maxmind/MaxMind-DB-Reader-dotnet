@@ -12,7 +12,7 @@ namespace MaxMind.Db.Benchmark
 {
     public class Country
     {
-        public string IsoCode;
+        public string? IsoCode;
 
         public Country()
         {

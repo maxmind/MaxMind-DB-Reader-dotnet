@@ -1,5 +1,8 @@
 ﻿#region
 
+using FluentAssertions;
+using MaxMind.Db.Test.Helper;
+using NetTools;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,10 +11,7 @@ using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Threading.Tasks;
-using FluentAssertions;
-using MaxMind.Db.Test.Helper;
 using Xunit;
-using NetTools;
 
 #endregion
 
@@ -194,6 +194,8 @@ namespace MaxMind.Db.Test
             }
         }
 
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
@@ -209,6 +211,8 @@ namespace MaxMind.Db.Test
                 .Should().Throw<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
         [Fact]
         public void TestEmptyStream()
@@ -374,7 +378,7 @@ namespace MaxMind.Db.Test
             }
         }
 
-        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues injectables = null) where T : class
+        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues? injectables = null) where T : class
         {
             // ensure start ip and prefix length are valid, will throw if not
             var range = new IPAddressRange(node.Start, node.PrefixLength);
@@ -420,8 +424,12 @@ namespace MaxMind.Db.Test
             count.Should().Be(26);
         }
 
-        private void TestDecodingTypes(IDictionary<string, object> record)
+        private void TestDecodingTypes(IDictionary<string, object>? record)
         {
+            if (record == null)
+            {
+                throw new Xunit.Sdk.XunitException("unexpected null record value");
+            }
             ((bool)record["boolean"]).Should().BeTrue();
 
             ((byte[])record["bytes"]).Should().Equal(0, 0, 0, 42);
@@ -465,7 +473,10 @@ namespace MaxMind.Db.Test
                 var injectables = new InjectableValues();
                 injectables.AddValue("injected", "injected string");
                 var record = reader.Find<TypeHolder>(IPAddress.Parse("1.1.1.1"), injectables);
-
+                if (record == null)
+                {
+                    throw new Xunit.Sdk.XunitException("unexpected null record value");
+                }
                 record.Boolean.Should().BeTrue();
                 record.Bytes.Should().Equal(0, 0, 0, 42);
                 record.Utf8String.Should().Be("unicode! ☯ - ♫");
@@ -500,7 +511,10 @@ namespace MaxMind.Db.Test
             using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
             {
                 var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::"));
-
+                if (record == null)
+                {
+                    throw new Xunit.Sdk.XunitException("unexpected null record value");
+                }
                 ((bool)record["boolean"]).Should().BeFalse();
 
                 ((byte[])record["bytes"]).Should().BeEmpty();
@@ -605,6 +619,8 @@ namespace MaxMind.Db.Test
         private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,
             Dictionary<string, string> pairs, IEnumerable<string> nullAddresses, Dictionary<string, int> prefixes)
         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
             foreach (var address in singleAddresses)
             {
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"].Should().Be(
@@ -618,6 +634,7 @@ namespace MaxMind.Db.Test
                     pairs[address],
                     $"Did not find expected data record for {address} in {file}");
             }
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             foreach (var address in nullAddresses)
             {

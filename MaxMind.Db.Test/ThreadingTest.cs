@@ -1,12 +1,12 @@
 ﻿#region
 
+using MaxMind.Db.Test.Helper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using MaxMind.Db.Test.Helper;
 using Xunit;
 
 #endregion
@@ -24,7 +24,7 @@ namespace MaxMind.Db.Test
         [InlineData(FileAccessMode.Memory)]
         public void TestParallelFor(FileAccessMode mode)
         {
-            var ipsAndResults = new Dictionary<IPAddress, string>();
+            var ipsAndResults = new Dictionary<IPAddress, string?>();
             var rand = new Random();
             using (var reader = new Reader(_testDatabase, mode))
             {
@@ -41,6 +41,10 @@ namespace MaxMind.Db.Test
                 {
                     var ipAddress = ips[i];
                     var result = reader.Find<object>(ipAddress);
+                    if (result == null)
+                    {
+                        throw new Xunit.Sdk.XunitException("unexpected null result value");
+                    }
                     var resultString = result.ToString();
                     var expectedString = ipsAndResults[ipAddress];
                     if (resultString != expectedString)
