@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 2.6.0 ##
+## 2.6.0 (2019-12-06) ##
 
 * This library has been updated to support the nullable reference types
   introduced in C# 8.0.
