@@ -1,6 +1,6 @@
 # Release Nodes #
 
-## 2.6.1 ##
+## 2.6.1 (2019-12-06) ##
 
 * `netstandard2.1` was added as a target framework.
 
