@@ -1,5 +1,9 @@
 # Release Nodes #
 
+## 2.6.1 ##
+
+* `netstandard2.1` was added as a target framework.
+
 ## 2.6.0 (2019-12-06) ##
 
 * This library has been updated to support the nullable reference types
