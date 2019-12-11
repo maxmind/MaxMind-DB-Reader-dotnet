@@ -128,7 +128,7 @@ namespace MaxMind.Db
                         break;
 
                     default:
-                        size = 65821 + (i & (0x0FFFFFFF >> (32 - 8 * bytesToRead)));
+                        size = 65821 + i;
                         break;
                 }
             }
