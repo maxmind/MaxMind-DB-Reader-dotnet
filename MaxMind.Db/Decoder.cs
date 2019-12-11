@@ -115,22 +115,21 @@ namespace MaxMind.Db
             if (size >= 29)
             {
                 var bytesToRead = size - 28;
-                var i = _database.ReadInteger(0, offset, bytesToRead);
-                offset = offset + bytesToRead;
                 switch (size)
                 {
                     case 29:
-                        size = 29 + i;
+                        size = 29 + _database.ReadOne(offset);
                         break;
 
                     case 30:
-                        size = 285 + i;
+                        size = 285 + _database.ReadInteger(0, offset, bytesToRead);
                         break;
 
                     default:
-                        size = 65821 + i;
+                        size = 65821 + _database.ReadInteger(0, offset, bytesToRead);
                         break;
                 }
+                offset = offset + bytesToRead;
             }
             outOffset = offset;
             return type;
