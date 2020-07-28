@@ -28,10 +28,8 @@ namespace MaxMind.Db
 
         public static async Task<ArrayBuffer> CreateAsync(string file)
         {
-            using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
-            {
-                return await CreateAsync(stream).ConfigureAwait(false);
-            }
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+            return await CreateAsync(stream).ConfigureAwait(false);
         }
 
         internal static async Task<ArrayBuffer> CreateAsync(Stream stream)

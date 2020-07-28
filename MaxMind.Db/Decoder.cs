@@ -72,8 +72,7 @@ namespace MaxMind.Db
         /// <returns>An object containing the data read from the stream</returns>
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
-            var decoded = Decode(typeof(T), offset, out outOffset, injectables, network) as T;
-            if (decoded == null)
+            if (!(Decode(typeof(T), offset, out outOffset, injectables, network) is T decoded))
             {
                 throw new InvalidDatabaseException("The value cannot be decoded as " + typeof(T));
             }
@@ -115,21 +114,13 @@ namespace MaxMind.Db
             if (size >= 29)
             {
                 var bytesToRead = size - 28;
-                switch (size)
+                size = size switch
                 {
-                    case 29:
-                        size = 29 + _database.ReadOne(offset);
-                        break;
-
-                    case 30:
-                        size = 285 + _database.ReadInteger(0, offset, bytesToRead);
-                        break;
-
-                    default:
-                        size = 65821 + _database.ReadInteger(0, offset, bytesToRead);
-                        break;
-                }
-                offset = offset + bytesToRead;
+                    29 => 29 + _database.ReadOne(offset),
+                    30 => 285 + _database.ReadInteger(0, offset, bytesToRead),
+                    _ => 65821 + _database.ReadInteger(0, offset, bytesToRead),
+                };
+                offset += bytesToRead;
             }
             outOffset = offset;
             return type;
@@ -224,18 +215,13 @@ namespace MaxMind.Db
         {
             ReflectionUtil.CheckType(expectedType, typeof(bool));
 
-            switch (size)
+            return size switch
             {
-                case 0:
-                    return false;
-
-                case 1:
-                    return true;
-
-                default:
-                    throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
-                                                       + "invalid size of boolean.");
-            }
+                0 => false,
+                1 => true,
+                _ => throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
+                                                     + "invalid size of boolean."),
+            };
         }
 
         /// <summary>
@@ -426,7 +412,7 @@ namespace MaxMind.Db
             {
                 case ObjectType.Pointer:
                     offset = DecodePointer(offset, size, out outOffset);
-                    return DecodeKey(offset, out offset);
+                    return DecodeKey(offset, out _);
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
@@ -469,7 +455,7 @@ namespace MaxMind.Db
                         break;
                 }
 
-                numberToSkip = numberToSkip - 1;
+                numberToSkip -= 1;
             }
         }
 
