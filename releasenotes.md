@@ -1,5 +1,10 @@
 # Release Nodes #
 
+## 3.0.0 () ##
+
+* This library now requires .NET Framework 4.52 or greater or .NET Standard
+  2.0 or greater.
+
 ## 2.6.1 (2019-12-06) ##
 
 * `netstandard2.1` was added as a target framework.

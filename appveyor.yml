@@ -9,25 +9,29 @@ environment:
     MAXMIND_TEST_BASE_DIR: $(APPVEYOR_BUILD_FOLDER)/MaxMind.Db.Test
   matrix:
     - CONFIGURATION: Debug
-      CONSOLE_FRAMEWORK: net45
-      LIB_FRAMEWORK: net45
+      CONSOLE_FRAMEWORK: net452
+      LIB_FRAMEWORK: net452
       TEST_FRAMEWORK: net452
     - CONFIGURATION: Release
-      CONSOLE_FRAMEWORK: net45
+      CONSOLE_FRAMEWORK: net452
       TEST_FRAMEWORK: net452
-      LIB_FRAMEWORK: net45
+      LIB_FRAMEWORK: net452
     - CONFIGURATION: Debug
-      CONSOLE_FRAMEWORK: netcoreapp3.0
-      LIB_FRAMEWORK: netstandard2.0
-      TEST_FRAMEWORK: netcoreapp3.0
-    - CONFIGURATION: Release
       CONSOLE_FRAMEWORK: netcoreapp2.1
-      LIB_FRAMEWORK: netstandard1.4
+      LIB_FRAMEWORK: netstandard2.0
       TEST_FRAMEWORK: netcoreapp2.1
     - CONFIGURATION: Release
       CONSOLE_FRAMEWORK: netcoreapp2.1
       LIB_FRAMEWORK: netstandard2.0
       TEST_FRAMEWORK: netcoreapp2.1
+    - CONFIGURATION: Debug
+      CONSOLE_FRAMEWORK: netcoreapp3.1
+      LIB_FRAMEWORK: netstandard2.1
+      TEST_FRAMEWORK: netcoreapp3.1
+    - CONFIGURATION: Release
+      CONSOLE_FRAMEWORK: netcoreapp3.1
+      LIB_FRAMEWORK: netstandard2.1
+      TEST_FRAMEWORK: netcoreapp3.1
 
 before_build:
   - git submodule update --init --recursive

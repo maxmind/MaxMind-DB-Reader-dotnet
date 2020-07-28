@@ -14,11 +14,11 @@ matrix:
     dotnet: 3.1
     mono: none
     sudo: required
-    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.0
+    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.1
   - os: osx
     dotnet: 3.1.100
     mono: none
-    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.0
+    env: DOTNETCORE=1 CONSOLE_FRAMEWORK=netcoreapp3.1
   - os: linux
     mono: latest
     sudo: false

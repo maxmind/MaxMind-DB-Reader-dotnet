@@ -1,10 +1,8 @@
 ﻿#region
 
 using System;
-#if !NETSTANDARD1_4
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
-#endif
 #endregion
 
 namespace MaxMind.Db
@@ -12,10 +10,8 @@ namespace MaxMind.Db
     /// <summary>
     ///     Thrown when there is an error deserializing to the provided type.
     /// </summary>
-#if !NETSTANDARD1_4
     [SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")]
     [Serializable]
-#endif
     public sealed class DeserializationException : Exception
     {
         /// <summary>
@@ -37,7 +33,6 @@ namespace MaxMind.Db
         {
         }
 
-#if !NETSTANDARD1_4
         /// <summary>
         ///     Constructor for deserialization.
         /// </summary>
@@ -46,6 +41,5 @@ namespace MaxMind.Db
         private DeserializationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
-#endif
     }
 }
