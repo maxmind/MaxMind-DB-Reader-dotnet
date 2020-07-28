@@ -124,20 +124,13 @@ namespace MaxMind.Db
 
         private static Buffer BufferForMode(string file, FileAccessMode mode)
         {
-            switch (mode)
+            return mode switch
             {
-                case FileAccessMode.MemoryMapped:
-                    return new MemoryMapBuffer(file, false);
-
-                case FileAccessMode.MemoryMappedGlobal:
-                    return new MemoryMapBuffer(file, true);
-
-                case FileAccessMode.Memory:
-                    return new ArrayBuffer(file);
-
-                default:
-                    throw new ArgumentException("Unknown file access mode");
-            }
+                FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
+                FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
+                FileAccessMode.Memory => new ArrayBuffer(file),
+                _ => throw new ArgumentException("Unknown file access mode"),
+            };
         }
 
         /// <summary>
