@@ -2,7 +2,7 @@
 
 ## 3.0.0 () ##
 
-* This library now requires .NET Framework 4.52 or greater or .NET Standard
+* This library now requires .NET Framework 4.5 or greater or .NET Standard
   2.0 or greater.
 
 ## 2.6.1 (2019-12-06) ##
