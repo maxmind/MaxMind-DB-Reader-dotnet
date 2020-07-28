@@ -1,9 +1,7 @@
 ﻿#region
 
 using System;
-#if !NETSTANDARD1_4
 using System.Runtime.Serialization;
-#endif
 #endregion
 
 namespace MaxMind.Db
@@ -11,9 +9,7 @@ namespace MaxMind.Db
     /// <summary>
     ///     Thrown when the MaxMind database file is incorrectly formatted
     /// </summary>
-#if !NETSTANDARD1_4
     [Serializable]
-#endif
     public sealed class InvalidDatabaseException : Exception
     {
         /// <summary>
@@ -39,7 +35,6 @@ namespace MaxMind.Db
         {
         }
 
-#if !NETSTANDARD1_4
         /// <summary>
         ///     Constructor for deserialization.
         /// </summary>
@@ -48,6 +43,5 @@ namespace MaxMind.Db
         private InvalidDatabaseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
-#endif
     }
 }

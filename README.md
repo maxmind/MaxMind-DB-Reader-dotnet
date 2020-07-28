@@ -8,7 +8,7 @@ format that stores data indexed by IP address subnets (IPv4 or IPv6).
 ## Requirements ##
 
 This library works with .NET Framework version 4.5 and above and .NET Standard
-1.4 or above.
+2.0 or above.
 
 ## Installation ##
 

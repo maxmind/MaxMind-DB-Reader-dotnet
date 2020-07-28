@@ -33,7 +33,7 @@ namespace MaxMind.Db
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
-#if !NETSTANDARD1_4 && !NETSTANDARD2_0 && !NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
 #else           // Note that PNSE is only required by .NetStandard1.0, see the subsequent comment for more context
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
@@ -41,7 +41,7 @@ namespace MaxMind.Db
                 {
                     var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                                 FileShare.Delete | FileShare.Read);
-#if !NETSTANDARD1_4 && !NETSTANDARD2_0 && !NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1
                     var security = new MemoryMappedFileSecurity();
                     security.AddAccessRule(
                         new System.Security.AccessControl.AccessRule<MemoryMappedFileRights>(
@@ -92,14 +92,7 @@ namespace MaxMind.Db
             // reviewing the source code, these operations appear to
             // be thread safe as long as only read operations are
             // being done.
-#if !NETSTANDARD1_4
             _view.ReadArray(offset, bytes, 0, bytes.Length);
-#else       // FIXME: to be removed if/when this issue is resolved: https://github.com/dotnet/coreclr/issues/4799.
-            for (long j = 0, i = offset; j < bytes.Length; i++, ++j)
-            {
-                bytes[j] = _view.ReadByte(i);
-            }
-#endif
         }
 
         /// <summary>
