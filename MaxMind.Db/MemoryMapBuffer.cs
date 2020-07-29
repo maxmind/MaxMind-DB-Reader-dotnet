@@ -94,6 +94,7 @@ namespace MaxMind.Db
 #else
             if (offset + count > _view.Capacity) {
                 throw new ArgumentOutOfRangeException(
+                    nameof(offset),
                     "Attempt to read beyond the end of the MemoryMappedFile.");
             }
             unsafe
