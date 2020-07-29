@@ -20,22 +20,13 @@ namespace MaxMind.Db
         private static ObjectActivator ListActivator(Type expectedType)
         {
             var genericArgs = expectedType.GetGenericArguments();
-            Type argType;
-            switch (genericArgs.Length)
+            var argType = genericArgs.Length switch
             {
-                case 0:
-                    argType = typeof(object);
-                    break;
-
-                case 1:
-                    argType = genericArgs[0];
-                    break;
-
-                default:
-                    throw new DeserializationException(
-                        $"Unexpected number of generic arguments for list: {genericArgs.Length}");
-            }
-
+                0 => typeof(object),
+                1 => genericArgs[0],
+                _ => throw new DeserializationException(
+                         $"Unexpected number of generic arguments for list: {genericArgs.Length}"),
+            };
             ConstructorInfo constructor;
             var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
             var listType = typeof(List<>).MakeGenericType(argType);
