@@ -82,8 +82,25 @@ namespace MaxMind.Db
 
         public override string ReadString(long offset, int count)
         {
+#if NET45
             var buffer = Read(offset, count);
             return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+#else
+            if (offset + count > _view.Capacity) {
+                throw new ArgumentOutOfRangeException(
+                    "Attempt to read beyond the end of the MemoryMappedFile.");
+            }
+            unsafe
+            {
+                byte* ptr = (byte*) 0;
+                try {
+                    _view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+                    return Encoding.UTF8.GetString(ptr + offset, count);
+                } finally {
+                    _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                }
+            }
+#endif
         }
 
         public override void Copy(long offset, byte[] bytes)
