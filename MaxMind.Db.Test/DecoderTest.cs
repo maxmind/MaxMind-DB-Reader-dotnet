@@ -34,18 +34,16 @@ namespace MaxMind.Db.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using (var database = new ArrayBuffer(input))
+                using var database = new ArrayBuffer(input);
+                var decoder = new Decoder(database, 0, false);
+                var val = decoder.Decode<T>(0, out _);
+                if (useShouldBe)
                 {
-                    var decoder = new Decoder(database, 0, false);
-                    var val = decoder.Decode<T>(0, out _);
-                    if (useShouldBe)
-                    {
-                        val.Should().Be(expect);
-                    }
-                    else
-                    {
-                        val.Should().BeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
-                    }
+                    val.Should().Be(expect);
+                }
+                else
+                {
+                    val.Should().BeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
                 }
             }
         }
