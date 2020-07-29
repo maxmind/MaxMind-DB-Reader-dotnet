@@ -17,6 +17,14 @@ environment:
       TEST_FRAMEWORK: net452
       LIB_FRAMEWORK: net45
     - CONFIGURATION: Debug
+      CONSOLE_FRAMEWORK: net46
+      LIB_FRAMEWORK: net46
+      TEST_FRAMEWORK: net46
+    - CONFIGURATION: Release
+      CONSOLE_FRAMEWORK: net46
+      TEST_FRAMEWORK: net46
+      LIB_FRAMEWORK: net46
+    - CONFIGURATION: Debug
       CONSOLE_FRAMEWORK: netcoreapp2.1
       LIB_FRAMEWORK: netstandard2.0
       TEST_FRAMEWORK: netcoreapp2.1
