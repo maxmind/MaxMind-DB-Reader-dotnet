@@ -17,7 +17,7 @@ namespace MaxMind.Db
 
         public abstract byte ReadOne(long offset);
 
-        public abstract void Copy(long offset, byte[] array);
+        public abstract void Copy(long offset, byte[] bytes);
 
         public abstract void Dispose();
 

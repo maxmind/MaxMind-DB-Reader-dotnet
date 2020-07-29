@@ -114,26 +114,6 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by loading the specified file into memory.
-        /// </summary>
-        /// <param name="file">The file.</param>
-        public static async Task<Reader> CreateAsync(string file)
-        {
-            return new Reader(await ArrayBuffer.CreateAsync(file).ConfigureAwait(false), file);
-        }
-
-        private static Buffer BufferForMode(string file, FileAccessMode mode)
-        {
-            return mode switch
-            {
-                FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
-                FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
-                FileAccessMode.Memory => new ArrayBuffer(file),
-                _ => throw new ArgumentException("Unknown file access mode"),
-            };
-        }
-
-        /// <summary>
         ///     Initialize with <c>Stream</c>. The current position of the
         ///     string must point to the start of the database. The content
         ///     between the current position and the end of the stream must
@@ -146,6 +126,25 @@ namespace MaxMind.Db
         {
         }
 
+        private Reader(Buffer buffer, string? file)
+        {
+            _fileName = file;
+            _database = buffer;
+            var start = FindMetadataStart();
+            var metaDecode = new Decoder(_database, start);
+            Metadata = metaDecode.Decode<Metadata>(start, out _);
+            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+        }
+
+        /// <summary>
+        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by loading the specified file into memory.
+        /// </summary>
+        /// <param name="file">The file.</param>
+        public static async Task<Reader> CreateAsync(string file)
+        {
+            return new Reader(await ArrayBuffer.CreateAsync(file).ConfigureAwait(false), file);
+        }
+
         /// <summary>
         ///     Asynchronously initialize with Stream.
         /// </summary>
@@ -156,14 +155,15 @@ namespace MaxMind.Db
             return new Reader(await ArrayBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
-        private Reader(Buffer buffer, string? file)
+        private static Buffer BufferForMode(string file, FileAccessMode mode)
         {
-            _fileName = file;
-            _database = buffer;
-            var start = FindMetadataStart();
-            var metaDecode = new Decoder(_database, start);
-            Metadata = metaDecode.Decode<Metadata>(start, out _);
-            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+            return mode switch
+            {
+                FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
+                FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
+                FileAccessMode.Memory => new ArrayBuffer(file),
+                _ => throw new ArgumentException("Unknown file access mode"),
+            };
         }
 
         /// <summary>
@@ -229,6 +229,20 @@ namespace MaxMind.Db
         public T? Find<T>(IPAddress ipAddress, InjectableValues? injectables = null) where T : class
         {
             return Find<T>(ipAddress, out _, injectables);
+        }
+
+        /// <summary>
+        ///     Finds the data related to the specified address.
+        /// </summary>
+        /// <param name="ipAddress">The IP address.</param>
+        /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
+        /// <param name="injectables">Value to inject during deserialization</param>
+        /// <returns>An object containing the IP related data</returns>
+        public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
+        {
+            var pointer = FindAddressInTree(ipAddress, out prefixLength);
+            var network = new Network(ipAddress, prefixLength);
+            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
         }
 
         /// <summary>
@@ -298,20 +312,6 @@ namespace MaxMind.Db
                     }
                 }
             }
-        }
-
-        /// <summary>
-        ///     Finds the data related to the specified address.
-        /// </summary>
-        /// <param name="ipAddress">The IP address.</param>
-        /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
-        /// <param name="injectables">Value to inject during deserialization</param>
-        /// <returns>An object containing the IP related data</returns>
-        public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
-        {
-            var pointer = FindAddressInTree(ipAddress, out prefixLength);
-            var network = new Network(ipAddress, prefixLength);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
         }
 
         private T ResolveDataPointer<T>(int pointer, InjectableValues? injectables, Network? network) where T : class
