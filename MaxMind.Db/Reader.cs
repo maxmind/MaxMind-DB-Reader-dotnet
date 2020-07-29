@@ -371,16 +371,22 @@ namespace MaxMind.Db
 
         private int FindMetadataStart()
         {
-            var buffer = new byte[_metadataStartMarker.Length];
+            var dbLength = _database.Length;
+            var markerLength = _metadataStartMarker.Length;
 
-            for (var i = _database.Length - _metadataStartMarker.Length; i > 0; i--)
-            {
-                _database.Copy(i, buffer);
-
-                if (!buffer.SequenceEqual(_metadataStartMarker))
-                    continue;
-
-                return i + _metadataStartMarker.Length;
+            for (var i = dbLength - markerLength; i > 0; i--) {
+                int j = 0;
+                for (; j < _metadataStartMarker.Length; j++)
+                {
+                    if (_metadataStartMarker[j] != _database.ReadOne(i + j))
+                    {
+                        break;
+                    }
+                }
+                if (j == markerLength)
+                {
+                    return i + _metadataStartMarker.Length;
+                }
             }
 
             throw new InvalidDatabaseException(
