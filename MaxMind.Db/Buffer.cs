@@ -49,9 +49,7 @@ namespace MaxMind.Db
         /// </summary>
         internal double ReadDouble(long offset)
         {
-            var buffer = Read(offset, 8);
-            Array.Reverse(buffer);
-            return BitConverter.ToDouble(buffer, 0);
+            return BitConverter.Int64BitsToDouble(ReadLong(offset, 8));
         }
 
         /// <summary>
@@ -59,9 +57,13 @@ namespace MaxMind.Db
         /// </summary>
         internal float ReadFloat(long offset)
         {
+#if NETSTANDARD2_0 || NET45
             var buffer = Read(offset, 4);
             Array.Reverse(buffer);
             return BitConverter.ToSingle(buffer, 0);
+#else
+            return BitConverter.Int32BitsToSingle(ReadInteger(0, offset, 4));
+#endif
         }
 
         /// <summary>
