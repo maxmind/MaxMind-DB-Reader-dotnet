@@ -74,7 +74,13 @@ namespace MaxMind.Db
         public override byte[] Read(long offset, int count)
         {
             var bytes = new byte[count];
-            Copy(offset, bytes);
+
+            // Although not explicitly marked as thread safe, from
+            // reviewing the source code, these operations appear to
+            // be thread safe as long as only read operations are
+            // being done.
+            _view.ReadArray(offset, bytes, 0, bytes.Length);
+
             return bytes;
         }
 
@@ -102,15 +108,6 @@ namespace MaxMind.Db
                 }
             }
 #endif
-        }
-
-        public override void Copy(long offset, byte[] bytes)
-        {
-            // Although not explicitly marked as thread safe, from
-            // reviewing the source code, these operations appear to
-            // be thread safe as long as only read operations are
-            // being done.
-            _view.ReadArray(offset, bytes, 0, bytes.Length);
         }
 
         /// <summary>
