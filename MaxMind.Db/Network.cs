@@ -7,7 +7,7 @@ namespace MaxMind.Db
     /// </summary>
     public sealed class Network
     {
-        private IPAddress ip;
+        private readonly IPAddress ip;
 
         /// <summary>
         ///     The prefix length is the number of leading 1 bits in the 

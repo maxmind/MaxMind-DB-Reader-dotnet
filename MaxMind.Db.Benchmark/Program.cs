@@ -75,11 +75,9 @@ namespace MaxMind.Db.Benchmark
                 }
             }
 
-            using (var reader = new Reader(dbPath, FileAccessMode.Memory))
-            {
-                Bench("GeoIP2 class", ip => reader.Find<GeoIP2>(ip));
-                Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
-            }
+            using var reader = new Reader(dbPath, FileAccessMode.Memory);
+            Bench("GeoIP2 class", ip => reader.Find<GeoIP2>(ip));
+            Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
         }
 
         private static void Bench(string name, Action<IPAddress> op)
