@@ -85,21 +85,17 @@ namespace MaxMind.Db.Test
                 {
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    using (var streamReader = File.OpenText(file))
-                    {
-                        using (var reader = new Reader(streamReader.BaseStream))
-                        {
-                            TestMetadata(reader, ipVersion);
+                    using var streamReader = File.OpenText(file);
+                    using var reader = new Reader(streamReader.BaseStream);
+                    TestMetadata(reader, ipVersion);
 
-                            if (ipVersion == 4)
-                            {
-                                TestIPV4(reader, file);
-                            }
-                            else
-                            {
-                                TestIPV6(reader, file);
-                            }
-                        }
+                    if (ipVersion == 4)
+                    {
+                        TestIPV4(reader, file);
+                    }
+                    else
+                    {
+                        TestIPV6(reader, file);
                     }
                 }
             }
@@ -114,21 +110,17 @@ namespace MaxMind.Db.Test
                 {
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    using (var streamReader = File.OpenText(file))
-                    {
-                        using (var reader = await Reader.CreateAsync(streamReader.BaseStream).ConfigureAwait(false))
-                        {
-                            TestMetadata(reader, ipVersion);
+                    using var streamReader = File.OpenText(file);
+                    using var reader = await Reader.CreateAsync(streamReader.BaseStream).ConfigureAwait(false);
+                    TestMetadata(reader, ipVersion);
 
-                            if (ipVersion == 4)
-                            {
-                                TestIPV4(reader, file);
-                            }
-                            else
-                            {
-                                TestIPV6(reader, file);
-                            }
-                        }
+                    if (ipVersion == 4)
+                    {
+                        TestIPV4(reader, file);
+                    }
+                    else
+                    {
+                        TestIPV6(reader, file);
                     }
                 }
             }
@@ -144,21 +136,17 @@ namespace MaxMind.Db.Test
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
 
-                    using (var stream = new NonSeekableStreamWrapper(File.OpenRead(file)))
-                    {
-                        using (var reader = new Reader(stream))
-                        {
-                            TestMetadata(reader, ipVersion);
+                    using var stream = new NonSeekableStreamWrapper(File.OpenRead(file));
+                    using var reader = new Reader(stream);
+                    TestMetadata(reader, ipVersion);
 
-                            if (ipVersion == 4)
-                            {
-                                TestIPV4(reader, file);
-                            }
-                            else
-                            {
-                                TestIPV6(reader, file);
-                            }
-                        }
+                    if (ipVersion == 4)
+                    {
+                        TestIPV4(reader, file);
+                    }
+                    else
+                    {
+                        TestIPV6(reader, file);
                     }
                 }
             }
@@ -174,21 +162,17 @@ namespace MaxMind.Db.Test
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
 
-                    using (var stream = new NonSeekableStreamWrapper(File.OpenRead(file)))
-                    {
-                        using (var reader = await Reader.CreateAsync(stream).ConfigureAwait(false))
-                        {
-                            TestMetadata(reader, ipVersion);
+                    using var stream = new NonSeekableStreamWrapper(File.OpenRead(file));
+                    using var reader = await Reader.CreateAsync(stream).ConfigureAwait(false);
+                    TestMetadata(reader, ipVersion);
 
-                            if (ipVersion == 4)
-                            {
-                                TestIPV4(reader, file);
-                            }
-                            else
-                            {
-                                TestIPV6(reader, file);
-                            }
-                        }
+                    if (ipVersion == 4)
+                    {
+                        TestIPV4(reader, file);
+                    }
+                    else
+                    {
+                        TestIPV6(reader, file);
                     }
                 }
             }
@@ -217,33 +201,27 @@ namespace MaxMind.Db.Test
         [Fact]
         public void TestEmptyStream()
         {
-            using (var stream = new MemoryStream())
-            {
-                ((Action)(() => new Reader(stream)))
-                    .Should().Throw<InvalidDatabaseException>()
-                    .WithMessage("*zero bytes left in the stream*");
-            }
+            using var stream = new MemoryStream();
+            ((Action)(() => new Reader(stream)))
+                .Should().Throw<InvalidDatabaseException>()
+                .WithMessage("*zero bytes left in the stream*");
         }
 
         [Fact]
         public void TestEmptyStreamAsync()
         {
-            using (var stream = new MemoryStream())
-            {
-                ((Func<Task>)(async () => { await Reader.CreateAsync(stream).ConfigureAwait(false); }))
-                    .Should().Throw<InvalidDatabaseException>()
-                    .WithMessage("*zero bytes left in the stream*");
-            }
+            using var stream = new MemoryStream();
+            ((Func<Task>)(async () => { await Reader.CreateAsync(stream).ConfigureAwait(false); }))
+                .Should().Throw<InvalidDatabaseException>()
+                .WithMessage("*zero bytes left in the stream*");
         }
 
         [Fact]
         public void NoIPV4SearchTree()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb")))
-            {
-                reader.Find<string>(IPAddress.Parse("1.1.1.1")).Should().Be("::0/64");
-                reader.Find<string>(IPAddress.Parse("192.1.1.1")).Should().Be("::0/64");
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb"));
+            reader.Find<string>(IPAddress.Parse("1.1.1.1")).Should().Be("::0/64");
+            reader.Find<string>(IPAddress.Parse("192.1.1.1")).Should().Be("::0/64");
         }
 
         [Fact]
@@ -328,22 +306,20 @@ namespace MaxMind.Db.Test
 
             foreach (var test in tests)
             {
-                using (var reader = new Reader(Path.Combine(_testDataRoot, test.dbFile)))
+                using var reader = new Reader(Path.Combine(_testDataRoot, test.dbFile));
+                var ip = IPAddress.Parse(test.ip);
+                var record = reader.Find<object>(ip, out var prefixLength);
+
+                prefixLength.Should().Be(test.expectedPrefixLength,
+                    $"{test.expectedPrefixLength} is the prefix length for {ip} in {test.dbFile}");
+
+                if (test.expectedOK)
                 {
-                    var ip = IPAddress.Parse(test.ip);
-                    var record = reader.Find<object>(ip, out var prefixLength);
-
-                    prefixLength.Should().Be(test.expectedPrefixLength,
-                        $"{test.expectedPrefixLength} is the prefix length for {ip} in {test.dbFile}");
-
-                    if (test.expectedOK)
-                    {
-                        record.Should().NotBeNull($"there is a record for {ip} in {test.dbFile}");
-                    }
-                    else
-                    {
-                        record.Should().BeNull($"there is no record for {ip} in {test.dbFile}");
-                    }
+                    record.Should().NotBeNull($"there is a record for {ip} in {test.dbFile}");
+                }
+                else
+                {
+                    record.Should().BeNull($"there is no record for {ip} in {test.dbFile}");
                 }
             }
         }
@@ -351,31 +327,25 @@ namespace MaxMind.Db.Test
         [Fact]
         public void TestDecodingToDictionary()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
-            {
-                var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
-                TestDecodingTypes(record);
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+            TestDecodingTypes(record);
         }
 
         [Fact]
         public void TestDecodingToGenericIDictionary()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
-            {
-                var record = reader.Find<IDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
-                TestDecodingTypes(record);
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var record = reader.Find<IDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+            TestDecodingTypes(record);
         }
 
         [Fact]
         public void TestDecodingToConcurrentDictionary()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
-            {
-                var record = reader.Find<ConcurrentDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
-                TestDecodingTypes(record);
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var record = reader.Find<ConcurrentDictionary<string, object>>(IPAddress.Parse("::1.1.1.0"));
+            TestDecodingTypes(record);
         }
 
         private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues? injectables = null) where T : class
@@ -468,106 +438,96 @@ namespace MaxMind.Db.Test
         [Fact]
         public void TestDecodingTypesToObject()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var injectables = new InjectableValues();
+            injectables.AddValue("injected", "injected string");
+            var record = reader.Find<TypeHolder>(IPAddress.Parse("1.1.1.1"), injectables);
+            if (record == null)
             {
-                var injectables = new InjectableValues();
-                injectables.AddValue("injected", "injected string");
-                var record = reader.Find<TypeHolder>(IPAddress.Parse("1.1.1.1"), injectables);
-                if (record == null)
-                {
-                    throw new Xunit.Sdk.XunitException("unexpected null record value");
-                }
-                record.Boolean.Should().BeTrue();
-                record.Bytes.Should().Equal(0, 0, 0, 42);
-                record.Utf8String.Should().Be("unicode! ☯ - ♫");
-
-                record.Array.Should().Equal(new List<long> { 1, 2, 3 });
-
-                var mapX = record.Map.MapX;
-                mapX.Utf8StringX.Should().Be("hello");
-                mapX.ArrayX.Should().Equal(new List<long> { 7, 8, 9 });
-                mapX.Network.ToString().Should().Be("1.1.1.0/24");
-
-                record.Double.Should().BeApproximately(42.123456, 0.000000001);
-                record.Float.Should().BeApproximately(1.1F, 0.000001F);
-                record.Int32.Should().Be(-268435456);
-                record.Uint16.Should().Be(100);
-                record.Uint32.Should().Be(268435456);
-                record.Uint64.Should().Be(1152921504606846976);
-                record.Uint128.Should().Be(BigInteger.Parse("1329227995784915872903807060280344576"));
-
-                record.Nonexistant.Injected.Should().Be("injected string");
-                record.Nonexistant.Network.ToString().Should().Be("1.1.1.0/24");
-                record.Nonexistant.Network2.ToString().Should().Be("1.1.1.0/24");
-
-                record.Nonexistant.InnerNonexistant.Injected.Should().Be("injected string");
-                record.Nonexistant.InnerNonexistant.Network.ToString().Should().Be("1.1.1.0/24");
+                throw new Xunit.Sdk.XunitException("unexpected null record value");
             }
+            record.Boolean.Should().BeTrue();
+            record.Bytes.Should().Equal(0, 0, 0, 42);
+            record.Utf8String.Should().Be("unicode! ☯ - ♫");
+
+            record.Array.Should().Equal(new List<long> { 1, 2, 3 });
+
+            var mapX = record.Map.MapX;
+            mapX.Utf8StringX.Should().Be("hello");
+            mapX.ArrayX.Should().Equal(new List<long> { 7, 8, 9 });
+            mapX.Network.ToString().Should().Be("1.1.1.0/24");
+
+            record.Double.Should().BeApproximately(42.123456, 0.000000001);
+            record.Float.Should().BeApproximately(1.1F, 0.000001F);
+            record.Int32.Should().Be(-268435456);
+            record.Uint16.Should().Be(100);
+            record.Uint32.Should().Be(268435456);
+            record.Uint64.Should().Be(1152921504606846976);
+            record.Uint128.Should().Be(BigInteger.Parse("1329227995784915872903807060280344576"));
+
+            record.Nonexistant.Injected.Should().Be("injected string");
+            record.Nonexistant.Network.ToString().Should().Be("1.1.1.0/24");
+            record.Nonexistant.Network2.ToString().Should().Be("1.1.1.0/24");
+
+            record.Nonexistant.InnerNonexistant.Injected.Should().Be("injected string");
+            record.Nonexistant.InnerNonexistant.Network.ToString().Should().Be("1.1.1.0/24");
         }
 
         [Fact]
         public void TestZeros()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::"));
+            if (record == null)
             {
-                var record = reader.Find<Dictionary<string, object>>(IPAddress.Parse("::"));
-                if (record == null)
-                {
-                    throw new Xunit.Sdk.XunitException("unexpected null record value");
-                }
+                throw new Xunit.Sdk.XunitException("unexpected null record value");
+            }
                 ((bool)record["boolean"]).Should().BeFalse();
 
-                ((byte[])record["bytes"]).Should().BeEmpty();
+            ((byte[])record["bytes"]).Should().BeEmpty();
 
-                record["utf8_string"].ToString().Should().BeEmpty();
+            record["utf8_string"].ToString().Should().BeEmpty();
 
-                record["array"].Should().BeOfType<List<object>>();
-                ((List<object>)record["array"]).Should().BeEmpty();
+            record["array"].Should().BeOfType<List<object>>();
+            ((List<object>)record["array"]).Should().BeEmpty();
 
-                record["map"].Should().BeOfType<Dictionary<string, object>>();
-                ((Dictionary<string, object>)record["map"]).Should().BeEmpty();
+            record["map"].Should().BeOfType<Dictionary<string, object>>();
+            ((Dictionary<string, object>)record["map"]).Should().BeEmpty();
 
-                ((double)record["double"]).Should().BeApproximately(0, 0.000000001);
-                ((float)record["float"]).Should().BeApproximately(0, 0.000001F);
-                record["int32"].Should().Be(0);
-                record["uint16"].Should().Be(0);
-                record["uint32"].Should().BeEquivalentTo(0);
-                record["uint64"].Should().BeEquivalentTo(0);
-                record["uint128"].Should().Be(new BigInteger(0));
-            }
+            ((double)record["double"]).Should().BeApproximately(0, 0.000000001);
+            ((float)record["float"]).Should().BeApproximately(0, 0.000001F);
+            record["int32"].Should().Be(0);
+            record["uint16"].Should().Be(0);
+            record["uint32"].Should().BeEquivalentTo(0);
+            record["uint64"].Should().BeEquivalentTo(0);
+            record["uint128"].Should().Be(new BigInteger(0));
         }
 
         [Fact]
         public void TestBrokenDatabase()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb")))
-            {
-                ((Action)(() => reader.Find<object>(IPAddress.Parse("2001:220::"))))
-                    .Should().Throw<InvalidDatabaseException>()
-                    .WithMessage("*contains bad data*");
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb"));
+            ((Action)(() => reader.Find<object>(IPAddress.Parse("2001:220::"))))
+                .Should().Throw<InvalidDatabaseException>()
+                .WithMessage("*contains bad data*");
         }
 
         [Fact]
         public void TestBrokenSearchTreePointer()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
-            {
-                ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.32"))))
-                    .Should().Throw<InvalidDatabaseException>()
-                    .WithMessage("*search tree is corrupt*");
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb"));
+            ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.32"))))
+                .Should().Throw<InvalidDatabaseException>()
+                .WithMessage("*search tree is corrupt*");
         }
 
         [Fact]
         public void TestBrokenDataPointer()
         {
-            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb")))
-            {
-                ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.16"))))
-                    .Should().Throw<InvalidDatabaseException>()
-                    .WithMessage("*data section contains bad data*");
-            }
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb"));
+            ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.16"))))
+                .Should().Throw<InvalidDatabaseException>()
+                .WithMessage("*data section contains bad data*");
         }
 
         private void TestIPV6(Reader reader, string file)
