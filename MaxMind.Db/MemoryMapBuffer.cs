@@ -20,8 +20,11 @@ namespace MaxMind.Db
         {
         }
 
-        private MemoryMapBuffer(string file, bool useGlobalNamespace, FileInfo fileInfo) : base((int)fileInfo.Length)
+        private MemoryMapBuffer(string file, bool useGlobalNamespace, FileInfo fileInfo)
         {
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
+                                              FileShare.Delete | FileShare.Read);
+            Length = (int)stream.Length;
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";
@@ -39,8 +42,6 @@ namespace MaxMind.Db
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
 #endif
                 {
-                    var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
-                                                FileShare.Delete | FileShare.Read);
 #if !NETSTANDARD2_0 && !NETSTANDARD2_1
                     var security = new MemoryMappedFileSecurity();
                     security.AddAccessRule(

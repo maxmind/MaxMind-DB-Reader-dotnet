@@ -13,8 +13,9 @@ namespace MaxMind.Db
     {
         private readonly byte[] _fileBytes;
 
-        public ArrayBuffer(byte[] array) : base(array.Length)
+        public ArrayBuffer(byte[] array)
         {
+            Length = array.Length;
             _fileBytes = array;
         }
 
