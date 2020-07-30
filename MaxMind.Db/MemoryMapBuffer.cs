@@ -24,7 +24,7 @@ namespace MaxMind.Db
         {
             using var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                               FileShare.Delete | FileShare.Read);
-            Length = (int)stream.Length;
+            Length = stream.Length;
             // Ideally we would use the file ID in the mapName, but it is not
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";

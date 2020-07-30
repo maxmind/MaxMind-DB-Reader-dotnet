@@ -17,8 +17,7 @@ namespace MaxMind.Db
 
         public abstract void Dispose();
 
-        // XXX - this should really be long
-        public int Length { get; protected set; }
+        public long Length { get; protected set; }
 
         /// <summary>
         ///     Read a big integer from the buffer.
