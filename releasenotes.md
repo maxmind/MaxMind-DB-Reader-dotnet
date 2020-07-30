@@ -7,6 +7,8 @@
 * When decoding strings in a memory-mapped file for targets other than .NET
   4.5, the reader no longer allocates a temporary `byte[]`. This significantly
   improves performance but requires the use of `unsafe` code.
+* `FileAccessMode.MemoryMapped` now works if the database path specified is
+  a symlink to the actual database.
 
 ## 2.6.1 (2019-12-06) ##
 

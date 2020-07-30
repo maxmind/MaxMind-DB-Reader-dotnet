@@ -369,14 +369,14 @@ namespace MaxMind.Db
             return 0;
         }
 
-        private int FindMetadataStart()
+        private long FindMetadataStart()
         {
             var dbLength = _database.Length;
-            var markerLength = _metadataStartMarker.Length;
+            var markerLength = (long) _metadataStartMarker.Length;
 
             for (var i = dbLength - markerLength; i > 0; i--) {
                 int j = 0;
-                for (; j < _metadataStartMarker.Length; j++)
+                for (; j < markerLength; j++)
                 {
                     if (_metadataStartMarker[j] != _database.ReadOne(i + j))
                     {
@@ -385,7 +385,7 @@ namespace MaxMind.Db
                 }
                 if (j == markerLength)
                 {
-                    return i + _metadataStartMarker.Length;
+                    return i + markerLength;
                 }
             }
 

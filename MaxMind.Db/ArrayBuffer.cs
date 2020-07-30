@@ -13,8 +13,9 @@ namespace MaxMind.Db
     {
         private readonly byte[] _fileBytes;
 
-        public ArrayBuffer(byte[] array) : base(array.Length)
+        public ArrayBuffer(byte[] array)
         {
+            Length = array.LongLength;
             _fileBytes = array;
         }
 
@@ -91,7 +92,7 @@ namespace MaxMind.Db
 
             if (bytes.Length > 0)
             {
-                Array.Copy(_fileBytes, (int)offset, bytes, 0, bytes.Length);
+                Array.Copy(_fileBytes, offset, bytes, 0, bytes.Length);
             }
 
             return bytes;

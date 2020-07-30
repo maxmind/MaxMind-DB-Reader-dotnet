@@ -9,8 +9,6 @@ namespace MaxMind.Db
 {
     internal abstract class Buffer : IDisposable
     {
-        public readonly int Length;
-
         public abstract byte[] Read(long offset, int count);
 
         public abstract string ReadString(long offset, int count);
@@ -19,10 +17,7 @@ namespace MaxMind.Db
 
         public abstract void Dispose();
 
-        protected Buffer(int length)
-        {
-            Length = length;
-        }
+        public long Length { get; protected set; }
 
         /// <summary>
         ///     Read a big integer from the buffer.
