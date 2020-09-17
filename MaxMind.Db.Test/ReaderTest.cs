@@ -2,7 +2,6 @@
 
 using FluentAssertions;
 using MaxMind.Db.Test.Helper;
-using NetTools;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -350,11 +349,11 @@ namespace MaxMind.Db.Test
 
         private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues? injectables = null) where T : class
         {
-            // ensure start ip and prefix length are valid, will throw if not
-            var range = new IPAddressRange(node.Start, node.PrefixLength);
+            var lengthBits = node.Start.GetAddressBytes().Length * 8;
+            lengthBits.Should().BeGreaterOrEqualTo(node.PrefixLength);
 
             // ensure a lookup back into the db produces correct results
-            var find = reader.Find<T>(range.Begin, injectables);
+            var find = reader.Find<T>(node.Start, injectables);
             find.Should().NotBeNull();
             var find2 = reader.Find<T>(node.Start, injectables);
             find2.Should().NotBeNull();
