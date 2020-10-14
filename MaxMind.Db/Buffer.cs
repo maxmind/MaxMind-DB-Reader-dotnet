@@ -13,7 +13,9 @@ namespace MaxMind.Db
 
         public abstract string ReadString(long offset, int count);
 
-        public abstract int ReadInt(long offset, int count);
+        public abstract int ReadInt(long offset);
+
+        public abstract int ReadVarInt(long offset, int count);
 
         public abstract byte ReadOne(long offset);
 
@@ -57,7 +59,7 @@ namespace MaxMind.Db
             Array.Reverse(buffer);
             return BitConverter.ToSingle(buffer, 0);
 #else
-            return BitConverter.Int32BitsToSingle(ReadInt(offset, 4));
+            return BitConverter.Int32BitsToSingle(ReadInt(offset));
 #endif
         }
 

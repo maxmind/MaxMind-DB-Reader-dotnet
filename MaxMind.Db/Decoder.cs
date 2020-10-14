@@ -117,8 +117,8 @@ namespace MaxMind.Db
                 size = size switch
                 {
                     29 => 29 + _database.ReadOne(offset),
-                    30 => 285 + _database.ReadInt(offset, bytesToRead),
-                    _ => 65821 + _database.ReadInt(offset, bytesToRead),
+                    30 => 285 + _database.ReadVarInt(offset, bytesToRead),
+                    _ => 65821 + _database.ReadVarInt(offset, bytesToRead),
                 };
                 offset += bytesToRead;
             }
@@ -528,7 +528,7 @@ namespace MaxMind.Db
         {
             var pointerSize = ((size >> 3) & 0x3) + 1;
             var b = pointerSize == 4 ? 0 : size & 0x7;
-            var packed = (b << (8 * pointerSize)) | _database.ReadInt(offset, pointerSize);
+            var packed = (b << (8 * pointerSize)) | _database.ReadVarInt(offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }
@@ -541,7 +541,7 @@ namespace MaxMind.Db
         {
             ReflectionUtil.CheckType(expectedType, typeof(int));
 
-            return _database.ReadInt(offset, size);
+            return _database.ReadVarInt(offset, size);
         }
     }
 }

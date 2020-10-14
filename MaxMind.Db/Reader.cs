@@ -404,21 +404,21 @@ namespace MaxMind.Db
                 case 24:
                     {
                         var offset = baseOffset + index * 3;
-                        return _database.ReadInt(offset, 3);
+                        return _database.ReadVarInt(offset, 3);
                     }
                 case 28:
                     {
                         if (index == 0)
                         {
-                            var v = _database.ReadInt(baseOffset, 4);
+                            var v = _database.ReadInt(baseOffset);
                             return (v & 0xF0) << 20 | (0xFFFFFF & (v >> 8));
                         }
-                        return _database.ReadInt(baseOffset + 3, 4) & 0x0FFFFFFF;
+                        return _database.ReadInt(baseOffset + 3) & 0x0FFFFFFF;
                     }
                 case 32:
                     {
                         var offset = baseOffset + index * 4;
-                        return _database.ReadInt(offset, 4);
+                        return _database.ReadInt(offset);
                     }
             }
 
