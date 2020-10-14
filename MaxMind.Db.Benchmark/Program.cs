@@ -36,7 +36,7 @@ namespace MaxMind.Db.Benchmark
         }
     }
 
-    public class Program
+    public static class Program
     {
         private const int Count = 500000;
 
