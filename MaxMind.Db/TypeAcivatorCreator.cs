@@ -16,14 +16,14 @@ namespace MaxMind.Db
         internal readonly ObjectActivator Activator;
         internal readonly List<ParameterInfo> AlwaysCreatedParameters;
         internal readonly object?[] _defaultParameters;
-        internal readonly Dictionary<byte[], ParameterInfo> DeserializationParameters;
+        internal readonly Dictionary<Key, ParameterInfo> DeserializationParameters;
         internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
         internal readonly List<ParameterInfo> NetworkParameters;
         internal readonly Type[] ParameterTypes;
 
         internal TypeActivator(
             ObjectActivator activator,
-            Dictionary<byte[], ParameterInfo> deserializationParameters,
+            Dictionary<Key, ParameterInfo> deserializationParameters,
             Dictionary<string, ParameterInfo> injectables,
             List<ParameterInfo> networkParameters,
             List<ParameterInfo> alwaysCreatedParameters
@@ -79,7 +79,7 @@ namespace MaxMind.Db
 
             var constructor = constructors[0];
             var parameters = constructor.GetParameters();
-            var paramNameTypes = new Dictionary<byte[], ParameterInfo>(new ByteArrayEqualityComparer());
+            var paramNameTypes = new Dictionary<Key, ParameterInfo>();
             var injectables = new Dictionary<string, ParameterInfo>();
             var networkParams = new List<ParameterInfo>();
             var alwaysCreated = new List<ParameterInfo>();
@@ -105,7 +105,8 @@ namespace MaxMind.Db
                 }
                 else
                     name = param.Name;
-                paramNameTypes.Add(Encoding.UTF8.GetBytes(name), param);
+                var bytes = Encoding.UTF8.GetBytes(name);
+                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), param);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
             var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables, networkParams, alwaysCreated);

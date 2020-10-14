@@ -405,7 +405,7 @@ namespace MaxMind.Db
 
         private readonly TypeAcivatorCreator _typeAcivatorCreator;
 
-        private byte[] DecodeKey(long offset, out long outOffset)
+        private Key DecodeKey(long offset, out long outOffset)
         {
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
@@ -416,7 +416,7 @@ namespace MaxMind.Db
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
-                    return _database.Read(offset, size);
+                    return new Key(_database, offset, size);
 
                 default:
                     throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
