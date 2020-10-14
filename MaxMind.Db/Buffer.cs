@@ -13,6 +13,8 @@ namespace MaxMind.Db
 
         public abstract string ReadString(long offset, int count);
 
+        public abstract int ReadInt(long offset, int count);
+
         public abstract byte ReadOne(long offset);
 
         public abstract void Dispose();
@@ -55,20 +57,8 @@ namespace MaxMind.Db
             Array.Reverse(buffer);
             return BitConverter.ToSingle(buffer, 0);
 #else
-            return BitConverter.Int32BitsToSingle(ReadInteger(0, offset, 4));
+            return BitConverter.Int32BitsToSingle(ReadInt(offset, 4));
 #endif
-        }
-
-        /// <summary>
-        ///     Read an integer from the buffer.
-        /// </summary>
-        internal int ReadInteger(int val, long offset, int size)
-        {
-            for (var i = 0; i < size; i++)
-            {
-                val = (val << 8) | ReadOne(offset + i);
-            }
-            return val;
         }
 
         /// <summary>

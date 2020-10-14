@@ -112,6 +112,28 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        ///     Read an int from the buffer.
+        /// </summary>
+        public override int ReadInt(long offset, int count)
+        {
+            return count switch
+            {
+                0 => 0,
+                1 => _view.ReadByte(offset),
+                2 => _view.ReadByte(offset) << 8 |
+                     _view.ReadByte(offset + 1),
+                3 => _view.ReadByte(offset) << 16 |
+                     _view.ReadByte(offset + 1) << 8 |
+                     _view.ReadByte(offset + 2),
+                4 => _view.ReadByte(offset) << 24 |
+                     _view.ReadByte(offset + 1) << 16 |
+                     _view.ReadByte(offset + 2) << 8 |
+                     _view.ReadByte(offset + 3),
+                _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
+            };
+        }
+
+        /// <summary>
         ///     Release resources back to the system.
         /// </summary>
         public override void Dispose()
