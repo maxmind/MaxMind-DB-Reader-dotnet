@@ -103,6 +103,36 @@ namespace MaxMind.Db
         public override string ReadString(long offset, int count)
             => Encoding.UTF8.GetString(_fileBytes, (int)offset, count);
 
+        /// <summary>
+        ///     Read an int from the buffer.
+        /// </summary>
+        public override int ReadInt(long offset)
+        {
+            return _fileBytes[offset] << 24 |
+                   _fileBytes[offset + 1] << 16 |
+                   _fileBytes[offset + 2] << 8 |
+                   _fileBytes[offset + 3];
+        }
+
+        /// <summary>
+        ///     Read a variable-sized int from the buffer.
+        /// </summary>
+        public override int ReadVarInt(long offset, int count)
+        {
+            return count switch
+            {
+                0 => 0,
+                1 => _fileBytes[offset],
+                2 => _fileBytes[offset] << 8 |
+                     _fileBytes[offset + 1],
+                3 => _fileBytes[offset] << 16 |
+                     _fileBytes[offset + 1] << 8 |
+                     _fileBytes[offset + 2],
+                4 => ReadInt(offset),
+                _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
+            };
+        }
+
         public override void Dispose()
         {
         }

@@ -7,24 +7,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-#endregion
+[assembly: SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>", Scope = "type", Target = "~T:MaxMind.Db.Reader.ReaderIteratorNode`1")]
+[assembly: SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "<Pending>", Scope = "type", Target = "~T:MaxMind.Db.Reader.ReaderIteratorNode`1")]
+[assembly: SuppressMessage("Style", "IDE0056:Use index operator", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Buffer.ReadBigInteger(System.Int64,System.Int32)~System.Numerics.BigInteger")]
+[assembly: SuppressMessage("Style", "IDE0056:Use index operator", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Reader.FindAll``1(MaxMind.Db.InjectableValues,System.Int32)~System.Collections.Generic.IEnumerable{MaxMind.Db.Reader.ReaderIteratorNode{``0}}")]
 
-[assembly: SuppressMessage("Style", "IDE0005:Using directive is unnecessary.", Justification = "<Pending>")]
-[assembly:
-    SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "MaxMind",
-        Scope = "member", Target = "MaxMind.Db.Decoder.#CtrlData(System.Int64,System.Int32&,System.Int64&)")]
-[assembly:
-    SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors", Scope = "type",
-        Target = "MaxMind.Db.InvalidDatabaseException")]
-[assembly:
-    SuppressMessage("Microsoft.Naming", "CA1724:TypeNamesShouldNotMatchNamespaces", Scope = "type",
-        Target = "MaxMind.Db.Metadata")]
-[assembly:
-    SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member",
-        Target = "MaxMind.Db.Reader.#Find`1(System.Net.IPAddress,MaxMind.Db.InjectableValues)")]
-[assembly:
-    SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member",
-        Target = "MaxMind.Db.ParameterAttribute.#.ctor(System.String,System.Boolean)")]
-[assembly: SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "1#", Scope = "member", Target = "MaxMind.Db.Reader.#Find`1(System.Net.IPAddress,System.Int32&,MaxMind.Db.InjectableValues)")]
-[assembly: SuppressMessage("Microsoft.Design", "CA1026:DefaultParametersShouldNotBeUsed", Scope = "member", Target = "MaxMind.Db.Reader.#Find`1(System.Net.IPAddress,System.Int32&,MaxMind.Db.InjectableValues)")]
-[assembly: SuppressMessage("Microsoft.Usage", "CA2243:AttributeStringLiteralsShouldParseCorrectly")]
+#endregion
