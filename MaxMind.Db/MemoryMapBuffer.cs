@@ -9,7 +9,7 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal sealed class MemoryMapBuffer : Buffer
+    internal sealed class MemoryMapBuffer : Buffer, IDisposable
     {
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
