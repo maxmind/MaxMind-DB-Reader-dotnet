@@ -11,5 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "<Pending>", Scope = "type", Target = "~T:MaxMind.Db.Reader.ReaderIteratorNode`1")]
 [assembly: SuppressMessage("Style", "IDE0056:Use index operator", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Buffer.ReadBigInteger(System.Int64,System.Int32)~System.Numerics.BigInteger")]
 [assembly: SuppressMessage("Style", "IDE0056:Use index operator", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Reader.FindAll``1(MaxMind.Db.InjectableValues,System.Int32)~System.Collections.Generic.IEnumerable{MaxMind.Db.Reader.ReaderIteratorNode{``0}}")]
+[assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.MemoryMapBuffer.#ctor(System.String,System.Boolean,System.IO.FileInfo)")]
 
 #endregion
