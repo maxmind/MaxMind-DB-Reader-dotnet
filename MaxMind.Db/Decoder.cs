@@ -72,7 +72,7 @@ namespace MaxMind.Db
         /// <returns>An object containing the data read from the stream</returns>
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
-            if (!(Decode(typeof(T), offset, out outOffset, injectables, network) is T decoded))
+            if (Decode(typeof(T), offset, out outOffset, injectables, network) is not T decoded)
             {
                 throw new InvalidDatabaseException("The value cannot be decoded as " + typeof(T));
             }
