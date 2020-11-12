@@ -27,7 +27,7 @@ namespace MaxMind.Db
                 _ => throw new DeserializationException(
                          $"Unexpected number of generic arguments for list: {genericArgs.Length}"),
             };
-            ConstructorInfo constructor;
+            ConstructorInfo? constructor;
             var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
             var listType = typeof(List<>).MakeGenericType(argType);
             if (expectedType.IsAssignableFrom(listType))
@@ -38,9 +38,9 @@ namespace MaxMind.Db
             {
                 ReflectionUtil.CheckType(interfaceType, expectedType);
                 constructor = expectedType.GetConstructor(Type.EmptyTypes);
-                if (constructor == null)
-                    throw new DeserializationException($"Unable to find default constructor for {expectedType}");
             }
+            if (constructor == null)
+                throw new DeserializationException($"Unable to find default constructor for {expectedType}");
             var activator = ReflectionUtil.CreateActivator(constructor);
             return activator;
         }

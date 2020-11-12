@@ -485,12 +485,22 @@ namespace MaxMind.Db
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
             var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
+            if (interfaceType == null)
+            {
+                throw new DeserializationException("Unexpected null generic type while decoding array");
+            }
+
+            var addMethod = interfaceType.GetMethod("Add");
+            if (addMethod == null)
+            {
+                throw new DeserializationException("Missing Add method when decoding array");
+            }
 
             var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
                 var r = Decode(argType, offset, out offset, injectables, network);
-                interfaceType.GetMethod("Add").Invoke(array, new[] { r });
+                addMethod.Invoke(array, new[] { r });
             }
 
             outOffset = offset;

@@ -24,7 +24,7 @@ namespace MaxMind.Db
             if (genericArgs.Length != 2)
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
-            ConstructorInfo constructor;
+            ConstructorInfo? constructor;
             if (expectedType.GetTypeInfo().IsInterface)
             {
                 var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
@@ -35,9 +35,9 @@ namespace MaxMind.Db
             {
                 ReflectionUtil.CheckType(typeof(IDictionary), expectedType);
                 constructor = expectedType.GetConstructor(Type.EmptyTypes);
-                if (constructor == null)
-                    throw new DeserializationException($"Unable to find default constructor for {expectedType}");
             }
+            if (constructor == null)
+                throw new DeserializationException($"Unable to find default constructor for {expectedType}");
             var activator = ReflectionUtil.CreateActivator(constructor);
             return activator;
         }
