@@ -96,7 +96,7 @@ namespace MaxMind.Db
                     networkParams.Add(param);
                 }
                 var paramAttribute = param.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
-                string name;
+                string? name;
                 if (paramAttribute != null)
                 {
                     name = paramAttribute.ParameterName;
@@ -104,7 +104,13 @@ namespace MaxMind.Db
                         alwaysCreated.Add(param);
                 }
                 else
+                {
                     name = param.Name;
+                    if (name == null)
+                    {
+                        throw new DeserializationException("Unexpected null parameter name");
+                    }
+                }
                 var bytes = Encoding.UTF8.GetBytes(name);
                 paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), param);
             }

@@ -72,7 +72,7 @@ namespace MaxMind.Db
         /// <returns>An object containing the data read from the stream</returns>
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
-            if (!(Decode(typeof(T), offset, out outOffset, injectables, network) is T decoded))
+            if (Decode(typeof(T), offset, out outOffset, injectables, network) is not T decoded)
             {
                 throw new InvalidDatabaseException("The value cannot be decoded as " + typeof(T));
             }
@@ -485,12 +485,22 @@ namespace MaxMind.Db
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
             var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
+            if (interfaceType == null)
+            {
+                throw new DeserializationException("Unexpected null generic type while decoding array");
+            }
+
+            var addMethod = interfaceType.GetMethod("Add");
+            if (addMethod == null)
+            {
+                throw new DeserializationException("Missing Add method when decoding array");
+            }
 
             var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
                 var r = Decode(argType, offset, out offset, injectables, network);
-                interfaceType.GetMethod("Add").Invoke(array, new[] { r });
+                addMethod.Invoke(array, new[] { r });
             }
 
             outOffset = offset;

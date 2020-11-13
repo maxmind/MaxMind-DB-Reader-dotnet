@@ -41,7 +41,7 @@ namespace MaxMind.Db.Test.Helper
                 }
                 currentDirectoryInfo = currentDirectoryInfo.Parent;
             }
-            while (currentDirectoryInfo.Parent != null);
+            while (currentDirectoryInfo?.Parent != null);
 
             return currentDirectory;
         }

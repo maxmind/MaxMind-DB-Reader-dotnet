@@ -9,7 +9,7 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal sealed class MemoryMapBuffer : Buffer
+    internal sealed class MemoryMapBuffer : Buffer, IDisposable
     {
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
@@ -36,13 +36,13 @@ namespace MaxMind.Db
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
-#if !NETSTANDARD2_0 && !NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1 && !NET5_0
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
 #else           // Note that PNSE is only required by .NetStandard1.0, see the subsequent comment for more context
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
 #endif
                 {
-#if !NETSTANDARD2_0 && !NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETSTANDARD2_1 && !NET5_0
                     var security = new MemoryMappedFileSecurity();
                     security.AddAccessRule(
                         new System.Security.AccessControl.AccessRule<MemoryMappedFileRights>(
