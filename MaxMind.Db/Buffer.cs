@@ -19,8 +19,6 @@ namespace MaxMind.Db
 
         public abstract byte ReadOne(long offset);
 
-        public abstract void Dispose();
-
         public long Length { get; protected set; }
 
         /// <summary>
@@ -87,6 +85,17 @@ namespace MaxMind.Db
                 val = (val << 8) | ReadOne(offset + i);
             }
             return val;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            // This is overridden in subclasses.
         }
     }
 }

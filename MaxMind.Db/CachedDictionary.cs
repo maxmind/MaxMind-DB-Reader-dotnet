@@ -138,11 +138,20 @@ namespace MaxMind.Db
         /// <summary>
         /// Disposes of all resources. Derived classes should call this base class method last.
         /// </summary>
-        public virtual void Dispose()
+        public void Dispose()
         {
-            dictionary = null;
-            priorityList = null;
-            maxCount = 0;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                dictionary = null;
+                priorityList = null;
+                maxCount = 0;
+            }
         }
 
         #endregion Public methods

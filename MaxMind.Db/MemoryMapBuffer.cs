@@ -9,7 +9,7 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal sealed class MemoryMapBuffer : Buffer, IDisposable
+    internal sealed class MemoryMapBuffer : Buffer
     {
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
@@ -139,17 +139,8 @@ namespace MaxMind.Db
         /// <summary>
         ///     Release resources back to the system.
         /// </summary>
-        public override void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        ///     Release resources back to the system.
-        /// </summary>
         /// <param name="disposing"></param>
-        private void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
