@@ -7,7 +7,7 @@ format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Requirements ##
 
-This library works with .NET Framework version 4.5 and above and .NET Standard
+This library works with .NET Framework version 4.6.1 and above and .NET Standard
 2.0 or above.
 
 ## Installation ##

@@ -9,7 +9,7 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal sealed class MemoryMapBuffer : Buffer, IDisposable
+    internal sealed class MemoryMapBuffer : Buffer
     {
         private static readonly object FileLocker = new object();
         private readonly MemoryMappedFile _memoryMappedFile;
@@ -89,10 +89,6 @@ namespace MaxMind.Db
 
         public override string ReadString(long offset, int count)
         {
-#if NET45
-            var buffer = Read(offset, count);
-            return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
-#else
             if (offset + count > _view.Capacity) {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -108,7 +104,6 @@ namespace MaxMind.Db
                     _view.SafeMemoryMappedViewHandle.ReleasePointer();
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -144,17 +139,8 @@ namespace MaxMind.Db
         /// <summary>
         ///     Release resources back to the system.
         /// </summary>
-        public override void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        ///     Release resources back to the system.
-        /// </summary>
         /// <param name="disposing"></param>
-        private void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (_disposed)
                 return;

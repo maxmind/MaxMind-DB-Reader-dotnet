@@ -347,7 +347,11 @@ namespace MaxMind.Db.Test
             TestDecodingTypes(record);
         }
 
-        private void TestNode<T>(Reader reader, Reader.ReaderIteratorNode<T> node, InjectableValues? injectables = null) where T : class
+        private static void TestNode<T>(
+            Reader reader,
+            Reader.ReaderIteratorNode<T> node,
+            InjectableValues? injectables = null
+            ) where T : class
         {
             var lengthBits = node.Start.GetAddressBytes().Length * 8;
             lengthBits.Should().BeGreaterOrEqualTo(node.PrefixLength);
@@ -393,7 +397,7 @@ namespace MaxMind.Db.Test
             count.Should().Be(26);
         }
 
-        private void TestDecodingTypes(IDictionary<string, object>? record)
+        private static void TestDecodingTypes(IDictionary<string, object>? record)
         {
             if (record == null)
             {
@@ -529,7 +533,7 @@ namespace MaxMind.Db.Test
                 .WithMessage("*data section contains bad data*");
         }
 
-        private void TestIPV6(Reader reader, string file)
+        private static void TestIPV6(Reader reader, string file)
         {
             TestAddresses(reader,
                 file,
@@ -552,7 +556,7 @@ namespace MaxMind.Db.Test
                 });
         }
 
-        private void TestIPV4(Reader reader, string file)
+        private static void TestIPV4(Reader reader, string file)
         {
             TestAddresses(reader,
                 file,
@@ -575,7 +579,7 @@ namespace MaxMind.Db.Test
                 });
         }
 
-        private void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,
+        private static void TestAddresses(Reader reader, string file, IEnumerable<string> singleAddresses,
             Dictionary<string, string> pairs, IEnumerable<string> nullAddresses, Dictionary<string, int> prefixes)
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -614,7 +618,7 @@ namespace MaxMind.Db.Test
             }
         }
 
-        private void TestMetadata(Reader reader, int ipVersion)
+        private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;
 

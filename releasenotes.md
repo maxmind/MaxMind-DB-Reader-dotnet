@@ -1,15 +1,15 @@
-# Release Nodes #
+# Release Notes #
 
-## 2.7.0 () ##
+## 3.0.0 () ##
 
-* This library now requires .NET Framework 4.5 or greater or .NET Standard
+* This library now requires .NET Framework 4.6.1 or greater or .NET Standard
   2.0 or greater.
 * .NET 5.0 was added as a target framework.
-* When decoding strings in a memory-mapped file for targets other than .NET
-  4.5, the reader no longer allocates a temporary `byte[]`. This significantly
-  improves performance but requires the use of `unsafe` code.
+* When decoding strings in a memory-mapped file, the reader no longer
+  allocates a temporary `byte[]`. This significantly improves performance but
+  requires the use of `unsafe` code.
 * `FileAccessMode.MemoryMapped` now works if the database path specified is
-  a symlink to the actual database.
+  a symbolic link to the actual database.
 
 ## 2.6.1 (2019-12-06) ##
 

@@ -19,8 +19,6 @@ namespace MaxMind.Db
 
         public abstract byte ReadOne(long offset);
 
-        public abstract void Dispose();
-
         public long Length { get; protected set; }
 
         /// <summary>
@@ -54,7 +52,7 @@ namespace MaxMind.Db
         /// </summary>
         internal float ReadFloat(long offset)
         {
-#if NETSTANDARD2_0 || NET45 || NET46
+#if NETSTANDARD2_0 || NET461
             var buffer = Read(offset, 4);
             Array.Reverse(buffer);
             return BitConverter.ToSingle(buffer, 0);
@@ -87,6 +85,17 @@ namespace MaxMind.Db
                 val = (val << 8) | ReadOne(offset + i);
             }
             return val;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            // This is overridden in subclasses.
         }
     }
 }
