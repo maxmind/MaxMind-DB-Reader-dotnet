@@ -89,10 +89,6 @@ namespace MaxMind.Db
 
         public override string ReadString(long offset, int count)
         {
-#if NET45
-            var buffer = Read(offset, count);
-            return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
-#else
             if (offset + count > _view.Capacity) {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -108,7 +104,6 @@ namespace MaxMind.Db
                     _view.SafeMemoryMappedViewHandle.ReleasePointer();
                 }
             }
-#endif
         }
 
         /// <summary>
