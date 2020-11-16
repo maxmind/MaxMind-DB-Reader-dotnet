@@ -1,4 +1,4 @@
-# Release Nodes #
+# Release Notes #
 
 ## 3.0.0 () ##
 
