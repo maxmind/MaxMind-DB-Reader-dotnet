@@ -117,7 +117,7 @@ threads.
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to
 records. See
-[the specification](https://github.com/maxmind/MaxMind-DB/blob/master/MaxMind-DB-spec.md)
+[the specification](https://github.com/maxmind/MaxMind-DB/blob/main/MaxMind-DB-spec.md)
 for more information on the format.
 
 ## Bug Tracker ##
