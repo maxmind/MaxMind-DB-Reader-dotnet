@@ -376,7 +376,7 @@ namespace MaxMind.Db.Test
                     count++;
                 }
 
-            count.Should().Be(297);
+            count.Should().BeGreaterOrEqualTo(397);
         }
 
         [Fact]
