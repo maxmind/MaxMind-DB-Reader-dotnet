@@ -216,6 +216,13 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public void MetadataPointer()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-metadata-pointers.mmdb"));
+            reader.Metadata.DatabaseType.Should().Be("Lots of pointers in metadata");
+        }
+
+        [Fact]
         public void NoIPV4SearchTree()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb"));
