@@ -1,6 +1,5 @@
 ﻿#region
 
-using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -37,14 +36,7 @@ namespace MaxMind.Db.Test
                 using var database = new ArrayBuffer(input);
                 var decoder = new Decoder(database, 0, false);
                 var val = decoder.Decode<T>(0, out _);
-                if (useShouldBe)
-                {
-                    val.Should().Be(expect);
-                }
-                else
-                {
-                    val.Should().BeEquivalentTo(expect, options => options.RespectingRuntimeTypes());
-                }
+                Assert.Equal(expect, val);
             }
         }
 
