@@ -230,103 +230,36 @@ namespace MaxMind.Db.Test
             reader.Find<string>(IPAddress.Parse("192.1.1.1")).Should().Be("::0/64");
         }
 
-        [Fact]
-        public void TestFindPrefixLength()
+        [Theory]
+        [InlineData("1.1.1.1", "MaxMind-DB-test-ipv6-32.mmdb", 8, false)]
+        [InlineData("::1:ffff:ffff", "MaxMind-DB-test-ipv6-24.mmdb", 128, true)]
+        [InlineData("::2:0:1", "MaxMind-DB-test-ipv6-24.mmdb", 122, true)]
+        [InlineData("1.1.1.1", "MaxMind-DB-test-ipv4-24.mmdb", 32, true)]
+        [InlineData("1.1.1.3", "MaxMind-DB-test-ipv4-24.mmdb", 31, true)]
+        [InlineData("1.1.1.3", "MaxMind-DB-test-decoder.mmdb", 24, true)]
+        [InlineData("::ffff:1.1.1.128", "MaxMind-DB-test-decoder.mmdb", 120, true)]
+        [InlineData("::1.1.1.128", "MaxMind-DB-test-decoder.mmdb", 120, true)]
+        [InlineData("200.0.2.1", "MaxMind-DB-no-ipv4-search-tree.mmdb", 0, true)]
+        [InlineData("::200.0.2.1", "MaxMind-DB-no-ipv4-search-tree.mmdb", 64, true)]
+        [InlineData("0:0:0:0:ffff:ffff:ffff:ffff", "MaxMind-DB-no-ipv4-search-tree.mmdb", 64, true)]
+        [InlineData("ef00::", "MaxMind-DB-no-ipv4-search-tree.mmdb", 1, false)]
+        public void TestFindPrefixLength(string ipStr, string dbFile, int expectedPrefixLength, bool expectedOK)
         {
-            var tests = new[]
+
+            using var reader = new Reader(Path.Combine(_testDataRoot, dbFile));
+            var ip = IPAddress.Parse(ipStr);
+            var record = reader.Find<object>(ip, out var prefixLength);
+
+            prefixLength.Should().Be(expectedPrefixLength,
+                $"{expectedPrefixLength} is the prefix length for {ip} in {dbFile}");
+
+            if (expectedOK)
             {
-                new
-                {
-                    ip = "1.1.1.1",
-                    dbFile = "MaxMind-DB-test-ipv6-32.mmdb",
-                    expectedPrefixLength = 8,
-                    expectedOK = false,
-                },
-                new {
-                    ip = "::1:ffff:ffff",
-                    dbFile = "MaxMind-DB-test-ipv6-24.mmdb",
-                    expectedPrefixLength = 128,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "::2:0:1",
-                    dbFile = "MaxMind-DB-test-ipv6-24.mmdb",
-                    expectedPrefixLength = 122,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "1.1.1.1",
-                    dbFile = "MaxMind-DB-test-ipv4-24.mmdb",
-                    expectedPrefixLength = 32,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "1.1.1.3",
-                    dbFile = "MaxMind-DB-test-ipv4-24.mmdb",
-                    expectedPrefixLength = 31,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "1.1.1.3",
-                    dbFile = "MaxMind-DB-test-decoder.mmdb",
-                    expectedPrefixLength = 24,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "::ffff:1.1.1.128",
-                    dbFile = "MaxMind-DB-test-decoder.mmdb",
-                    expectedPrefixLength = 120,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "::1.1.1.128",
-                    dbFile = "MaxMind-DB-test-decoder.mmdb",
-                    expectedPrefixLength = 120,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "200.0.2.1",
-                    dbFile = "MaxMind-DB-no-ipv4-search-tree.mmdb",
-                    expectedPrefixLength = 0,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "::200.0.2.1",
-                    dbFile = "MaxMind-DB-no-ipv4-search-tree.mmdb",
-                    expectedPrefixLength = 64,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "0:0:0:0:ffff:ffff:ffff:ffff",
-                    dbFile = "MaxMind-DB-no-ipv4-search-tree.mmdb",
-                    expectedPrefixLength = 64,
-                    expectedOK = true,
-                },
-                new {
-                    ip = "ef00::",
-                    dbFile = "MaxMind-DB-no-ipv4-search-tree.mmdb",
-                    expectedPrefixLength = 1,
-                    expectedOK = false,
-                }
-            };
-
-            foreach (var test in tests)
+                record.Should().NotBeNull($"there is a record for {ip} in {dbFile}");
+            }
+            else
             {
-                using var reader = new Reader(Path.Combine(_testDataRoot, test.dbFile));
-                var ip = IPAddress.Parse(test.ip);
-                var record = reader.Find<object>(ip, out var prefixLength);
-
-                prefixLength.Should().Be(test.expectedPrefixLength,
-                    $"{test.expectedPrefixLength} is the prefix length for {ip} in {test.dbFile}");
-
-                if (test.expectedOK)
-                {
-                    record.Should().NotBeNull($"there is a record for {ip} in {test.dbFile}");
-                }
-                else
-                {
-                    record.Should().BeNull($"there is no record for {ip} in {test.dbFile}");
-                }
+                record.Should().BeNull($"there is no record for {ip} in {dbFile}");
             }
         }
 
