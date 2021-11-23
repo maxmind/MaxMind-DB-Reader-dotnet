@@ -54,7 +54,7 @@ if ((Read-Host -Prompt 'Should push? (y/n)') -ne 'y') {
 & git push
 
 Pop-Location
-& hub release create "$tag"
+& gh release create --target "$(git branch --show-current)" -t "$version" "$tag"
 & git push
 
 & nuget push "MaxMind.Db/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
