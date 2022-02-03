@@ -71,7 +71,6 @@ namespace MaxMind.Db
             priorityList.Remove(node);
             dictionary.Remove(key);
             return true;
-
         }
 
         #endregion Private methods
@@ -240,7 +239,6 @@ namespace MaxMind.Db
             get => throw new NotSupportedException("Use TryGetValue instead");
             set => throw new NotSupportedException("Use Add instead");
         }
-
 
         /// <summary>
         /// Gets all the keys that are in memory

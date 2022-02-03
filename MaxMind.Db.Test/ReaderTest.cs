@@ -247,7 +247,6 @@ namespace MaxMind.Db.Test
         [InlineData("ef00::", "MaxMind-DB-no-ipv4-search-tree.mmdb", 1, false)]
         public void TestFindPrefixLength(string ipStr, string dbFile, int expectedPrefixLength, bool expectedOK)
         {
-
             using var reader = new Reader(Path.Combine(_testDataRoot, dbFile));
             var ip = IPAddress.Parse(ipStr);
             var record = reader.Find<object>(ip, out var prefixLength);
