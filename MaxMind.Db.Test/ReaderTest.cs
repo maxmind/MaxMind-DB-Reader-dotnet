@@ -503,7 +503,7 @@ namespace MaxMind.Db.Test
         {
             TestAddresses(reader,
                 file,
-                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
+                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, i)),
                 new Dictionary<string, string>
                 {
                     {"1.1.1.3", "1.1.1.2"},
