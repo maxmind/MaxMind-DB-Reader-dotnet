@@ -177,12 +177,13 @@ namespace MaxMind.Db.Test
             }
         }
 
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             ((Action)(() => new Reader((Stream)null)))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().Throw<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
@@ -190,12 +191,13 @@ namespace MaxMind.Db.Test
         [Fact]
         public void NullStreamThrowsArgumentNullExceptionAsync()
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             ((Func<Task>)(async () => { await Reader.CreateAsync((Stream)null).ConfigureAwait(false); }))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().ThrowExactlyAsync<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
         [Fact]
         public void TestEmptyStream()
