@@ -52,7 +52,13 @@ namespace MaxMind.Db
         /// </summary>
         internal float ReadFloat(long offset)
         {
+#if NETSTANDARD2_0
+            var buffer = Read(offset, 4);
+            Array.Reverse(buffer);
+            return BitConverter.ToSingle(buffer, 0);
+#else
             return BitConverter.Int32BitsToSingle(ReadInt(offset));
+#endif
         }
 
         /// <summary>

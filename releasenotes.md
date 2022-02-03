@@ -2,7 +2,8 @@
 
 ## 4.0.0 (2022-02-03) ##
 
-* This library now requires .NET 5.0 or greater or .NET Standard 3.1.
+* This library no longer targets .NET 4.6.1.
+* .NET 6.0 was added as a target.
 
 ## 3.0.0 (2020-11-16) ##
 
