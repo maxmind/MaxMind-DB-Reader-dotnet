@@ -192,7 +192,7 @@ namespace MaxMind.Db.Test
         public void NullStreamThrowsArgumentNullExceptionAsync()
         {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            ((Func<Task>)(async () => { await Reader.CreateAsync((Stream)null).ConfigureAwait(false); }))
+            ((Func<Task>)(async () => await Reader.CreateAsync((Stream)null).ConfigureAwait(false)))
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().ThrowExactlyAsync<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
@@ -212,7 +212,7 @@ namespace MaxMind.Db.Test
         public void TestEmptyStreamAsync()
         {
             using var stream = new MemoryStream();
-            ((Func<Task>)(async () => { await Reader.CreateAsync(stream).ConfigureAwait(false); }))
+            ((Func<Task>)(async () => await Reader.CreateAsync(stream).ConfigureAwait(false)))
                 .Should().ThrowExactlyAsync<InvalidDatabaseException>()
                 .WithMessage("*zero bytes left in the stream*");
         }
