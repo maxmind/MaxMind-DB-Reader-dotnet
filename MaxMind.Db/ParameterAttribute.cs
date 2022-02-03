@@ -7,7 +7,7 @@ using System;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Instruct <code>Reader</code> to map database key to constructor parameter.
+    ///     Instruct <c>Reader</c> to map database key to constructor parameter.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ParameterAttribute : Attribute
@@ -25,7 +25,7 @@ namespace MaxMind.Db
         public bool AlwaysCreate { get; }
 
         /// <summary>
-        ///     Create a new instance of <code>ParameterAttribute</code>.
+        ///     Create a new instance of <c>ParameterAttribute</c>.
         /// </summary>
         /// <param name="parameterName">The name of the parameter.</param>
         /// <param name="alwaysCreate">

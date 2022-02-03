@@ -246,9 +246,8 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.
-        /// 
-        /// Note that due to caching, the Network attribute on constructor parameters will be ignored.
+        /// <para>Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.</para>
+        /// <para>Note that due to caching, the Network attribute on constructor parameters will be ignored.</para>
         /// </summary>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>

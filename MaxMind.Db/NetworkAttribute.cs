@@ -7,13 +7,13 @@ using System;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Instruct <code>Reader</code> to set the parameter to be the network in CIDR format.
+    ///     Instruct <c>Reader</c> to set the parameter to be the network in CIDR format.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class NetworkAttribute : Attribute
     {
         /// <summary>
-        ///     Create a new instance of <code>NetworkAttribute</code>.
+        ///     Create a new instance of <c>NetworkAttribute</c>.
         /// </summary>
         public NetworkAttribute()
         {

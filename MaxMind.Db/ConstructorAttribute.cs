@@ -7,7 +7,7 @@ using System;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Instruct <code>Reader</code> to use the constructor when deserializing.
+    ///     Instruct <c>Reader</c> to use the constructor when deserializing.
     /// </summary>
     [AttributeUsage(AttributeTargets.Constructor)]
     public sealed class ConstructorAttribute : Attribute

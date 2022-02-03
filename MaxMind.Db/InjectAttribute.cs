@@ -7,7 +7,7 @@ using System;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Instruct <code>Reader</code> to map database key to constructor parameter.
+    ///     Instruct <c>Reader</c> to map database key to constructor parameter.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class InjectAttribute : Attribute
@@ -18,7 +18,7 @@ namespace MaxMind.Db
         public string ParameterName { get; }
 
         /// <summary>
-        ///     Create a new instance of <code>InjectAttribute</code>.
+        ///     Create a new instance of <c>InjectAttribute</c>.
         /// </summary>
         /// <param name="parameterName"></param>
         public InjectAttribute(string parameterName)
