@@ -371,9 +371,10 @@ namespace MaxMind.Db
         private long FindMetadataStart()
         {
             var dbLength = _database.Length;
-            var markerLength = (long) _metadataStartMarker.Length;
+            var markerLength = (long)_metadataStartMarker.Length;
 
-            for (var i = dbLength - markerLength; i > 0; i--) {
+            for (var i = dbLength - markerLength; i > 0; i--)
+            {
                 int j = 0;
                 for (; j < markerLength; j++)
                 {

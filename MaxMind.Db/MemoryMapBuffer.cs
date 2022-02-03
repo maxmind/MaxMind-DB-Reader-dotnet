@@ -69,18 +69,22 @@ namespace MaxMind.Db
 
         public override string ReadString(long offset, int count)
         {
-            if (offset + count > _view.Capacity) {
+            if (offset + count > _view.Capacity)
+            {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
                     "Attempt to read beyond the end of the MemoryMappedFile.");
             }
             unsafe
             {
-                byte* ptr = (byte*) 0;
-                try {
+                byte* ptr = (byte*)0;
+                try
+                {
                     _view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
                     return Encoding.UTF8.GetString(ptr + offset, count);
-                } finally {
+                }
+                finally
+                {
                     _view.SafeMemoryMappedViewHandle.ReleasePointer();
                 }
             }
