@@ -48,7 +48,7 @@ namespace MaxMind.Db.Benchmark
             {
                 if (!File.Exists(dbPath))
                 {
-                    throw new Exception("Path provided by command-line argument does not exist!");
+                    throw new("Path provided by command-line argument does not exist!");
                 }
             }
             else
@@ -60,7 +60,7 @@ namespace MaxMind.Db.Benchmark
                 {
                     if (!File.Exists(dbPath))
                     {
-                        throw new Exception("Path set as environment variable MAXMIND_BENCHMARK_DB does not exist!");
+                        throw new("Path set as environment variable MAXMIND_BENCHMARK_DB does not exist!");
                     }
                 }
                 else
@@ -70,7 +70,7 @@ namespace MaxMind.Db.Benchmark
 
                     if (!File.Exists(dbPath))
                     {
-                        throw new Exception($"{dbPath} does not exist in current directory ({Directory.GetCurrentDirectory()})!");
+                        throw new($"{dbPath} does not exist in current directory ({Directory.GetCurrentDirectory()})!");
                     }
                 }
             }

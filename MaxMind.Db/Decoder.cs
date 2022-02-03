@@ -88,8 +88,10 @@ namespace MaxMind.Db
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
         {
             if (offset >= _database.Length)
+            {
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "pointer larger than the database.");
+            }
 
             var ctrlByte = _database.ReadOne(offset);
             offset++;
@@ -101,10 +103,13 @@ namespace MaxMind.Db
                 int nextByte = _database.ReadOne(offset);
                 var typeNum = nextByte + 7;
                 if (typeNum < 8)
+                {
                     throw new InvalidDatabaseException(
                         "Something went horribly wrong in the decoder. An extended type "
                         + "resolved to a type number < 8 (" + typeNum
                         + ")");
+                }
+
                 type = (ObjectType)typeNum;
                 offset++;
             }
@@ -233,8 +238,11 @@ namespace MaxMind.Db
             ReflectionUtil.CheckType(expectedType, typeof(double));
 
             if (size != 8)
+            {
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of double.");
+            }
+
             return _database.ReadDouble(offset);
         }
 
@@ -247,8 +255,11 @@ namespace MaxMind.Db
             ReflectionUtil.CheckType(expectedType, typeof(float));
 
             if (size != 4)
+            {
                 throw new InvalidDatabaseException("The MaxMind DB file's data section contains bad data: "
                                                    + "invalid size of float.");
+            }
+
             return _database.ReadFloat(offset);
         }
 
@@ -307,8 +318,10 @@ namespace MaxMind.Db
         {
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
+            {
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+            }
 
             var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
 
@@ -455,7 +468,7 @@ namespace MaxMind.Db
                         break;
                 }
 
-                numberToSkip -= 1;
+                numberToSkip--;
             }
         }
 

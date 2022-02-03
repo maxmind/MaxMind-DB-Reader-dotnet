@@ -7,8 +7,8 @@ format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
 ## Requirements ##
 
-This library works with .NET Framework version 4.6.1 and above and .NET Standard
-2.0 or above.
+This library works with .NET 5.0 and above and .NET Standard
+3.1 or above.
 
 ## Installation ##
 
@@ -140,6 +140,6 @@ The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2013-2020 by MaxMind, Inc.
+This software is Copyright (c) 2013-2022 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.

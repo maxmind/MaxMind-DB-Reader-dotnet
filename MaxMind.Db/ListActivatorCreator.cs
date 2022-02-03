@@ -12,7 +12,7 @@ namespace MaxMind.Db
     internal sealed class ListActivatorCreator
     {
         private readonly ConcurrentDictionary<Type, ObjectActivator> _listActivators =
-            new ConcurrentDictionary<Type, ObjectActivator>();
+            new();
 
         internal ObjectActivator GetActivator(Type expectedType)
             => _listActivators.GetOrAdd(expectedType, ListActivator);

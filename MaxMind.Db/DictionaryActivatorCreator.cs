@@ -13,7 +13,7 @@ namespace MaxMind.Db
     internal sealed class DictionaryActivatorCreator
     {
         private readonly ConcurrentDictionary<Type, ObjectActivator> _dictActivators =
-            new ConcurrentDictionary<Type, ObjectActivator>();
+            new();
 
         internal ObjectActivator GetActivator(Type expectedType)
             => _dictActivators.GetOrAdd(expectedType, DictionaryActivator);
@@ -22,8 +22,11 @@ namespace MaxMind.Db
         {
             var genericArgs = expectedType.GetGenericArguments();
             if (genericArgs.Length != 2)
+            {
                 throw new DeserializationException(
                     $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+            }
+
             ConstructorInfo? constructor;
             if (expectedType.GetTypeInfo().IsInterface)
             {

@@ -25,12 +25,11 @@ namespace MaxMind.Db
         /// <param name="nodeCount"></param>
         /// <param name="recordSize"></param>
         [Constructor]
+        [CLSCompliant(false)]
         public Metadata(
             [Parameter("binary_format_major_version")] int binaryFormatMajorVersion,
             [Parameter("binary_format_minor_version")] int binaryFormatMinorVersion,
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
             [Parameter("build_epoch")] ulong buildEpoch,
-#pragma warning restore CS3001 // Argument type is not CLS-compliant
             [Parameter("database_type")] string databaseType,
             IDictionary<string, string> description,
             [Parameter("ip_version")] int ipVersion,

@@ -1,7 +1,6 @@
 ﻿#region
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 #endregion
 
@@ -10,10 +9,16 @@ namespace MaxMind.Db
     /// <summary>
     ///     Thrown when there is an error deserializing to the provided type.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")]
     [Serializable]
     public sealed class DeserializationException : Exception
     {
+        /// <summary>
+        ///     Construct a DeserializationException
+        /// </summary>
+        public DeserializationException() : base()
+        {
+        }
+
         /// <summary>
         ///     Construct a DeserializationException
         /// </summary>
@@ -34,7 +39,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Constructor for deserialization.
+        ///     Construct a DeserializationException
         /// </summary>
         /// <param name="info">The SerializationInfo with data.</param>
         /// <param name="context">The source for this deserialization.</param>

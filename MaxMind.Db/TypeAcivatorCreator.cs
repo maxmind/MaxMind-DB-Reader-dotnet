@@ -55,7 +55,7 @@ namespace MaxMind.Db
     internal sealed class TypeAcivatorCreator
     {
         private readonly ConcurrentDictionary<Type, TypeActivator> _typeConstructors =
-            new ConcurrentDictionary<Type, TypeActivator>();
+            new();
 
         internal TypeActivator GetActivator(Type expectedType)
             => _typeConstructors.GetOrAdd(expectedType, ClassActivator);

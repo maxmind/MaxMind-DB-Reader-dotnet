@@ -246,9 +246,8 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        /// Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.
-        /// 
-        /// Note that due to caching, the Network attribute on constructor parameters will be ignored.
+        /// <para>Get an enumerator that iterates all data nodes in the database. Do not modify the object as it may be cached.</para>
+        /// <para>Note that due to caching, the Network attribute on constructor parameters will be ignored.</para>
         /// </summary>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <param name="cacheSize">The size of the data cache. This can greatly speed enumeration at the cost of memory usage.</param>
@@ -372,9 +371,10 @@ namespace MaxMind.Db
         private long FindMetadataStart()
         {
             var dbLength = _database.Length;
-            var markerLength = (long) _metadataStartMarker.Length;
+            var markerLength = (long)_metadataStartMarker.Length;
 
-            for (var i = dbLength - markerLength; i > 0; i--) {
+            for (var i = dbLength - markerLength; i > 0; i--)
+            {
                 int j = 0;
                 for (; j < markerLength; j++)
                 {
@@ -403,7 +403,7 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        var offset = baseOffset + index * 3;
+                        var offset = baseOffset + (index * 3);
                         return _database.ReadVarInt(offset, 3);
                     }
                 case 28:
@@ -417,7 +417,7 @@ namespace MaxMind.Db
                     }
                 case 32:
                     {
-                        var offset = baseOffset + index * 4;
+                        var offset = baseOffset + (index * 4);
                         return _database.ReadInt(offset);
                     }
             }

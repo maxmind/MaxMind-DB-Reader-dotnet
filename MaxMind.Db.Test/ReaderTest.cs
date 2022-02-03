@@ -177,12 +177,13 @@ namespace MaxMind.Db.Test
             }
         }
 
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         [Fact]
         public void NullStreamThrowsArgumentNullException()
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             ((Action)(() => new Reader((Stream)null)))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().Throw<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
@@ -190,12 +191,13 @@ namespace MaxMind.Db.Test
         [Fact]
         public void NullStreamThrowsArgumentNullExceptionAsync()
         {
-            ((Func<Task>)(async () => { await Reader.CreateAsync((Stream)null).ConfigureAwait(false); }))
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+            ((Func<Task>)(async () => await Reader.CreateAsync((Stream)null).ConfigureAwait(false)))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().ThrowExactlyAsync<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
         }
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
         [Fact]
         public void TestEmptyStream()
@@ -210,7 +212,7 @@ namespace MaxMind.Db.Test
         public void TestEmptyStreamAsync()
         {
             using var stream = new MemoryStream();
-            ((Func<Task>)(async () => { await Reader.CreateAsync(stream).ConfigureAwait(false); }))
+            ((Func<Task>)(async () => await Reader.CreateAsync(stream).ConfigureAwait(false)))
                 .Should().ThrowExactlyAsync<InvalidDatabaseException>()
                 .WithMessage("*zero bytes left in the stream*");
         }
@@ -245,7 +247,6 @@ namespace MaxMind.Db.Test
         [InlineData("ef00::", "MaxMind-DB-no-ipv4-search-tree.mmdb", 1, false)]
         public void TestFindPrefixLength(string ipStr, string dbFile, int expectedPrefixLength, bool expectedOK)
         {
-
             using var reader = new Reader(Path.Combine(_testDataRoot, dbFile));
             var ip = IPAddress.Parse(ipStr);
             var record = reader.Find<object>(ip, out var prefixLength);
@@ -310,11 +311,13 @@ namespace MaxMind.Db.Test
         {
             var count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
+            {
                 foreach (var node in reader.FindAll<Dictionary<string, object>>())
                 {
                     TestNode(reader, node);
                     count++;
                 }
+            }
 
             count.Should().BeGreaterOrEqualTo(397);
         }
@@ -500,7 +503,7 @@ namespace MaxMind.Db.Test
         {
             TestAddresses(reader,
                 file,
-                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, 1)),
+                Enumerable.Range(0, 5).Select(i => "1.1.1." + (int)Math.Pow(2, i)),
                 new Dictionary<string, string>
                 {
                     {"1.1.1.3", "1.1.1.2"},
