@@ -14,6 +14,7 @@
     <PackageIcon>MaxMind-logo.png</PackageIcon>
     <PackageProjectUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <EnablePackageValidation>true</EnablePackageValidation>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet</RepositoryUrl>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
