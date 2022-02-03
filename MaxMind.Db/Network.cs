@@ -10,7 +10,7 @@ namespace MaxMind.Db
         private readonly IPAddress ip;
 
         /// <summary>
-        ///     The prefix length is the number of leading 1 bits in the 
+        ///     The prefix length is the number of leading 1 bits in the
         ///     subnet mask. Sometimes also known as netmask length.
         /// </summary>
         public int PrefixLength { get; }
@@ -55,10 +55,10 @@ namespace MaxMind.Db
             PrefixLength = prefixLength;
         }
 
-        /// <returns>
+        /// <summary>
         ///     A string representation of the network in CIDR notation, e.g.,
         ///     1.2.3.0/24 or 2001::/8.
-        /// </returns>
+        /// </summary>
         public override string ToString()
         {
             return $"{NetworkAddress}/{PrefixLength}";

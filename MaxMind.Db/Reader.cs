@@ -402,7 +402,7 @@ namespace MaxMind.Db
             {
                 case 24:
                     {
-                        var offset = baseOffset + index * 3;
+                        var offset = baseOffset + (index * 3);
                         return _database.ReadVarInt(offset, 3);
                     }
                 case 28:
@@ -416,7 +416,7 @@ namespace MaxMind.Db
                     }
                 case 32:
                     {
-                        var offset = baseOffset + index * 4;
+                        var offset = baseOffset + (index * 4);
                         return _database.ReadInt(offset);
                     }
             }

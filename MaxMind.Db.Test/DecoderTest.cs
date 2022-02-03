@@ -11,7 +11,7 @@ using Xunit;
 
 namespace MaxMind.Db.Test
 {
-    public class DecoderTest
+    public static class DecoderTest
     {
         [Theory]
         [MemberData(nameof(TestUInt16))]

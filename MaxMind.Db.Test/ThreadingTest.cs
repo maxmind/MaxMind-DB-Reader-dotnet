@@ -58,7 +58,7 @@ namespace MaxMind.Db.Test
         [Trait("Category", "BreaksMono")]
         public void TestManyOpens(FileAccessMode mode)
         {
-            Parallel.For(0, 50, i =>
+            Parallel.For(0, 50, _ =>
             {
                 using var reader = new Reader(_testDatabase, mode);
                 reader.Find<object>(IPAddress.Parse("175.16.199.0"));

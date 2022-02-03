@@ -468,7 +468,7 @@ namespace MaxMind.Db
                         break;
                 }
 
-                numberToSkip -= 1;
+                numberToSkip--;
             }
         }
 
