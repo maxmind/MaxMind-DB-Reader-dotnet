@@ -311,11 +311,13 @@ namespace MaxMind.Db.Test
         {
             var count = 0;
             using (var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-Country-Test.mmdb")))
+            {
                 foreach (var node in reader.FindAll<Dictionary<string, object>>())
                 {
                     TestNode(reader, node);
                     count++;
                 }
+            }
 
             count.Should().BeGreaterOrEqualTo(397);
         }
