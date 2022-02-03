@@ -5,11 +5,6 @@
 This is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file
 format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
-## Requirements ##
-
-This library works with .NET 5.0 and above and .NET Standard
-3.1 or above.
-
 ## Installation ##
 
 ### NuGet ###
