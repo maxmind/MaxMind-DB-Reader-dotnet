@@ -13,7 +13,7 @@ namespace MaxMind.Db
     internal sealed class DictionaryActivatorCreator
     {
         private readonly ConcurrentDictionary<Type, ObjectActivator> _dictActivators =
-            new ConcurrentDictionary<Type, ObjectActivator>();
+            new();
 
         internal ObjectActivator GetActivator(Type expectedType)
             => _dictActivators.GetOrAdd(expectedType, DictionaryActivator);

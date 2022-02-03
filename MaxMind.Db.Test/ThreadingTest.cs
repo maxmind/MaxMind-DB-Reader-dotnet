@@ -47,7 +47,7 @@ namespace MaxMind.Db.Test
                 var resultString = result.ToString();
                 var expectedString = ipsAndResults[ipAddress];
                 if (resultString != expectedString)
-                    throw new Exception($"Non-matching result. Expected {expectedString}, found {resultString}");
+                    throw new($"Non-matching result. Expected {expectedString}, found {resultString}");
             });
         }
 

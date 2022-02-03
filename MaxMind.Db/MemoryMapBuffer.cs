@@ -11,7 +11,7 @@ namespace MaxMind.Db
 {
     internal sealed class MemoryMapBuffer : Buffer
     {
-        private static readonly object FileLocker = new object();
+        private static readonly object FileLocker = new();
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;

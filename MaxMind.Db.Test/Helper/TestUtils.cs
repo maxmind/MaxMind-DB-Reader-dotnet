@@ -17,7 +17,7 @@ namespace MaxMind.Db.Test.Helper
             {
                 if (!Directory.Exists(dbPath))
                 {
-                    throw new Exception("Path set as environment variable MAXMIND_TEST_BASE_DIR does not exist!");
+                    throw new("Path set as environment variable MAXMIND_TEST_BASE_DIR does not exist!");
                 }
 
                 return dbPath;
