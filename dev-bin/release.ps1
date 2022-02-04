@@ -51,10 +51,11 @@ if ((Read-Host -Prompt 'Should push? (y/n)') -ne 'y') {
     Write-Error 'Aborting'
 }
 
-& git push
+& git push -u origin HEAD
+
 
 Pop-Location
 & gh release create --target "$(git branch --show-current)" -t "$version" "$tag"
-& git push
+& git push -u origin HEAD
 
 & nuget push "MaxMind.Db/bin/Release/MaxMind.Db.$version.nupkg" -Source https://www.nuget.org/api/v2/package
