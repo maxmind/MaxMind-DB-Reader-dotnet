@@ -12,6 +12,7 @@
     <PackageId>MaxMind.Db</PackageId>
     <PackageTags>maxmind;ip;geoip;geoip2;geolocation;maxmind;ipv4;ipv6;mmdb;maxminddb</PackageTags>
     <PackageIcon>MaxMind-logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/maxmind/MaxMind-DB-Reader-dotnet</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <EnablePackageValidation>true</EnablePackageValidation>
@@ -39,6 +40,10 @@
 
     <ItemGroup>
     <None Include="..\MaxMind-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
