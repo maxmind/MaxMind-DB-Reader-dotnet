@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Test project to validate .NET reader for the MaxMind DB file format</Description>
     <VersionPrefix>4.0.0</VersionPrefix>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">net6.0;net5.0;net461;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">net6.0;net5.0;net472;netcoreapp3.1</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">net6.0;net5.0;netcoreapp3.1</TargetFrameworks>
     <AssemblyName>MaxMind.Db.Test</AssemblyName>
     <AssemblyOriginatorKeyFile>../MaxMind.snk</AssemblyOriginatorKeyFile>
@@ -36,7 +36,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
     <PackageReference Include="FluentAssertions" Version="6.6.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
