@@ -1,5 +1,8 @@
 # MaxMind DB Reader #
 
+[![NuGet](https://img.shields.io/nuget/v/MaxMind.Db)](https://www.nuget.org/packages/MaxMind.Db)
+[![API Docs](https://www.fuget.org/packages/MaxMind.Db/badge.svg)](https://www.fuget.org/packages/MaxMind.Db)
+
 ## Description ##
 
 This is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file
