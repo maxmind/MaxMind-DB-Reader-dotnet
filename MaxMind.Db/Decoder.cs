@@ -41,7 +41,7 @@ namespace MaxMind.Db
         private readonly Buffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
-        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + (1 << 11), 0 };
+        private readonly int[] _pointerValueOffset = [0, 0, 1 << 11, (1 << 19) + (1 << 11), 0];
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;

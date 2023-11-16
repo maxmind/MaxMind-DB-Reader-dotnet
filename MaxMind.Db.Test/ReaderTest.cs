@@ -530,7 +530,7 @@ namespace MaxMind.Db.Test
             foreach (var address in singleAddresses)
             {
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"].Should().Be(
-                    new string(address.ToArray()),
+                    new string([.. address]),
                     $"Did not find expected data record for {address} in {file}");
             }
 
