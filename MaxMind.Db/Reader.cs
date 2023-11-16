@@ -84,6 +84,12 @@ namespace MaxMind.Db
         private const int DataSectionSeparatorSize = 16;
         private readonly Buffer _database;
         private readonly string? _fileName;
+        private readonly long _dataPointerOffset;
+        private readonly int _dbIPVersion;
+        private readonly long _nodeByteSize;
+        private readonly long _nodeCount;
+        private readonly int _recordSize;
+        private readonly long _searchTreeSize;
 
         // The property getter was a hotspot during profiling.
 
@@ -133,7 +139,23 @@ namespace MaxMind.Db
             var start = FindMetadataStart();
             var metaDecode = new Decoder(_database, start);
             Metadata = metaDecode.Decode<Metadata>(start, out _);
+            _dataPointerOffset = Metadata.SearchTreeSize - Metadata.NodeCount;
+            _dbIPVersion = Metadata.IPVersion;
+            _nodeByteSize = Metadata.NodeByteSize;
+            _nodeCount = Metadata.NodeCount;
+            _recordSize = Metadata.RecordSize;
+            _searchTreeSize = Metadata.SearchTreeSize;
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+
+            if (_dbIPVersion ==6)
+            {
+                var node = 0;
+                for (var i = 0; i < 96 && node < _nodeCount; i++)
+                {
+                    node = ReadNode(node, 0);
+                }
+                _ipV4Start = node;
+            }
         }
 
         /// <summary>
@@ -173,24 +195,6 @@ namespace MaxMind.Db
         ///     The metadata.
         /// </value>
         public Metadata Metadata { get; }
-
-        private int IPv4Start
-        {
-            get
-            {
-                if (_ipV4Start != 0 || Metadata.IPVersion == 4)
-                {
-                    return _ipV4Start;
-                }
-                var node = 0;
-                for (var i = 0; i < 96 && node < Metadata.NodeCount; i++)
-                {
-                    node = ReadNode(node, 0);
-                }
-                _ipV4Start = node;
-                return node;
-            }
-        }
 
         private Decoder Decoder { get; }
 
@@ -254,7 +258,7 @@ namespace MaxMind.Db
         /// <returns>Enumerator for all data nodes</returns>
         public IEnumerable<ReaderIteratorNode<T>> FindAll<T>(InjectableValues? injectables = null, int cacheSize = 16384) where T : class
         {
-            var byteCount = Metadata.IPVersion == 6 ? 16 : 4;
+            var byteCount = _dbIPVersion == 6 ? 16 : 4;
             var nodes = new List<NetNode>();
             var root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
@@ -265,7 +269,7 @@ namespace MaxMind.Db
                 nodes.RemoveAt(nodes.Count - 1);
                 while (true)
                 {
-                    if (node.Pointer < Metadata.NodeCount)
+                    if (node.Pointer < _nodeCount)
                     {
                         var ipRight = new byte[byteCount];
                         Array.Copy(node.IPBytes, ipRight, ipRight.Length);
@@ -281,7 +285,7 @@ namespace MaxMind.Db
                     }
                     else
                     {
-                        if (node.Pointer > Metadata.NodeCount)
+                        if (node.Pointer > _nodeCount)
                         {
                             // data node, we are done with this branch
                             if (!dataCache.TryGetValue(node.Pointer, out var data))
@@ -315,7 +319,7 @@ namespace MaxMind.Db
 
         private T ResolveDataPointer<T>(int pointer, InjectableValues? injectables, Network? network) where T : class
         {
-            var resolved = pointer - Metadata.NodeCount + Metadata.SearchTreeSize;
+            var resolved = pointer + _dataPointerOffset;
 
             if (resolved >= _database.Length)
             {
@@ -333,7 +337,7 @@ namespace MaxMind.Db
 
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
-            var nodeCount = Metadata.NodeCount;
+            var nodeCount = _nodeCount;
 
             var i = 0;
             for (; i < bitLength && record < nodeCount; i++)
@@ -342,12 +346,12 @@ namespace MaxMind.Db
                 record = ReadNode(record, bit);
             }
             prefixLength = i;
-            if (record == Metadata.NodeCount)
+            if (record == nodeCount)
             {
                 // record is empty
                 return 0;
             }
-            if (record > Metadata.NodeCount)
+            if (record > nodeCount)
             {
                 // record is a data pointer
                 return record;
@@ -359,9 +363,9 @@ namespace MaxMind.Db
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
             // is the case, we can skip over the first 96 nodes.
-            if (Metadata.IPVersion == 6 && bitLength == 32)
+            if (_dbIPVersion == 6 && bitLength == 32)
             {
-                return IPv4Start;
+                return _ipV4Start;
             }
             // The first node of the tree is always node 0, at the beginning of the
             // value
@@ -395,9 +399,9 @@ namespace MaxMind.Db
 
         private int ReadNode(int nodeNumber, int index)
         {
-            var baseOffset = nodeNumber * Metadata.NodeByteSize;
+            var baseOffset = nodeNumber * _nodeByteSize;
 
-            var size = Metadata.RecordSize;
+            var size = _recordSize;
 
             switch (size)
             {
