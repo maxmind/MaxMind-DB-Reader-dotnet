@@ -40,6 +40,9 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="info">The SerializationInfo with data.</param>
         /// <param name="context">The source for this deserialization.</param>
+#if NET8_0_OR_GREATER
+        [Obsolete(DiagnosticId = "SYSLIB0051")]
+#endif
         private InvalidDatabaseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

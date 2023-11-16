@@ -57,7 +57,7 @@ namespace MaxMind.Db.Test
                 {
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    var reader = await Reader.CreateAsync(file).ConfigureAwait(false);
+                    var reader = await Reader.CreateAsync(file);
                     using (reader)
                     {
                         TestMetadata(reader, ipVersion);
@@ -110,7 +110,7 @@ namespace MaxMind.Db.Test
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
                     using var streamReader = File.OpenText(file);
-                    using var reader = await Reader.CreateAsync(streamReader.BaseStream).ConfigureAwait(false);
+                    using var reader = await Reader.CreateAsync(streamReader.BaseStream);
                     TestMetadata(reader, ipVersion);
 
                     if (ipVersion == 4)
@@ -162,7 +162,7 @@ namespace MaxMind.Db.Test
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
 
                     using var stream = new NonSeekableStreamWrapper(File.OpenRead(file));
-                    using var reader = await Reader.CreateAsync(stream).ConfigureAwait(false);
+                    using var reader = await Reader.CreateAsync(stream);
                     TestMetadata(reader, ipVersion);
 
                     if (ipVersion == 4)
@@ -192,7 +192,7 @@ namespace MaxMind.Db.Test
         public void NullStreamThrowsArgumentNullExceptionAsync()
         {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            ((Func<Task>)(async () => await Reader.CreateAsync((Stream)null).ConfigureAwait(false)))
+            ((Func<Task>)(async () => await Reader.CreateAsync((Stream)null)))
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 .Should().ThrowExactlyAsync<ArgumentNullException>()
                 .WithMessage("The database stream must not be null.*");
@@ -212,7 +212,7 @@ namespace MaxMind.Db.Test
         public void TestEmptyStreamAsync()
         {
             using var stream = new MemoryStream();
-            ((Func<Task>)(async () => await Reader.CreateAsync(stream).ConfigureAwait(false)))
+            ((Func<Task>)(async () => await Reader.CreateAsync(stream)))
                 .Should().ThrowExactlyAsync<InvalidDatabaseException>()
                 .WithMessage("*zero bytes left in the stream*");
         }
