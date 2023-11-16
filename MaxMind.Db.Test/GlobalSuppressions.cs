@@ -21,3 +21,25 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Blocker Code Smell", "S2699:Tests should include assertions", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ThreadingTest.TestManyOpens(MaxMind.Db.FileAccessMode)")]
 [assembly: SuppressMessage("Blocker Code Smell", "S2699:Tests should include assertions", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ThreadingTest.TestParallelFor(MaxMind.Db.FileAccessMode)")]
 [assembly: SuppressMessage("Major Code Smell", "S3881:\"IDisposable\" should be implemented correctly", Justification = "<Pending>", Scope = "type", Target = "~T:MaxMind.Db.Test.Helper.NonSeekableStreamWrapper")]
+
+/* Unmerged change from project 'MaxMind.Db.Test (net6.0)'
+Added:
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV4(MaxMind.Db.Reader,System.String)")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV6(MaxMind.Db.Reader,System.String)")]
+*/
+
+/* Unmerged change from project 'MaxMind.Db.Test (net7.0)'
+Added:
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV4(MaxMind.Db.Reader,System.String)")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV6(MaxMind.Db.Reader,System.String)")]
+*/
+
+/* Unmerged change from project 'MaxMind.Db.Test (net8.0)'
+Added:
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV4(MaxMind.Db.Reader,System.String)")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV6(MaxMind.Db.Reader,System.String)")]
+*/
+[assembly: SuppressMessage("Roslynator", "RCS1047:Non-asynchronous method name should not end with 'Async'.", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.NullStreamThrowsArgumentNullExceptionAsync")]
+[assembly: SuppressMessage("Roslynator", "RCS1047:Non-asynchronous method name should not end with 'Async'.", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestEmptyStreamAsync")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV4(MaxMind.Db.Reader,System.String)")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "<Pending>", Scope = "member", Target = "~M:MaxMind.Db.Test.ReaderTest.TestIPV6(MaxMind.Db.Reader,System.String)")]

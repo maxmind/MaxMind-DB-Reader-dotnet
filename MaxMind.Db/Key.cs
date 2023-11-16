@@ -1,6 +1,6 @@
 ﻿namespace MaxMind.Db
 {
-    internal struct Key
+    internal readonly struct Key
     {
         private readonly Buffer buffer;
         private readonly long offset;
@@ -16,7 +16,7 @@
             var code = 17;
             for (var i = 0; i < size; i++)
             {
-                code = 31 * code + buffer.ReadOne(offset + i);
+                code = (31 * code) + buffer.ReadOne(offset + i);
             }
             hashCode = code;
         }
