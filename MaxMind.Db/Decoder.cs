@@ -41,7 +41,7 @@ namespace MaxMind.Db
         private readonly Buffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
-        private readonly int[] _pointerValueOffset = { 0, 0, 1 << 11, (1 << 19) + (1 << 11), 0 };
+        private readonly int[] _pointerValueOffset = [0, 0, 1 << 11, (1 << 19) + (1 << 11), 0];
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
@@ -352,9 +352,9 @@ namespace MaxMind.Db
             for (var i = 0; i < size; i++)
             {
                 var key = DecodeKey(offset, out offset);
-                if (constructor.DeserializationParameters.ContainsKey(key))
+                if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
-                    var param = constructor.DeserializationParameters[key];
+                    var param = v;
                     var paramType = param.ParameterType;
                     var value = Decode(paramType, offset, out offset, injectables, network);
                     parameters[param.Position] = value;
@@ -397,10 +397,10 @@ namespace MaxMind.Db
         {
             foreach (var item in constructor.InjectableParameters)
             {
-                if (injectables == null || !injectables.Values.ContainsKey(item.Key))
+                if (injectables == null || !injectables.Values.TryGetValue(item.Key, out var value))
                     throw new DeserializationException($"No injectable value found for {item.Key}");
 
-                parameters[item.Value.Position] = injectables.Values[item.Key];
+                parameters[item.Value.Position] = value;
             }
         }
 

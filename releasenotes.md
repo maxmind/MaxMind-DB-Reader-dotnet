@@ -6,6 +6,7 @@
   However, if you are using .NET 5.0, the .NET Standard 2.1 target should
   continue working for you.
 * .NET 7.0 and .NET 8.0 have been added as a target.
+* Minor performance improvements.
 
 ## 4.0.0 (2022-02-03) ##
 
