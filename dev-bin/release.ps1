@@ -51,10 +51,6 @@ if ((Read-Host -Prompt 'Should push? (y/n)') -ne 'y') {
     Write-Error 'Aborting'
 }
 
-& git push -u origin HEAD
-
-
-Pop-Location
 & gh release create --target "$(git branch --show-current)" -t "$version" "$tag"
 & git push -u origin HEAD
 
