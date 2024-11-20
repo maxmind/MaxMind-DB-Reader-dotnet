@@ -100,7 +100,7 @@ namespace MaxMind.Db
         };
 
         private bool _disposed;
-        private int _ipV4Start;
+        private readonly int _ipV4Start;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Reader" /> class.

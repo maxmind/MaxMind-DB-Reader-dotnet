@@ -95,7 +95,7 @@ namespace MaxMind.Db
         /// Sets a new comparer. Clears the cache.
         /// </summary>
         /// <param name="comparer">New comparer</param>
-        protected void SetComparer(IEqualityComparer<TKey> comparer)
+        private void SetComparer(IEqualityComparer<TKey> comparer)
         {
             dictionary = new Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>(comparer);
             priorityList = new LinkedList<KeyValuePair<TKey, TValue>>();
@@ -210,7 +210,7 @@ namespace MaxMind.Db
         /// <param name="key">Key to find (receives the found key)</param>
         /// <param name="value">Found value (default of TValue if not found)</param>
         /// <returns>True if found, false if not</returns>
-        public bool TryGetValueRef(ref TKey key, out TValue value)
+        private bool TryGetValueRef(ref TKey key, out TValue value)
         {
             if (dictionary.TryGetValue(key, out var node))
             {
