@@ -53,7 +53,7 @@ namespace MaxMind.Db
 
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
-                catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
+                catch (Exception ex) when (ex is IOException or NotImplementedException or PlatformNotSupportedException)
                 {
                     // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
                     // When executed on unsupported platform, we get the PNSE. In which case, we consruct the memory map by
