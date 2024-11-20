@@ -6,6 +6,10 @@
   reach their end of support from Microsoft. If you are using these versions,
   the .NET Standard 2.1 target should continue working for you.
 * .NET 9.0 has been added as a target.
+* We now use a mutex rather than a lock statement when opening the
+  database. This is done to reduce the likelihood of a race condition
+  when process are opening a single database when using
+  `FileAccessMode.MemoryMappedGlobal`.
 
 ## 4.1.0 (2023-12-05) ##
 

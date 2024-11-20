@@ -3,7 +3,9 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 #endregion
 
@@ -11,7 +13,6 @@ namespace MaxMind.Db
 {
     internal sealed class MemoryMapBuffer : Buffer
     {
-        private static readonly object FileLocker = new();
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;
@@ -29,11 +30,27 @@ namespace MaxMind.Db
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";
 
-            string? mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
-            lock (FileLocker)
+            // We create a sha256 here as there are limitations on mutex names.
+            using var sha256 = SHA256.Create();
+            var suffixTxt = $"{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(suffixTxt));
+            var suffix = BitConverter.ToString(hashBytes).Replace("-", "");
+
+            var mapName = $"{objectNamespace}\\{suffix}";
+            var mutexName = $"{mapName}-Mutex";
+
+            using (var mutex = new Mutex(false, mutexName))
             {
+                var hasHandle = false;
+
                 try
                 {
+                    hasHandle = mutex.WaitOne(TimeSpan.FromSeconds(10), false);
+                    if (!hasHandle)
+                    {
+                        throw new TimeoutException("Timeout waiting for mutex.");
+                    }
+
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
@@ -46,6 +63,13 @@ namespace MaxMind.Db
 
                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
                             MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                }
+                finally
+                {
+                    if (hasHandle)
+                    {
+                        mutex.ReleaseMutex();
+                    }
                 }
             }
 
