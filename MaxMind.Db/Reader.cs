@@ -147,7 +147,7 @@ namespace MaxMind.Db
             _searchTreeSize = Metadata.SearchTreeSize;
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
 
-            if (_dbIPVersion ==6)
+            if (_dbIPVersion == 6)
             {
                 var node = 0;
                 for (var i = 0; i < 96 && node < _nodeCount; i++)
