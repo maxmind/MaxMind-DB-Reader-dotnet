@@ -3,8 +3,8 @@
   <PropertyGroup>
     <Description>Benchmark project to validate .NET reader for the MaxMind DB file format</Description>
     <VersionPrefix>4.0.0</VersionPrefix>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">net8.0;net7.0;net6.0;net472</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">net8.0;net7.0;net6.0</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">net9.0;net8.0;net481</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">net9.0;net8.0</TargetFrameworks>
     <AssemblyName>MaxMind.Db.Benchmark</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>MaxMind.Db.Benchmark</PackageId>
