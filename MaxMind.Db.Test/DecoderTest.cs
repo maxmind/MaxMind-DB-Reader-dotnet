@@ -53,10 +53,10 @@ namespace MaxMind.Db.Test
             var uint16s = new Dictionary<object, byte[]>
             {
                 {0, [0xa0] },
-                {(1 << 8) - 1, [(byte) 0xa1, (byte) 0xff] },
+                {(1 << 8) - 1, [0xa1, 0xff] },
                 {500, [0xa2, 0x1, 0xf4] },
                 {10872, [0xa2, 0x2a, 0x78] },
-                {ushort.MaxValue, [(byte) 0xa2, (byte) 0xff, (byte) 0xff] }
+                {ushort.MaxValue, [0xa2, 0xff, 0xff] }
             };
 
             yield return [uint16s];
@@ -66,13 +66,13 @@ namespace MaxMind.Db.Test
         {
             var uint32s = new Dictionary<object, byte[]>
             {
-                {0, [(byte) 0xc0] },
-                {(1 << 8) - 1, [(byte) 0xc1, (byte) 0xff] },
+                {0, [0xc0] },
+                {(1 << 8) - 1, [0xc1, 0xff] },
                 {500, [0xc2, 0x1, 0xf4] },
                 {10872, [0xc2, 0x2a, 0x78] },
-                {(1 << 16) - 1, [(byte) 0xc2, (byte) 0xff, (byte) 0xff] },
-                {(1 << 24) - 1, [(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff] },
-                {uint.MaxValue, [(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff] }
+                {(1 << 16) - 1, [0xc2, 0xff, 0xff] },
+                {(1 << 24) - 1, [0xc3, 0xff, 0xff, 0xff] },
+                {uint.MaxValue, [0xc4, 0xff, 0xff, 0xff, 0xff] }
             };
 
             yield return [uint32s];
@@ -292,7 +292,7 @@ namespace MaxMind.Db.Test
             var maps = new Dictionary<Dictionary<string, object>, byte[]>();
 
             var empty = new Dictionary<string, object>();
-            maps.Add(new Dictionary<string, object>(empty), [(byte)0xe0]);
+            maps.Add(new Dictionary<string, object>(empty), [0xe0]);
 
             var one = new Dictionary<string, object> { { "en", "Foo" } };
             maps.Add(new Dictionary<string, object>(one), [
