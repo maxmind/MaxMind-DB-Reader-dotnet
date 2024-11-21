@@ -19,7 +19,6 @@ namespace MaxMind.Db
         internal readonly Dictionary<Key, ParameterInfo> DeserializationParameters;
         internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
         internal readonly List<ParameterInfo> NetworkParameters;
-        private readonly Type[] ParameterTypes;
 
         internal TypeActivator(
             ObjectActivator activator,
@@ -35,9 +34,8 @@ namespace MaxMind.Db
             InjectableParameters = injectables;
 
             NetworkParameters = networkParameters;
-            ParameterTypes =
-                deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
-            _defaultParameters = ParameterTypes.Select(DefaultValue).ToArray();
+            Type[] parameterTypes = deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
+            _defaultParameters = parameterTypes.Select(DefaultValue).ToArray();
         }
 
         internal object[] DefaultParameters() => (object[])_defaultParameters.Clone();
