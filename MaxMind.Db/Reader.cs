@@ -377,7 +377,7 @@ namespace MaxMind.Db
 
             for (var i = dbLength - markerLength; i > 0; i--)
             {
-                int j = 0;
+                var j = 0;
                 for (; j < markerLength; j++)
                 {
                     if (_metadataStartMarker[j] != _database.ReadOne(i + j))

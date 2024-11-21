@@ -101,7 +101,7 @@ namespace MaxMind.Db
             }
             unsafe
             {
-                byte* ptr = (byte*)0;
+                var ptr = (byte*)0;
                 try
                 {
                     _view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
