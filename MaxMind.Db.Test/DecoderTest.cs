@@ -52,60 +52,60 @@ namespace MaxMind.Db.Test
         {
             var uint16s = new Dictionary<object, byte[]>
             {
-                {0, new byte[] {0xa0}},
-                {(1 << 8) - 1, new[] {(byte) 0xa1, (byte) 0xff}},
-                {500, new byte[] {0xa2, 0x1, 0xf4}},
-                {10872, new byte[] {0xa2, 0x2a, 0x78}},
-                {ushort.MaxValue, new[] {(byte) 0xa2, (byte) 0xff, (byte) 0xff}}
+                {0, [0xa0] },
+                {(1 << 8) - 1, [(byte) 0xa1, (byte) 0xff] },
+                {500, [0xa2, 0x1, 0xf4] },
+                {10872, [0xa2, 0x2a, 0x78] },
+                {ushort.MaxValue, [(byte) 0xa2, (byte) 0xff, (byte) 0xff] }
             };
 
-            yield return new object[] { uint16s };
+            yield return [uint16s];
         }
 
         public static IEnumerable<object[]> TestUInt32()
         {
             var uint32s = new Dictionary<object, byte[]>
             {
-                {0, new[] {(byte) 0xc0}},
-                {(1 << 8) - 1, new[] {(byte) 0xc1, (byte) 0xff}},
-                {500, new byte[] {0xc2, 0x1, 0xf4}},
-                {10872, new byte[] {0xc2, 0x2a, 0x78}},
-                {(1 << 16) - 1, new[] {(byte) 0xc2, (byte) 0xff, (byte) 0xff}},
-                {(1 << 24) - 1, new[] {(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff}},
-                {uint.MaxValue, new[] {(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}}
+                {0, [(byte) 0xc0] },
+                {(1 << 8) - 1, [(byte) 0xc1, (byte) 0xff] },
+                {500, [0xc2, 0x1, 0xf4] },
+                {10872, [0xc2, 0x2a, 0x78] },
+                {(1 << 16) - 1, [(byte) 0xc2, (byte) 0xff, (byte) 0xff] },
+                {(1 << 24) - 1, [(byte) 0xc3, (byte) 0xff, (byte) 0xff, (byte) 0xff] },
+                {uint.MaxValue, [(byte) 0xc4, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff] }
             };
 
-            yield return new object[] { uint32s };
+            yield return [uint32s];
         }
 
         public static IEnumerable<object[]> TestInt32s()
         {
             var int32s = new Dictionary<object, byte[]>
             {
-                {0, new byte[] {0x0, 0x1}},
-                {-1, new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0xff}},
-                {(2 << 7) - 1, new byte[] {0x1, 0x1, 0xff}},
-                {1 - (2 << 7), new byte[] {0x4, 0x1, 0xff, 0xff, 0xff, 0x1}},
-                {500, new byte[] {0x2, 0x1, 0x1, 0xf4}},
-                {-500, new byte[] {0x4, 0x1, 0xff, 0xff, 0xfe, 0xc}},
-                {(2 << 15) - 1, new byte[] {0x2, 0x1, 0xff, 0xff}},
-                {1 - (2 << 15), new byte[] {0x4, 0x1, 0xff, 0xff, 0x0, 0x1}},
-                {(2 << 23) - 1, new byte[] {0x3, 0x1, 0xff, 0xff, 0xff}},
-                {1 - (2 << 23), new byte[] {0x4, 0x1, 0xff, 0x0, 0x0, 0x1}},
-                {int.MaxValue, new byte[] {0x4, 0x1, 0x7f, 0xff, 0xff, 0xff}},
-                {-int.MaxValue, new byte[] {0x4, 0x1, 0x80, 0x0, 0x0, 0x1}}
+                {0, [0x0, 0x1] },
+                {-1, [0x4, 0x1, 0xff, 0xff, 0xff, 0xff] },
+                {(2 << 7) - 1, [0x1, 0x1, 0xff] },
+                {1 - (2 << 7), [0x4, 0x1, 0xff, 0xff, 0xff, 0x1] },
+                {500, [0x2, 0x1, 0x1, 0xf4] },
+                {-500, [0x4, 0x1, 0xff, 0xff, 0xfe, 0xc] },
+                {(2 << 15) - 1, [0x2, 0x1, 0xff, 0xff] },
+                {1 - (2 << 15), [0x4, 0x1, 0xff, 0xff, 0x0, 0x1] },
+                {(2 << 23) - 1, [0x3, 0x1, 0xff, 0xff, 0xff] },
+                {1 - (2 << 23), [0x4, 0x1, 0xff, 0x0, 0x0, 0x1] },
+                {int.MaxValue, [0x4, 0x1, 0x7f, 0xff, 0xff, 0xff] },
+                {-int.MaxValue, [0x4, 0x1, 0x80, 0x0, 0x0, 0x1] }
             };
 
-            yield return new object[] { int32s };
+            yield return [int32s];
         }
 
         public static IEnumerable<object[]> TestInt64s()
         {
             var int64s = new Dictionary<object, byte[]>
             {
-                {0L, new byte[] {0x0, 0x2}},
-                {500L, new byte[] {0x2, 0x2, 0x1, 0xf4}},
-                {10872, new byte[] {0x2, 0x2, 0x2a, 0x78}}
+                {0L, [0x0, 0x2] },
+                {500L, [0x2, 0x2, 0x1, 0xf4] },
+                {10872, [0x2, 0x2, 0x2a, 0x78] }
             };
 
             for (var power = 1; power < 8; power++)
@@ -123,7 +123,7 @@ namespace MaxMind.Db.Test
                 int64s.Add(key, value);
             }
 
-            yield return new object[] { int64s };
+            yield return [int64s];
         }
 
         public static long Int64Pow(long x, int pow)
@@ -143,9 +143,9 @@ namespace MaxMind.Db.Test
         {
             var bigInts = new Dictionary<object, byte[]>
             {
-                {new BigInteger(0), new byte[] {0x0, 0x3}},
-                {new BigInteger(500), new byte[] {0x2, 0x3, 0x1, 0xf4}},
-                {new BigInteger(10872), new byte[] {0x2, 0x3, 0x2a, 0x78}}
+                {new BigInteger(0), [0x0, 0x3] },
+                {new BigInteger(500), [0x2, 0x3, 0x1, 0xf4] },
+                {new BigInteger(10872), [0x2, 0x3, 0x2a, 0x78] }
             };
 
             for (var power = 1; power <= 16; power++)
@@ -163,66 +163,66 @@ namespace MaxMind.Db.Test
                 bigInts.Add(key, value);
             }
 
-            yield return new object[] { bigInts, /*useShouldBe*/ true };
+            yield return [bigInts, /*useShouldBe*/ true];
         }
 
         public static IEnumerable<object[]> TestDoubles()
         {
             var doubles = new Dictionary<object, byte[]>
             {
-                {0.0, new byte[] {0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
-                {0.5, new byte[] {0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
-                {3.14159265359, new byte[] {0x68, 0x40, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA}},
-                {123.0, new byte[] {0x68, 0x40, 0x5E, 0xC0, 0x0, 0x0, 0x0, 0x0, 0x0}},
-                {1073741824.12457, new byte[] {0x68, 0x41, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4}},
-                {-0.5, new byte[] {0x68, 0xBF, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
-                {-3.14159265359, new byte[] {0x68, 0xC0, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA}},
-                {-1073741824.12457, new byte[] {0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4}}
+                {0.0, [0x68, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0] },
+                {0.5, [0x68, 0x3F, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0] },
+                {3.14159265359, [0x68, 0x40, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA] },
+                {123.0, [0x68, 0x40, 0x5E, 0xC0, 0x0, 0x0, 0x0, 0x0, 0x0] },
+                {1073741824.12457, [0x68, 0x41, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4] },
+                {-0.5, [0x68, 0xBF, 0xE0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0] },
+                {-3.14159265359, [0x68, 0xC0, 0x9, 0x21, 0xFB, 0x54, 0x44, 0x2E, 0xEA] },
+                {-1073741824.12457, [0x68, 0xC1, 0xD0, 0x0, 0x0, 0x0, 0x7, 0xF8, 0xF4] }
             };
 
-            yield return new object[] { doubles };
+            yield return [doubles];
         }
 
         public static IEnumerable<object[]> TestFloats()
         {
             var floats = new Dictionary<object, byte[]>
             {
-                {(float) 0.0, new byte[] {0x4, 0x8, 0x0, 0x0, 0x0, 0x0}},
-                {(float) 1.0, new byte[] {0x4, 0x8, 0x3F, 0x80, 0x0, 0x0}},
-                {(float) 1.1, new byte[] {0x4, 0x8, 0x3F, 0x8C, 0xCC, 0xCD}},
-                {(float) 3.14, new byte[] {0x4, 0x8, 0x40, 0x48, 0xF5, 0xC3}},
-                {(float) 9999.99, new byte[] {0x4, 0x8, 0x46, 0x1C, 0x3F, 0xF6}},
-                {(float) -1.0, new byte[] {0x4, 0x8, 0xBF, 0x80, 0x0, 0x0}},
-                {(float) -1.1, new byte[] {0x4, 0x8, 0xBF, 0x8C, 0xCC, 0xCD}},
-                {(float) -3.14, new byte[] {0x4, 0x8, 0xC0, 0x48, 0xF5, 0xC3}},
-                {(float) -9999.99, new byte[] {0x4, 0x8, 0xC6, 0x1C, 0x3F, 0xF6}}
+                {(float) 0.0, [0x4, 0x8, 0x0, 0x0, 0x0, 0x0] },
+                {(float) 1.0, [0x4, 0x8, 0x3F, 0x80, 0x0, 0x0] },
+                {(float) 1.1, [0x4, 0x8, 0x3F, 0x8C, 0xCC, 0xCD] },
+                {(float) 3.14, [0x4, 0x8, 0x40, 0x48, 0xF5, 0xC3] },
+                {(float) 9999.99, [0x4, 0x8, 0x46, 0x1C, 0x3F, 0xF6] },
+                {(float) -1.0, [0x4, 0x8, 0xBF, 0x80, 0x0, 0x0] },
+                {(float) -1.1, [0x4, 0x8, 0xBF, 0x8C, 0xCC, 0xCD] },
+                {(float) -3.14, [0x4, 0x8, 0xC0, 0x48, 0xF5, 0xC3] },
+                {(float) -9999.99, [0x4, 0x8, 0xC6, 0x1C, 0x3F, 0xF6] }
             };
 
-            yield return new object[] { floats };
+            yield return [floats];
         }
 
         public static IEnumerable<object[]> TestPointers()
         {
             var pointers = new Dictionary<object, byte[]>
             {
-                {0, new byte[] {0x20, 0x0}},
-                {5, new byte[] {0x20, 0x5}},
-                {10, new byte[] {0x20, 0xa}},
-                {(1 << 10) - 1, new byte[] {0x23, 0xff}},
-                {3017, new byte[] {0x28, 0x3, 0xc9}},
-                {(1 << 19) - 5, new byte[] {0x2f, 0xf7, 0xfb}},
-                {(1 << 19) + (1 << 11) - 1, new byte[] {0x2f, 0xff, 0xff}},
-                {(1 << 27) - 2, new byte[] {0x37, 0xf7, 0xf7, 0xfe}},
-                {((long) 1 << 27) + (1 << 19) + (1 << 11) - 1, new byte[] {0x37, 0xff, 0xff, 0xff}},
-                {((long) 1 << 31) - 1, new byte[] {0x38, 0x7f, 0xff, 0xff, 0xff}}
+                {0, [0x20, 0x0] },
+                {5, [0x20, 0x5] },
+                {10, [0x20, 0xa] },
+                {(1 << 10) - 1, [0x23, 0xff] },
+                {3017, [0x28, 0x3, 0xc9] },
+                {(1 << 19) - 5, [0x2f, 0xf7, 0xfb] },
+                {(1 << 19) + (1 << 11) - 1, [0x2f, 0xff, 0xff] },
+                {(1 << 27) - 2, [0x37, 0xf7, 0xf7, 0xfe] },
+                {((long) 1 << 27) + (1 << 19) + (1 << 11) - 1, [0x37, 0xff, 0xff, 0xff] },
+                {((long) 1 << 31) - 1, [0x38, 0x7f, 0xff, 0xff, 0xff] }
             };
 
-            yield return new object[] { pointers };
+            yield return [pointers];
         }
 
         public static IEnumerable<object[]> TestStrings()
         {
-            yield return new object[] { Strings() };
+            yield return [Strings()];
         }
 
         private static Dictionary<string, byte[]> Strings()
@@ -235,18 +235,18 @@ namespace MaxMind.Db.Test
             AddTestString(strings, 0x43, "123");
             AddTestString(strings, 0x5b, "123456789012345678901234567");
             AddTestString(strings, 0x5c, "1234567890123456789012345678");
-            AddTestString(strings, new byte[] { 0x5d, 0x0 }, "12345678901234567890123456789");
-            AddTestString(strings, new byte[] { 0x5d, 0x1 }, "123456789012345678901234567890");
+            AddTestString(strings, [0x5d, 0x0], "12345678901234567890123456789");
+            AddTestString(strings, [0x5d, 0x1], "123456789012345678901234567890");
 
-            AddTestString(strings, new byte[] { 0x5e, 0x0, 0xd7 }, new string('x', 500));
-            AddTestString(strings, new byte[] { 0x5e, 0x6, 0xb3 }, new string('x', 2000));
-            AddTestString(strings, new byte[] { 0x5f, 0x0, 0x10, 0x53 }, new string('x', 70000));
+            AddTestString(strings, [0x5e, 0x0, 0xd7], new string('x', 500));
+            AddTestString(strings, [0x5e, 0x6, 0xb3], new string('x', 2000));
+            AddTestString(strings, [0x5f, 0x0, 0x10, 0x53], new string('x', 70000));
             return strings;
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte ctrl, string str)
         {
-            AddTestString(tests, new[] { ctrl }, str);
+            AddTestString(tests, [ctrl], str);
         }
 
         private static void AddTestString(Dictionary<string, byte[]> tests, byte[] ctrl, string str)
@@ -263,11 +263,11 @@ namespace MaxMind.Db.Test
         {
             var booleans = new Dictionary<object, byte[]>
             {
-                {false, new byte[] {0x0, 0x7}},
-                {true, new byte[] {0x1, 0x7}}
+                {false, [0x0, 0x7] },
+                {true, [0x1, 0x7] }
             };
 
-            yield return new object[] { booleans };
+            yield return [booleans];
         }
 
         public static IEnumerable<object[]> TestBytes()
@@ -284,7 +284,7 @@ namespace MaxMind.Db.Test
                 bytes.Add(Encoding.UTF8.GetBytes(s), ba);
             }
 
-            yield return new object[] { bytes };
+            yield return [bytes];
         }
 
         public static IEnumerable<object[]> TestMaps()
@@ -292,18 +292,16 @@ namespace MaxMind.Db.Test
             var maps = new Dictionary<Dictionary<string, object>, byte[]>();
 
             var empty = new Dictionary<string, object>();
-            maps.Add(new Dictionary<string, object>(empty), new[] { (byte)0xe0 });
+            maps.Add(new Dictionary<string, object>(empty), [(byte)0xe0]);
 
             var one = new Dictionary<string, object> { { "en", "Foo" } };
-            maps.Add(new Dictionary<string, object>(one), new byte[]
-            {
+            maps.Add(new Dictionary<string, object>(one), [
                 0xe1, /* en */0x42, 0x65, 0x6e,
                 /* Foo */0x43, 0x46, 0x6f, 0x6f
-            });
+            ]);
 
             var two = new Dictionary<string, object> { { "en", "Foo" }, { "zh", "人" } };
-            maps.Add(new Dictionary<string, object>(two), new byte[]
-            {
+            maps.Add(new Dictionary<string, object>(two), [
                 0xe2,
                 /* en */
                 0x42, 0x65, 0x6e,
@@ -313,12 +311,11 @@ namespace MaxMind.Db.Test
                 0x42, 0x7a, 0x68,
                 /* 人 */
                 0x43, 0xe4, 0xba, 0xba
-            });
+            ]);
 
             var nested = new Dictionary<string, object> { { "name", two } };
 
-            maps.Add(new Dictionary<string, object>(nested), new byte[]
-            {
+            maps.Add(new Dictionary<string, object>(nested), [
                 0xe1, /* name */
                 0x44, 0x6e, 0x61, 0x6d, 0x65, 0xe2, /* en */
                 0x42, 0x65, 0x6e,
@@ -328,13 +325,12 @@ namespace MaxMind.Db.Test
                 0x42, 0x7a, 0x68,
                 /* 人 */
                 0x43, 0xe4, 0xba, 0xba
-            });
+            ]);
 
             var guess = new Dictionary<string, object>();
             var languages = new List<object> { "en", "zh" };
             guess.Add("languages", languages.AsReadOnly());
-            maps.Add(new Dictionary<string, object>(guess), new byte[]
-            {
+            maps.Add(new Dictionary<string, object>(guess), [
                 0xe1, /* languages */
                 0x49, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x73,
                 /* array */
@@ -343,9 +339,9 @@ namespace MaxMind.Db.Test
                 0x42, 0x65, 0x6e,
                 /* zh */
                 0x42, 0x7a, 0x68
-            });
+            ]);
 
-            yield return new object[] { maps };
+            yield return [maps];
         }
 
         public static IEnumerable<object[]> TestArrays()
@@ -353,27 +349,25 @@ namespace MaxMind.Db.Test
             var arrays = new Dictionary<List<object>, byte[]>();
 
             var f1 = new List<object> { "Foo" };
-            arrays.Add(f1, new byte[]
-            {
+            arrays.Add(f1, [
                 0x1, 0x4,
                 /* Foo */
                 0x43, 0x46, 0x6f, 0x6f
-            });
+            ]);
 
             var f2 = new List<object> { "Foo", "人" };
-            arrays.Add(f2, new byte[]
-            {
+            arrays.Add(f2, [
                 0x2, 0x4,
                 /* Foo */
                 0x43, 0x46, 0x6f, 0x6f,
                 /* 人 */
                 0x43, 0xe4, 0xba, 0xba
-            });
+            ]);
 
             var empty = new List<object>();
-            arrays.Add(empty, new byte[] { 0x0, 0x4 });
+            arrays.Add(empty, [0x0, 0x4]);
 
-            yield return new object[] { arrays };
+            yield return [arrays];
         }
     }
 }

@@ -32,7 +32,7 @@ namespace MaxMind.Db
             {
                 var dictType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
                 ReflectionUtil.CheckType(expectedType, dictType);
-                constructor = dictType.GetConstructor(new[] { typeof(int) });
+                constructor = dictType.GetConstructor([typeof(int)]);
             }
             else
             {

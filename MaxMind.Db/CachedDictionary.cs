@@ -98,7 +98,7 @@ namespace MaxMind.Db
         private void SetComparer(IEqualityComparer<TKey> comparer)
         {
             dictionary = new Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>(comparer);
-            priorityList = new LinkedList<KeyValuePair<TKey, TValue>>();
+            priorityList = [];
         }
 
         /// <summary>

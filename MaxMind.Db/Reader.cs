@@ -94,10 +94,10 @@ namespace MaxMind.Db
         // The property getter was a hotspot during profiling.
 
         private readonly byte[] _metadataStartMarker =
-        {
+        [
             0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
             109
-        };
+        ];
 
         private bool _disposed;
         private readonly int _ipV4Start;

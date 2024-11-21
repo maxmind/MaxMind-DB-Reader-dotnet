@@ -32,7 +32,7 @@ namespace MaxMind.Db
             var listType = typeof(List<>).MakeGenericType(argType);
             if (expectedType.IsAssignableFrom(listType))
             {
-                constructor = listType.GetConstructor(new[] { typeof(int) });
+                constructor = listType.GetConstructor([typeof(int)]);
             }
             else
             {
