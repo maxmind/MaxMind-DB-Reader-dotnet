@@ -126,10 +126,7 @@ namespace MaxMind.Db
             {
                 throw new ArgumentOutOfRangeException("Maxcount is " + maxCount + ", it must be greater than 0");
             }
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TKey>.Default;
-            }
+            comparer ??= EqualityComparer<TKey>.Default;
             this.maxCount = maxCount;
             SetComparer(comparer);
         }
