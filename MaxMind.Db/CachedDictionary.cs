@@ -22,16 +22,6 @@ using System.Collections.Generic;
 namespace MaxMind.Db
 {
     /// <summary>
-    /// Delegate that can be used to be notified when an item is removed from a CachedDictionary because the size was too big
-    /// </summary>
-    /// <typeparam name="TKey">Type of key</typeparam>
-    /// <typeparam name="TValue">Type of value</typeparam>
-    /// <param name="dictionary">Dictionary</param>
-    /// <param name="key">Key</param>
-    /// <param name="value">Value</param>
-    internal delegate void CachedItemRemovedDelegate<TKey, TValue>(CachedDictionary<TKey, TValue> dictionary, TKey key, TValue value);
-
-    /// <summary>
     /// A dictionary that caches up to N values in memory. Once the dictionary reaches N count, the last item in the internal list is removed.
     /// New items are always added to the start of the internal list.
     /// </summary>
