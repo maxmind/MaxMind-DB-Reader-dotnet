@@ -89,7 +89,6 @@ namespace MaxMind.Db
         private readonly long _nodeByteSize;
         private readonly long _nodeCount;
         private readonly int _recordSize;
-        private readonly long _searchTreeSize;
 
         // The property getter was a hotspot during profiling.
 
@@ -144,7 +143,6 @@ namespace MaxMind.Db
             _nodeByteSize = Metadata.NodeByteSize;
             _nodeCount = Metadata.NodeCount;
             _recordSize = Metadata.RecordSize;
-            _searchTreeSize = Metadata.SearchTreeSize;
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
 
             if (_dbIPVersion == 6)
