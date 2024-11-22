@@ -22,16 +22,6 @@ using System.Collections.Generic;
 namespace MaxMind.Db
 {
     /// <summary>
-    /// Delegate that can be used to be notified when an item is removed from a CachedDictionary because the size was too big
-    /// </summary>
-    /// <typeparam name="TKey">Type of key</typeparam>
-    /// <typeparam name="TValue">Type of value</typeparam>
-    /// <param name="dictionary">Dictionary</param>
-    /// <param name="key">Key</param>
-    /// <param name="value">Value</param>
-    internal delegate void CachedItemRemovedDelegate<TKey, TValue>(CachedDictionary<TKey, TValue> dictionary, TKey key, TValue value);
-
-    /// <summary>
     /// A dictionary that caches up to N values in memory. Once the dictionary reaches N count, the last item in the internal list is removed.
     /// New items are always added to the start of the internal list.
     /// </summary>
@@ -95,10 +85,10 @@ namespace MaxMind.Db
         /// Sets a new comparer. Clears the cache.
         /// </summary>
         /// <param name="comparer">New comparer</param>
-        protected void SetComparer(IEqualityComparer<TKey> comparer)
+        private void SetComparer(IEqualityComparer<TKey> comparer)
         {
             dictionary = new Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>(comparer);
-            priorityList = new LinkedList<KeyValuePair<TKey, TValue>>();
+            priorityList = [];
         }
 
         /// <summary>
@@ -126,10 +116,7 @@ namespace MaxMind.Db
             {
                 throw new ArgumentOutOfRangeException("Maxcount is " + maxCount + ", it must be greater than 0");
             }
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TKey>.Default;
-            }
+            comparer ??= EqualityComparer<TKey>.Default;
             this.maxCount = maxCount;
             SetComparer(comparer);
         }
@@ -210,7 +197,7 @@ namespace MaxMind.Db
         /// <param name="key">Key to find (receives the found key)</param>
         /// <param name="value">Found value (default of TValue if not found)</param>
         /// <returns>True if found, false if not</returns>
-        public bool TryGetValueRef(ref TKey key, out TValue value)
+        private bool TryGetValueRef(ref TKey key, out TValue value)
         {
             if (dictionary.TryGetValue(key, out var node))
             {

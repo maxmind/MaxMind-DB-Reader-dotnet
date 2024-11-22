@@ -11,15 +11,14 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal struct TypeActivator
+    internal readonly struct TypeActivator
     {
         internal readonly ObjectActivator Activator;
         internal readonly List<ParameterInfo> AlwaysCreatedParameters;
-        internal readonly object?[] _defaultParameters;
+        private readonly object?[] _defaultParameters;
         internal readonly Dictionary<Key, ParameterInfo> DeserializationParameters;
         internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
         internal readonly List<ParameterInfo> NetworkParameters;
-        internal readonly Type[] ParameterTypes;
 
         internal TypeActivator(
             ObjectActivator activator,
@@ -35,9 +34,8 @@ namespace MaxMind.Db
             InjectableParameters = injectables;
 
             NetworkParameters = networkParameters;
-            ParameterTypes =
-                deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
-            _defaultParameters = ParameterTypes.Select(DefaultValue).ToArray();
+            Type[] parameterTypes = deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
+            _defaultParameters = parameterTypes.Select(DefaultValue).ToArray();
         }
 
         internal object[] DefaultParameters() => (object[])_defaultParameters.Clone();

@@ -513,7 +513,7 @@ namespace MaxMind.Db
             for (var i = 0; i < size; i++)
             {
                 var r = Decode(argType, offset, out offset, injectables, network);
-                addMethod.Invoke(array, new[] { r });
+                addMethod.Invoke(array, [r]);
             }
 
             outOffset = offset;

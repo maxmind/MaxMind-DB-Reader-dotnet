@@ -89,18 +89,17 @@ namespace MaxMind.Db
         private readonly long _nodeByteSize;
         private readonly long _nodeCount;
         private readonly int _recordSize;
-        private readonly long _searchTreeSize;
 
         // The property getter was a hotspot during profiling.
 
         private readonly byte[] _metadataStartMarker =
-        {
+        [
             0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
             109
-        };
+        ];
 
         private bool _disposed;
-        private int _ipV4Start;
+        private readonly int _ipV4Start;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Reader" /> class.
@@ -144,10 +143,9 @@ namespace MaxMind.Db
             _nodeByteSize = Metadata.NodeByteSize;
             _nodeCount = Metadata.NodeCount;
             _recordSize = Metadata.RecordSize;
-            _searchTreeSize = Metadata.SearchTreeSize;
             Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
 
-            if (_dbIPVersion ==6)
+            if (_dbIPVersion == 6)
             {
                 var node = 0;
                 for (var i = 0; i < 96 && node < _nodeCount; i++)
@@ -379,7 +377,7 @@ namespace MaxMind.Db
 
             for (var i = dbLength - markerLength; i > 0; i--)
             {
-                int j = 0;
+                var j = 0;
                 for (; j < markerLength; j++)
                 {
                     if (_metadataStartMarker[j] != _database.ReadOne(i + j))
