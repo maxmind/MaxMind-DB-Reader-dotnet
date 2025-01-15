@@ -351,10 +351,10 @@ namespace MaxMind.Db.Test
             Assert.Equal("unicode! ☯ - ♫", record["utf8_string"]);
 
             var array = (List<object>)record["array"];
-            Assert.Equivalent(3, array.Count);
-            Assert.Equivalent(1, array[0]);
-            Assert.Equivalent(2, array[1]);
-            Assert.Equivalent(3, array[2]);
+            Assert.Equal(3, array.Count);
+            Assert.Equal(1L, array[0]);
+            Assert.Equal(2L, array[1]);
+            Assert.Equal(3L, array[2]);
 
             var map = (Dictionary<string, object>)record["map"];
             Assert.Single(map);
@@ -364,17 +364,17 @@ namespace MaxMind.Db.Test
             Assert.Equal("hello", mapX["utf8_stringX"]);
 
             var arrayX = (List<object>)mapX["arrayX"];
-            Assert.Equivalent(3, arrayX.Count);
-            Assert.Equivalent(7, arrayX[0]);
-            Assert.Equivalent(8, arrayX[1]);
-            Assert.Equivalent(9, arrayX[2]);
+            Assert.Equal(3, arrayX.Count);
+            Assert.Equal(7L, arrayX[0]);
+            Assert.Equal(8L, arrayX[1]);
+            Assert.Equal(9L, arrayX[2]);
 
             Assert.Equal(42.123456, (double)record["double"], 9);
             Assert.Equal(1.1F, (float)record["float"], 5);
             Assert.Equal(-268435456, record["int32"]);
             Assert.Equal(100, record["uint16"]);
-            Assert.Equivalent(268435456, record["uint32"]);
-            Assert.Equivalent(1152921504606846976, record["uint64"]);
+            Assert.Equal(268435456L, record["uint32"]);
+            Assert.Equal(1152921504606846976UL, record["uint64"]);
             Assert.Equal(
                 BigInteger.Parse("1329227995784915872903807060280344576"),
                 record["uint128"]);
@@ -407,7 +407,7 @@ namespace MaxMind.Db.Test
             Assert.Equal(-268435456, record.Int32);
             Assert.Equal(100, record.Uint16);
             Assert.Equal(268435456, record.Uint32);
-            Assert.Equivalent(1152921504606846976, record.Uint64);
+            Assert.Equal(1152921504606846976UL, record.Uint64);
             Assert.Equal(BigInteger.Parse("1329227995784915872903807060280344576"), record.Uint128);
 
             Assert.Equal("injected string", record.Nonexistant.Injected);
@@ -443,8 +443,8 @@ namespace MaxMind.Db.Test
             Assert.Equal(0, (float)record["float"], 5);
             Assert.Equal(0, record["int32"]);
             Assert.Equal(0, record["uint16"]);
-            Assert.Equivalent(0, record["uint32"]);
-            Assert.Equivalent(0, record["uint64"]);
+            Assert.Equal(0L, record["uint32"]);
+            Assert.Equal(0UL, record["uint64"]);
             Assert.Equal(new BigInteger(0), record["uint128"]);
         }
 

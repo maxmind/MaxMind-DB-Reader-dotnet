@@ -16,7 +16,7 @@ namespace MaxMind.Db.Test
         [MemberData(nameof(TestUInt16))]
         [MemberData(nameof(TestUInt32))]
         [MemberData(nameof(TestInt32s))]
-        [MemberData(nameof(TestInt64s))]
+        [MemberData(nameof(TestUInt64s))]
         [MemberData(nameof(TestBigIntegers))]
         [MemberData(nameof(TestDoubles))]
         [MemberData(nameof(TestFloats))]
@@ -26,7 +26,7 @@ namespace MaxMind.Db.Test
         [MemberData(nameof(TestBytes))]
         [MemberData(nameof(TestMaps))]
         [MemberData(nameof(TestArrays))]
-        public static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests, bool useShouldBe = false) where T : class
+        public static void TestTypeDecoding<T>(Dictionary<T, byte[]> tests) where T : class
         {
             foreach (var entry in tests)
             {
@@ -36,14 +36,7 @@ namespace MaxMind.Db.Test
                 using var database = new ArrayBuffer(input);
                 var decoder = new Decoder(database, 0, false);
                 var val = decoder.Decode<T>(0, out _);
-                if (useShouldBe)
-                {
                     Assert.Equal(expect, val);
-                }
-                else
-                {
-                    Assert.Equivalent(expect, val);
-                }
             }
         }
 
@@ -55,7 +48,7 @@ namespace MaxMind.Db.Test
                 {(1 << 8) - 1, [0xa1, 0xff] },
                 {500, [0xa2, 0x1, 0xf4] },
                 {10872, [0xa2, 0x2a, 0x78] },
-                {ushort.MaxValue, [0xa2, 0xff, 0xff] }
+                {(int) ushort.MaxValue, [0xa2, 0xff, 0xff] }
             };
 
             yield return [uint16s];
@@ -65,13 +58,13 @@ namespace MaxMind.Db.Test
         {
             var uint32s = new Dictionary<object, byte[]>
             {
-                {0, [0xc0] },
-                {(1 << 8) - 1, [0xc1, 0xff] },
-                {500, [0xc2, 0x1, 0xf4] },
-                {10872, [0xc2, 0x2a, 0x78] },
-                {(1 << 16) - 1, [0xc2, 0xff, 0xff] },
-                {(1 << 24) - 1, [0xc3, 0xff, 0xff, 0xff] },
-                {uint.MaxValue, [0xc4, 0xff, 0xff, 0xff, 0xff] }
+                {0L, [0xc0] },
+                {(1L << 8) - 1, [0xc1, 0xff] },
+                {500L, [0xc2, 0x1, 0xf4] },
+                {10872L, [0xc2, 0x2a, 0x78] },
+                {(1L << 16) - 1, [0xc2, 0xff, 0xff] },
+                {(1L << 24) - 1, [0xc3, 0xff, 0xff, 0xff] },
+                {(long) uint.MaxValue, [0xc4, 0xff, 0xff, 0xff, 0xff] }
             };
 
             yield return [uint32s];
@@ -98,18 +91,18 @@ namespace MaxMind.Db.Test
             yield return [int32s];
         }
 
-        public static IEnumerable<object[]> TestInt64s()
+        public static IEnumerable<object[]> TestUInt64s()
         {
-            var int64s = new Dictionary<object, byte[]>
+            var uint64s = new Dictionary<object, byte[]>
             {
-                {0L, [0x0, 0x2] },
-                {500L, [0x2, 0x2, 0x1, 0xf4] },
-                {10872, [0x2, 0x2, 0x2a, 0x78] }
+                {0UL, [0x0, 0x2] },
+                {500UL, [0x2, 0x2, 0x1, 0xf4] },
+                {10872UL, [0x2, 0x2, 0x2a, 0x78] }
             };
 
             for (var power = 1; power < 8; power++)
             {
-                var key = Int64Pow(2, 8 * power) - 1;
+                var key = UInt64Pow(2, 8 * power) - 1;
                 var value = new byte[2 + power];
 
                 value[0] = (byte)power;
@@ -119,15 +112,15 @@ namespace MaxMind.Db.Test
                     value[i] = 0xff;
                 }
 
-                int64s.Add(key, value);
+                uint64s.Add(key, value);
             }
 
-            yield return [int64s];
+            yield return [uint64s];
         }
 
-        public static long Int64Pow(long x, int pow)
+        public static ulong UInt64Pow(ulong x, int pow)
         {
-            long ret = 1;
+            ulong ret = 1;
             while (pow != 0)
             {
                 if ((pow & 1) == 1)
@@ -162,7 +155,7 @@ namespace MaxMind.Db.Test
                 bigInts.Add(key, value);
             }
 
-            yield return [bigInts, /*useShouldBe*/ true];
+            yield return [bigInts];
         }
 
         public static IEnumerable<object[]> TestDoubles()
@@ -204,16 +197,16 @@ namespace MaxMind.Db.Test
         {
             var pointers = new Dictionary<object, byte[]>
             {
-                {0, [0x20, 0x0] },
-                {5, [0x20, 0x5] },
-                {10, [0x20, 0xa] },
-                {(1 << 10) - 1, [0x23, 0xff] },
-                {3017, [0x28, 0x3, 0xc9] },
-                {(1 << 19) - 5, [0x2f, 0xf7, 0xfb] },
-                {(1 << 19) + (1 << 11) - 1, [0x2f, 0xff, 0xff] },
-                {(1 << 27) - 2, [0x37, 0xf7, 0xf7, 0xfe] },
-                {((long) 1 << 27) + (1 << 19) + (1 << 11) - 1, [0x37, 0xff, 0xff, 0xff] },
-                {((long) 1 << 31) - 1, [0x38, 0x7f, 0xff, 0xff, 0xff] }
+                {0L, [0x20, 0x0] },
+                {5L, [0x20, 0x5] },
+                {10L, [0x20, 0xa] },
+                {(1L << 10) - 1, [0x23, 0xff] },
+                {3017L, [0x28, 0x3, 0xc9] },
+                {(1L << 19) - 5, [0x2f, 0xf7, 0xfb] },
+                {(1L << 19) + (1 << 11) - 1, [0x2f, 0xff, 0xff] },
+                {(1L << 27) - 2, [0x37, 0xf7, 0xf7, 0xfe] },
+                {(1L << 27) + (1 << 19) + (1 << 11) - 1, [0x37, 0xff, 0xff, 0xff] },
+                {(1L << 31) - 1, [0x38, 0x7f, 0xff, 0xff, 0xff] }
             };
 
             yield return [pointers];
