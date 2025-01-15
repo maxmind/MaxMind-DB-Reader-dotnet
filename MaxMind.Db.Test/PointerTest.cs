@@ -1,6 +1,5 @@
 ﻿#region
 
-using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using System.Collections.Generic;
 using System.IO;
@@ -21,22 +20,22 @@ namespace MaxMind.Db.Test
             var decoder = new Decoder(database, 0);
 
             var node = decoder.Decode<Dictionary<string, object>>(0, out _);
-            node["long_key"].Should().Be("long_value1");
+            Assert.Equal("long_value1", node["long_key"]);
 
             node = decoder.Decode<Dictionary<string, object>>(22, out _);
-            node["long_key"].Should().Be("long_value2");
+            Assert.Equal("long_value2", node["long_key"]);
 
             node = decoder.Decode<Dictionary<string, object>>(37, out _);
-            node["long_key2"].Should().Be("long_value1");
+            Assert.Equal("long_value1", node["long_key2"]);
 
             node = decoder.Decode<Dictionary<string, object>>(50, out _);
-            node["long_key2"].Should().Be("long_value2");
+            Assert.Equal("long_value2", node["long_key2"]);
 
             node = decoder.Decode<Dictionary<string, object>>(55, out _);
-            node["long_key"].Should().Be("long_value1");
+            Assert.Equal("long_value1", node["long_key"]);
 
             node = decoder.Decode<Dictionary<string, object>>(57, out _);
-            node["long_key2"].Should().Be("long_value2");
+            Assert.Equal("long_value2", node["long_key2"]);
         }
     }
 }
