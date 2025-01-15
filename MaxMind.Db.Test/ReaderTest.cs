@@ -1,6 +1,5 @@
 ﻿#region
 
-using FluentAssertions;
 using MaxMind.Db.Test.Helper;
 using System;
 using System.Collections.Concurrent;
@@ -182,20 +181,20 @@ namespace MaxMind.Db.Test
         public void NullStreamThrowsArgumentNullException()
         {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            ((Action)(() => new Reader((Stream)null)))
+            var ex = Assert.Throws<ArgumentNullException>(
+                () => new Reader((Stream)null));
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-                .Should().Throw<ArgumentNullException>()
-                .WithMessage("The database stream must not be null.*");
+            Assert.Contains("The database stream must not be null", ex.Message);
         }
 
         [Fact]
-        public void NullStreamThrowsArgumentNullExceptionAsync()
+        public async Task NullStreamThrowsArgumentNullExceptionAsync()
         {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            ((Func<Task>)(async () => await Reader.CreateAsync((Stream)null)))
+            var ex = await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await Reader.CreateAsync((Stream)null));
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-                .Should().ThrowExactlyAsync<ArgumentNullException>()
-                .WithMessage("The database stream must not be null.*");
+            Assert.Contains("The database stream must not be null", ex.Message);
         }
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
@@ -203,33 +202,33 @@ namespace MaxMind.Db.Test
         public void TestEmptyStream()
         {
             using var stream = new MemoryStream();
-            ((Action)(() => new Reader(stream)))
-                .Should().Throw<InvalidDatabaseException>()
-                .WithMessage("*zero bytes left in the stream*");
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => new Reader(stream));
+            Assert.Contains("zero bytes left in the stream", ex.Message);
         }
 
         [Fact]
-        public void TestEmptyStreamAsync()
+        public async Task TestEmptyStreamAsync()
         {
             using var stream = new MemoryStream();
-            ((Func<Task>)(async () => await Reader.CreateAsync(stream)))
-                .Should().ThrowExactlyAsync<InvalidDatabaseException>()
-                .WithMessage("*zero bytes left in the stream*");
+            var ex = await Assert.ThrowsAsync<InvalidDatabaseException>(
+                async () => await Reader.CreateAsync(stream));
+            Assert.Contains("zero bytes left in the stream", ex.Message);
         }
 
         [Fact]
         public void MetadataPointer()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-metadata-pointers.mmdb"));
-            reader.Metadata.DatabaseType.Should().Be("Lots of pointers in metadata");
+            Assert.Equal("Lots of pointers in metadata", reader.Metadata.DatabaseType);
         }
 
         [Fact]
         public void NoIPV4SearchTree()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb"));
-            reader.Find<string>(IPAddress.Parse("1.1.1.1")).Should().Be("::0/64");
-            reader.Find<string>(IPAddress.Parse("192.1.1.1")).Should().Be("::0/64");
+            Assert.Equal("::0/64", reader.Find<string>(IPAddress.Parse("1.1.1.1")));
+            Assert.Equal("::0/64", reader.Find<string>(IPAddress.Parse("192.1.1.1")));
         }
 
         [Theory]
@@ -251,16 +250,15 @@ namespace MaxMind.Db.Test
             var ip = IPAddress.Parse(ipStr);
             var record = reader.Find<object>(ip, out var prefixLength);
 
-            prefixLength.Should().Be(expectedPrefixLength,
-                $"{expectedPrefixLength} is the prefix length for {ip} in {dbFile}");
+            Assert.Equal(expectedPrefixLength, prefixLength);
 
             if (expectedOK)
             {
-                record.Should().NotBeNull($"there is a record for {ip} in {dbFile}");
+                Assert.NotNull(record);
             }
             else
             {
-                record.Should().BeNull($"there is no record for {ip} in {dbFile}");
+                Assert.Null(record);
             }
         }
 
@@ -295,15 +293,15 @@ namespace MaxMind.Db.Test
             ) where T : class
         {
             var lengthBits = node.Start.GetAddressBytes().Length * 8;
-            lengthBits.Should().BeGreaterOrEqualTo(node.PrefixLength);
+            Assert.True(lengthBits >= node.PrefixLength);
 
             // ensure a lookup back into the db produces correct results
             var find = reader.Find<T>(node.Start, injectables);
-            find.Should().NotBeNull();
+            Assert.NotNull(find);
             var find2 = reader.Find<T>(node.Start, injectables);
-            find2.Should().NotBeNull();
-            find.Should().BeEquivalentTo(find2);
-            find.Should().BeEquivalentTo(node.Data);
+            Assert.NotNull(find2);
+            Assert.Equivalent(find, find2);
+            Assert.Equivalent(node.Data, find);
         }
 
         [Fact]
@@ -319,7 +317,7 @@ namespace MaxMind.Db.Test
                 }
             }
 
-            count.Should().BeGreaterOrEqualTo(397);
+            Assert.True(count >= 397);
         }
 
         [Fact]
@@ -337,7 +335,7 @@ namespace MaxMind.Db.Test
                     count++;
                 }
             }
-            count.Should().Be(26);
+            Assert.Equal(26, count);
         }
 
         private static void TestDecodingTypes(IDictionary<string, object>? record)
@@ -346,39 +344,40 @@ namespace MaxMind.Db.Test
             {
                 throw new Xunit.Sdk.XunitException("unexpected null record value");
             }
-            ((bool)record["boolean"]).Should().BeTrue();
+            Assert.True((bool)record["boolean"]);
 
-            ((byte[])record["bytes"]).Should().Equal(0, 0, 0, 42);
+            Assert.Equal(new byte[] { 0, 0, 0, 42 }, (byte[])record["bytes"]);
 
-            record["utf8_string"].Should().Be("unicode! ☯ - ♫");
+            Assert.Equal("unicode! ☯ - ♫", record["utf8_string"]);
 
             var array = (List<object>)record["array"];
-            array.Should().HaveCount(3);
-            array[0].Should().BeEquivalentTo(1);
-            array[1].Should().BeEquivalentTo(2);
-            array[2].Should().BeEquivalentTo(3);
+            Assert.Equal(3, array.Count);
+            Assert.Equal(1L, array[0]);
+            Assert.Equal(2L, array[1]);
+            Assert.Equal(3L, array[2]);
 
             var map = (Dictionary<string, object>)record["map"];
-            map.Should().HaveCount(1);
+            Assert.Single(map);
 
             var mapX = (Dictionary<string, object>)map["mapX"];
-            mapX.Should().HaveCount(2);
-            mapX["utf8_stringX"].Should().Be("hello");
+            Assert.Equal(2, mapX.Count);
+            Assert.Equal("hello", mapX["utf8_stringX"]);
 
             var arrayX = (List<object>)mapX["arrayX"];
-            arrayX.Should().HaveCount(3);
-            arrayX[0].Should().BeEquivalentTo(7);
-            arrayX[1].Should().BeEquivalentTo(8);
-            arrayX[2].Should().BeEquivalentTo(9);
+            Assert.Equal(3, arrayX.Count);
+            Assert.Equal(7L, arrayX[0]);
+            Assert.Equal(8L, arrayX[1]);
+            Assert.Equal(9L, arrayX[2]);
 
-            ((double)record["double"]).Should().BeApproximately(42.123456, 0.000000001);
-            ((float)record["float"]).Should().BeApproximately(1.1F, 0.000001F);
-            record["int32"].Should().BeEquivalentTo(-268435456);
-            record["uint16"].Should().BeEquivalentTo(100);
-            record["uint32"].Should().BeEquivalentTo(268435456);
-            record["uint64"].Should().BeEquivalentTo(1152921504606846976);
-            record["uint128"].Should().Be(
-                BigInteger.Parse("1329227995784915872903807060280344576"));
+            Assert.Equal(42.123456, (double)record["double"], 9);
+            Assert.Equal(1.1F, (float)record["float"], 5);
+            Assert.Equal(-268435456, record["int32"]);
+            Assert.Equal(100, record["uint16"]);
+            Assert.Equal(268435456L, record["uint32"]);
+            Assert.Equal(1152921504606846976UL, record["uint64"]);
+            Assert.Equal(
+                BigInteger.Parse("1329227995784915872903807060280344576"),
+                record["uint128"]);
         }
 
         [Fact]
@@ -392,31 +391,31 @@ namespace MaxMind.Db.Test
             {
                 throw new Xunit.Sdk.XunitException("unexpected null record value");
             }
-            record.Boolean.Should().BeTrue();
-            record.Bytes.Should().Equal(0, 0, 0, 42);
-            record.Utf8String.Should().Be("unicode! ☯ - ♫");
+            Assert.True(record.Boolean);
+            Assert.Equal(new byte[] { 0, 0, 0, 42 }, record.Bytes);
+            Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
 
-            record.Array.Should().Equal(new List<long> { 1, 2, 3 });
+            Assert.Equal(new List<long> { 1, 2, 3 }, record.Array);
 
             var mapX = record.Map.MapX;
-            mapX.Utf8StringX.Should().Be("hello");
-            mapX.ArrayX.Should().Equal(new List<long> { 7, 8, 9 });
-            mapX.Network.ToString().Should().Be("1.1.1.0/24");
+            Assert.Equal("hello", mapX.Utf8StringX);
+            Assert.Equal(new List<long> { 7, 8, 9 }, mapX.ArrayX);
+            Assert.Equal("1.1.1.0/24", mapX.Network.ToString());
 
-            record.Double.Should().BeApproximately(42.123456, 0.000000001);
-            record.Float.Should().BeApproximately(1.1F, 0.000001F);
-            record.Int32.Should().Be(-268435456);
-            record.Uint16.Should().Be(100);
-            record.Uint32.Should().Be(268435456);
-            record.Uint64.Should().Be(1152921504606846976);
-            record.Uint128.Should().Be(BigInteger.Parse("1329227995784915872903807060280344576"));
+            Assert.Equal(42.123456, record.Double, 9);
+            Assert.Equal(1.1F, record.Float, 5);
+            Assert.Equal(-268435456, record.Int32);
+            Assert.Equal(100, record.Uint16);
+            Assert.Equal(268435456, record.Uint32);
+            Assert.Equal(1152921504606846976UL, record.Uint64);
+            Assert.Equal(BigInteger.Parse("1329227995784915872903807060280344576"), record.Uint128);
 
-            record.Nonexistant.Injected.Should().Be("injected string");
-            record.Nonexistant.Network.ToString().Should().Be("1.1.1.0/24");
-            record.Nonexistant.Network2.ToString().Should().Be("1.1.1.0/24");
+            Assert.Equal("injected string", record.Nonexistant.Injected);
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.Network.ToString());
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.Network2.ToString());
 
-            record.Nonexistant.InnerNonexistant.Injected.Should().Be("injected string");
-            record.Nonexistant.InnerNonexistant.Network.ToString().Should().Be("1.1.1.0/24");
+            Assert.Equal("injected string", record.Nonexistant.InnerNonexistant.Injected);
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.InnerNonexistant.Network.ToString());
         }
 
         [Fact]
@@ -428,52 +427,52 @@ namespace MaxMind.Db.Test
             {
                 throw new Xunit.Sdk.XunitException("unexpected null record value");
             }
-                ((bool)record["boolean"]).Should().BeFalse();
+            Assert.False((bool)record["boolean"]);
 
-            ((byte[])record["bytes"]).Should().BeEmpty();
+            Assert.Empty((byte[])record["bytes"]);
 
-            record["utf8_string"].ToString().Should().BeEmpty();
+            Assert.Empty(record["utf8_string"] as string ?? "null");
 
-            record["array"].Should().BeOfType<List<object>>();
-            ((List<object>)record["array"]).Should().BeEmpty();
+            Assert.IsType<List<object>>(record["array"]);
+            Assert.Empty((List<object>)record["array"]);
 
-            record["map"].Should().BeOfType<Dictionary<string, object>>();
-            ((Dictionary<string, object>)record["map"]).Should().BeEmpty();
+            Assert.IsType<Dictionary<string, object>>(record["map"]);
+            Assert.Empty((Dictionary<string, object>)record["map"]);
 
-            ((double)record["double"]).Should().BeApproximately(0, 0.000000001);
-            ((float)record["float"]).Should().BeApproximately(0, 0.000001F);
-            record["int32"].Should().Be(0);
-            record["uint16"].Should().Be(0);
-            record["uint32"].Should().BeEquivalentTo(0);
-            record["uint64"].Should().BeEquivalentTo(0);
-            record["uint128"].Should().Be(new BigInteger(0));
+            Assert.Equal(0, (double)record["double"], 9);
+            Assert.Equal(0, (float)record["float"], 5);
+            Assert.Equal(0, record["int32"]);
+            Assert.Equal(0, record["uint16"]);
+            Assert.Equal(0L, record["uint32"]);
+            Assert.Equal(0UL, record["uint64"]);
+            Assert.Equal(new BigInteger(0), record["uint128"]);
         }
 
         [Fact]
         public void TestBrokenDatabase()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "GeoIP2-City-Test-Broken-Double-Format.mmdb"));
-            ((Action)(() => reader.Find<object>(IPAddress.Parse("2001:220::"))))
-                .Should().Throw<InvalidDatabaseException>()
-                .WithMessage("*contains bad data*");
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("2001:220::")));
+            Assert.Contains("contains bad data", ex.Message);
         }
 
         [Fact]
         public void TestBrokenSearchTreePointer()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb"));
-            ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.32"))))
-                .Should().Throw<InvalidDatabaseException>()
-                .WithMessage("*search tree is corrupt*");
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.32")));
+            Assert.Contains("search tree is corrupt", ex.Message);
         }
 
         [Fact]
         public void TestBrokenDataPointer()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-broken-pointers-24.mmdb"));
-            ((Action)(() => reader.Find<object>(IPAddress.Parse("1.1.1.16"))))
-                .Should().Throw<InvalidDatabaseException>()
-                .WithMessage("*data section contains bad data*");
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.16")));
+            Assert.Contains("data section contains bad data", ex.Message);
         }
 
         private static void TestIPV6(Reader reader, string file)
@@ -529,30 +528,31 @@ namespace MaxMind.Db.Test
 
             foreach (var address in singleAddresses)
             {
-                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"].Should().Be(
+                Assert.Equal(
                     new string([.. address]),
-                    $"Did not find expected data record for {address} in {file}");
+                    reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"]);
             }
 
             foreach (var address in pairs.Keys)
             {
-                reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"].Should().Be(
+                Assert.Equal(
                     pairs[address],
-                    $"Did not find expected data record for {address} in {file}");
+                    reader.Find<Dictionary<string, object>>(IPAddress.Parse(address))["ip"]);
             }
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             foreach (var address in nullAddresses)
             {
-                reader.Find<object>(IPAddress.Parse(address)).Should().BeNull(
-                    $"Did not find expected data record for {address} in {file}");
+                Assert.Null(
+                    reader.Find<object>(IPAddress.Parse(address)));
             }
 
             foreach (var address in prefixes.Keys)
             {
                 reader.Find<Dictionary<string, object>>(IPAddress.Parse(address), out var routingPrefix);
-                routingPrefix.Should().Be(prefixes[address],
-                    $"Invalid prefix for {address} in {file}");
+                Assert.Equal(
+                    prefixes[address],
+                    routingPrefix);
             }
 
             foreach (var node in reader.FindAll<Dictionary<string, object>>())
@@ -565,14 +565,15 @@ namespace MaxMind.Db.Test
         {
             var metadata = reader.Metadata;
 
-            metadata.BinaryFormatMajorVersion.Should().Be(2);
-            metadata.BinaryFormatMinorVersion.Should().Be(0);
-            metadata.IPVersion.Should().Be(ipVersion);
-            metadata.DatabaseType.Should().Be("Test");
-            metadata.Languages.Should().HaveElementSucceeding("en", "zh");
-            metadata.Description.Should().Contain("en", "Test Database");
-            metadata.Description.Should().Contain("zh", "Test Database Chinese");
-            metadata.Description.Should().NotContain("gibberish", "Lorem ipsum dolor sit amet");
+            Assert.Equal(2, metadata.BinaryFormatMajorVersion);
+            Assert.Equal(0, metadata.BinaryFormatMinorVersion);
+            Assert.Equal(ipVersion, metadata.IPVersion);
+            Assert.Equal("Test", metadata.DatabaseType);
+            Assert.Contains("en", metadata.Languages);
+            Assert.Contains("zh", metadata.Languages);
+            Assert.Equal("Test Database", metadata.Description["en"]);
+            Assert.Equal("Test Database Chinese", metadata.Description["zh"]);
+            Assert.DoesNotContain("gibberish", metadata.Description.Keys);
         }
     }
 }
