@@ -516,7 +516,7 @@ namespace MaxMind.Db
             object array;
 
             // Fast path for List<string> (and parents).
-            if (expectedType.IsAssignableFrom(typeof(List<string>)))
+            if (expectedType != typeof(object) && expectedType.IsAssignableFrom(typeof(List<string>)))
             {
                 List<string> list = new(size);
                 for (var i = 0; i < size; i++)
