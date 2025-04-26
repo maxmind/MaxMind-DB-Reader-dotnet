@@ -301,11 +301,11 @@ namespace MaxMind.Db
             )
         {
             var objDictType = typeof(Dictionary<string, object>);
-            if (!expectedType.GetTypeInfo().IsGenericType && expectedType.IsAssignableFrom(objDictType))
+            if (!expectedType.IsGenericType && expectedType.IsAssignableFrom(objDictType))
                 expectedType = objDictType;
 
             // Currently we don't support non-dict generic types
-            if (expectedType.GetTypeInfo().IsGenericType)
+            if (expectedType.IsGenericType)
             {
                 return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables, network);
             }
@@ -316,20 +316,38 @@ namespace MaxMind.Db
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
             InjectableValues? injectables, Network? network)
         {
-            var genericArgs = expectedType.GetGenericArguments();
-            if (genericArgs.Length != 2)
+            IDictionary obj;
+
+            // Fast path for Dictionary<string, string> (and parents).
+            if (expectedType.IsAssignableFrom(typeof(Dictionary<string, string>)))
             {
-                throw new DeserializationException(
-                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+                Dictionary<string, string> dic = new(size);
+                for (var i = 0; i < size; i++)
+                {
+                    var key = Decode<string>(offset, out offset);
+                    var value = Decode<string>(offset, out offset, injectables, network);
+                    dic.Add(key, value);
+                }
+
+                obj = dic;
             }
-
-            var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
-
-            for (var i = 0; i < size; i++)
+            else
             {
-                var key = Decode(genericArgs[0], offset, out offset);
-                var value = Decode(genericArgs[1], offset, out offset, injectables, network);
-                obj.Add(key, value);
+                var genericArgs = expectedType.GetGenericArguments();
+                if (genericArgs.Length != 2)
+                {
+                    throw new DeserializationException(
+                        $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+                }
+
+                obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
+
+                for (var i = 0; i < size; i++)
+                {
+                    var key = Decode(genericArgs[0], offset, out offset);
+                    var value = Decode(genericArgs[1], offset, out offset, injectables, network);
+                    obj.Add(key, value);
+                }
             }
 
             outOffset = offset;
@@ -495,25 +513,42 @@ namespace MaxMind.Db
         private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
             InjectableValues? injectables, Network? network)
         {
-            var genericArgs = expectedType.GetGenericArguments();
-            var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
-            var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
-            if (interfaceType == null)
-            {
-                throw new DeserializationException("Unexpected null generic type while decoding array");
-            }
+            object array;
 
-            var addMethod = interfaceType.GetMethod("Add");
-            if (addMethod == null)
+            // Fast path for List<string> (and parents).
+            if (expectedType.IsAssignableFrom(typeof(List<string>)))
             {
-                throw new DeserializationException("Missing Add method when decoding array");
-            }
+                List<string> list = new(size);
+                for (var i = 0; i < size; i++)
+                {
+                    var r = Decode<string>(offset, out offset, injectables, network);
+                    list.Add(r);
+                }
 
-            var array = _listActivatorCreator.GetActivator(expectedType)(size);
-            for (var i = 0; i < size; i++)
+                array = list;
+            }
+            else
             {
-                var r = Decode(argType, offset, out offset, injectables, network);
-                addMethod.Invoke(array, [r]);
+                var genericArgs = expectedType.GetGenericArguments();
+                var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
+                var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
+                if (interfaceType == null)
+                {
+                    throw new DeserializationException("Unexpected null generic type while decoding array");
+                }
+
+                var addMethod = interfaceType.GetMethod("Add");
+                if (addMethod == null)
+                {
+                    throw new DeserializationException("Missing Add method when decoding array");
+                }
+
+                array = _listActivatorCreator.GetActivator(expectedType)(size);
+                for (var i = 0; i < size; i++)
+                {
+                    var r = Decode(argType, offset, out offset, injectables, network);
+                    addMethod.Invoke(array, [r]);
+                }
             }
 
             outOffset = offset;
