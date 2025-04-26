@@ -13,7 +13,8 @@ BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
 [MemoryDiagnoser]
 public class CityBenchmark
 {
-    private static readonly IPAddress IpAddress = IPAddress.Parse("23.56.162.100"); // Akamai
+    // A random IP that has city info.
+    private static readonly IPAddress IpAddress = IPAddress.Parse("214.0.0.0");
 
     private Reader _reader = null!;
 
