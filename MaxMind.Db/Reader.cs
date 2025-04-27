@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 #endregion
@@ -331,8 +332,30 @@ namespace MaxMind.Db
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)
         {
-            var rawAddress = address.GetAddressBytes();
+#if NETSTANDARD2_0
+            byte[] rawAddress;
+#else
+            Span<byte> rawAddress = stackalloc byte[address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16];
+            if (address.TryWriteBytes(rawAddress, out int rawAddressLength))
+            {
+                rawAddress = rawAddress[..rawAddressLength];
+            }
+            else
+#endif
+            {
+                // Defensive check.
+                rawAddress = address.GetAddressBytes();
+            }
 
+            return FindAddressInTree(rawAddress, out prefixLength);
+        }
+
+#if NETSTANDARD2_0
+        private int FindAddressInTree(byte[] rawAddress, out int prefixLength)
+#else
+        private int FindAddressInTree(ReadOnlySpan<byte> rawAddress, out int prefixLength)
+#endif
+        {
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);
             var nodeCount = _nodeCount;
