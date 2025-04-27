@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace MaxMind.Db
 {
-    internal delegate object ObjectActivator(params object[] args);
+    internal delegate object ObjectActivator(params object?[] args);
 
     internal static class ReflectionUtil
     {

@@ -1,6 +1,8 @@
-﻿namespace MaxMind.Db
+﻿using System;
+
+namespace MaxMind.Db
 {
-    internal readonly struct Key
+    internal readonly struct Key : IEquatable<Key>
     {
         private readonly Buffer buffer;
         private readonly long offset;
@@ -21,15 +23,8 @@
             hashCode = code;
         }
 
-        public override bool Equals(object? obj)
+        public bool Equals(Key other)
         {
-            if ((obj == null) || !GetType().Equals(obj.GetType()))
-            {
-                return false;
-            }
-
-            var other = (Key)obj;
-
             if (size != other.size)
             {
                 return false;
@@ -42,7 +37,18 @@
                     return false;
                 }
             }
+
             return true;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || typeof(Key) != obj.GetType())
+            {
+                return false;
+            }
+
+            return Equals((Key)obj);
         }
 
         public override int GetHashCode()

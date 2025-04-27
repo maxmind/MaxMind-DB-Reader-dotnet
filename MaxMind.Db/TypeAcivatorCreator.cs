@@ -11,22 +11,22 @@ using System.Text;
 
 namespace MaxMind.Db
 {
-    internal readonly struct TypeActivator
+    internal class TypeActivator
     {
         internal readonly ObjectActivator Activator;
-        internal readonly List<ParameterInfo> AlwaysCreatedParameters;
-        private readonly object?[] _defaultParameters;
+        internal readonly ParameterInfo[] AlwaysCreatedParameters;
+        internal readonly object?[] DefaultParameters;
         internal readonly Dictionary<Key, ParameterInfo> DeserializationParameters;
-        internal readonly Dictionary<string, ParameterInfo> InjectableParameters;
-        internal readonly List<ParameterInfo> NetworkParameters;
+        internal readonly KeyValuePair<string, ParameterInfo>[] InjectableParameters;
+        internal readonly ParameterInfo[] NetworkParameters;
 
         internal TypeActivator(
             ObjectActivator activator,
             Dictionary<Key, ParameterInfo> deserializationParameters,
-            Dictionary<string, ParameterInfo> injectables,
-            List<ParameterInfo> networkParameters,
-            List<ParameterInfo> alwaysCreatedParameters
-            ) : this()
+            KeyValuePair<string, ParameterInfo>[] injectables,
+            ParameterInfo[] networkParameters,
+            ParameterInfo[] alwaysCreatedParameters
+            )
         {
             Activator = activator;
             AlwaysCreatedParameters = alwaysCreatedParameters;
@@ -35,10 +35,8 @@ namespace MaxMind.Db
 
             NetworkParameters = networkParameters;
             Type[] parameterTypes = deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
-            _defaultParameters = parameterTypes.Select(DefaultValue).ToArray();
+            DefaultParameters = parameterTypes.Select(DefaultValue).ToArray();
         }
-
-        internal object[] DefaultParameters() => (object[])_defaultParameters.Clone();
 
         private static object? DefaultValue(Type type)
         {
@@ -78,7 +76,7 @@ namespace MaxMind.Db
             var constructor = constructors[0];
             var parameters = constructor.GetParameters();
             var paramNameTypes = new Dictionary<Key, ParameterInfo>();
-            var injectables = new Dictionary<string, ParameterInfo>();
+            var injectables = new List<KeyValuePair<string, ParameterInfo>>();
             var networkParams = new List<ParameterInfo>();
             var alwaysCreated = new List<ParameterInfo>();
             foreach (var param in parameters)
@@ -86,7 +84,7 @@ namespace MaxMind.Db
                 var injectableAttribute = param.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
                 if (injectableAttribute != null)
                 {
-                    injectables.Add(injectableAttribute.ParameterName, param);
+                    injectables.Add(new KeyValuePair<string, ParameterInfo>(injectableAttribute.ParameterName, param));
                 }
                 var networkAttribute = param.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
                 if (networkAttribute != null)
@@ -113,7 +111,8 @@ namespace MaxMind.Db
                 paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), param);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
-            var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables, networkParams, alwaysCreated);
+            var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
+                networkParams.ToArray(), alwaysCreated.ToArray());
             return clsConstructor;
         }
     }

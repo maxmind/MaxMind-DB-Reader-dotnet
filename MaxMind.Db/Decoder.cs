@@ -1,6 +1,9 @@
 ﻿#region
 
 using System;
+#if NETSTANDARD2_1_OR_GREATER || NET8_0_OR_GREATER
+using System.Buffers;
+#endif
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
@@ -347,7 +350,15 @@ namespace MaxMind.Db
             )
         {
             var constructor = _typeAcivatorCreator.GetActivator(expectedType);
-            var parameters = constructor.DefaultParameters();
+
+#if NETSTANDARD2_1_OR_GREATER || NET8_0_OR_GREATER
+            // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
+            // number of parameters.
+            object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
+#else
+            object?[] parameters = new object?[constructor.DefaultParameters.Length];
+#endif
+            constructor.DefaultParameters.CopyTo(parameters, 0);
 
             for (var i = 0; i < size; i++)
             {
@@ -370,12 +381,18 @@ namespace MaxMind.Db
             SetAlwaysCreatedParams(constructor, parameters, injectables, network);
 
             outOffset = offset;
-            return constructor.Activator(parameters);
+            object obj = constructor.Activator(parameters);
+
+#if NETSTANDARD2_1_OR_GREATER || NET8_0_OR_GREATER
+            ArrayPool<object?>.Shared.Return(parameters);
+#endif
+
+            return obj;
         }
 
         private void SetAlwaysCreatedParams(
             TypeActivator constructor,
-            object[] parameters,
+            object?[] parameters,
             InjectableValues? injectables,
             Network? network
             )
@@ -385,15 +402,26 @@ namespace MaxMind.Db
                 if (parameters[param.Position] != null) continue;
 
                 var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
-                var cstorParams = activator.DefaultParameters();
+
+#if NETSTANDARD2_1_OR_GREATER || NET8_0_OR_GREATER
+                object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
+#else
+                object?[] cstorParams = new object?[activator.DefaultParameters.Length];
+#endif
+                activator.DefaultParameters.CopyTo(cstorParams, 0);
+
                 SetInjectables(activator, cstorParams, injectables);
                 SetNetwork(activator, cstorParams, network);
                 SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
                 parameters[param.Position] = activator.Activator(cstorParams);
+
+#if NETSTANDARD2_1_OR_GREATER || NET8_0_OR_GREATER
+                ArrayPool<object?>.Shared.Return(cstorParams);
+#endif
             }
         }
 
-        private static void SetInjectables(TypeActivator constructor, object[] parameters, InjectableValues? injectables)
+        private static void SetInjectables(TypeActivator constructor, object?[] parameters, InjectableValues? injectables)
         {
             foreach (var item in constructor.InjectableParameters)
             {
