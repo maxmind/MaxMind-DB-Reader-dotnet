@@ -14,9 +14,8 @@ BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
 public class CityBenchmark
 {
     // A random IP that has city info.
-    private static readonly IPAddress IpAddress = IPAddress.Parse("214.0.0.0");
-
     private Reader _reader = null!;
+    private IPAddress[] _ipAddresses = [];
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -25,6 +24,24 @@ public class CityBenchmark
         string dbPath = Environment.GetEnvironmentVariable(dbPathVarName) ??
                         throw new InvalidOperationException($"{dbPathVarName} was not set");
         _reader = new Reader(dbPath);
+
+        const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
+        string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
+        _ipAddresses = ipAddressesStr
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(IPAddress.Parse)
+            .ToArray();
+        if (_ipAddresses.Length == 0)
+        {
+            Random random = new(Seed: 0);
+            List<IPAddress> list = [];
+            for (int i = 0; i < 1_000; i += 1)
+            {
+                list.Add(new IPAddress(random.Next()));
+            }
+
+            _ipAddresses = list.ToArray();
+        }
     }
 
     [GlobalCleanup]
@@ -34,48 +51,58 @@ public class CityBenchmark
     }
 
     [Benchmark]
-    public CityResponse? City()
+    public int City()
     {
-        return _reader.Find<CityResponse>(IpAddress);
+        int x = 0;
+        foreach (var ipAddress in _ipAddresses)
+        {
+            if (_reader.Find<CityResponse>(ipAddress) != null)
+            {
+                x += 1;
+            }
+        }
+
+        return x;
     }
 }
-    public abstract class AbstractCountryResponse
-    {
-        protected AbstractCountryResponse(
-            Continent? continent = null,
-            Country? country = null,
-            Country? registeredCountry = null)
-        {
-            Continent = continent ?? new Continent();
-            Country = country ?? new Country();
-            RegisteredCountry = registeredCountry ?? new Country();
-        }
 
-        public Continent Continent { get; internal set; }
-        public Country Country { get; internal set; }
-        public Country RegisteredCountry { get; internal set; }
+public abstract class AbstractCountryResponse
+{
+    protected AbstractCountryResponse(
+        Continent? continent = null,
+        Country? country = null,
+        Country? registeredCountry = null)
+    {
+        Continent = continent ?? new Continent();
+        Country = country ?? new Country();
+        RegisteredCountry = registeredCountry ?? new Country();
     }
 
-    public abstract class AbstractCityResponse : AbstractCountryResponse
-    {
-        protected AbstractCityResponse(
-            City? city = null,
-            Continent? continent = null,
-            Country? country = null,
-            Location? location = null,
-            Country? registeredCountry = null,
-            IReadOnlyList<Subdivision>? subdivisions = null)
-            : base(continent, country, registeredCountry)
-        {
-            City = city ?? new City();
-            Location = location ?? new Location();
-            Subdivisions = subdivisions ?? new List<Subdivision>().AsReadOnly();
-        }
+    public Continent Continent { get; internal set; }
+    public Country Country { get; internal set; }
+    public Country RegisteredCountry { get; internal set; }
+}
 
-        public City City { get; internal set; }
-        public Location Location { get; internal set; }
-        public IReadOnlyList<Subdivision> Subdivisions { get; internal set; }
+public abstract class AbstractCityResponse : AbstractCountryResponse
+{
+    protected AbstractCityResponse(
+        City? city = null,
+        Continent? continent = null,
+        Country? country = null,
+        Location? location = null,
+        Country? registeredCountry = null,
+        IReadOnlyList<Subdivision>? subdivisions = null)
+        : base(continent, country, registeredCountry)
+    {
+        City = city ?? new City();
+        Location = location ?? new Location();
+        Subdivisions = subdivisions ?? new List<Subdivision>().AsReadOnly();
     }
+
+    public City City { get; internal set; }
+    public Location Location { get; internal set; }
+    public IReadOnlyList<Subdivision> Subdivisions { get; internal set; }
+}
 
 public class CityResponse : AbstractCityResponse
 {
