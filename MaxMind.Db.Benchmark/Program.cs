@@ -28,7 +28,7 @@ public class CityBenchmark
         const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
         string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
         _ipAddresses = ipAddressesStr
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Split([','], StringSplitOptions.RemoveEmptyEntries)
             .Select(IPAddress.Parse)
             .ToArray();
         if (_ipAddresses.Length == 0)
