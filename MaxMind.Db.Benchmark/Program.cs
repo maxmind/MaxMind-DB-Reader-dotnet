@@ -1,98 +1,239 @@
-﻿#region
-
+﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Running;
+using MaxMind.Db;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net;
 
-#endregion
+BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
 
-namespace MaxMind.Db.Benchmark
+[MemoryDiagnoser]
+public class CityBenchmark
 {
-    public class Country
+    // A random IP that has city info.
+    private Reader _reader = null!;
+    private IPAddress[] _ipAddresses = [];
+
+    [GlobalSetup]
+    public void GlobalSetup()
     {
-        public string? IsoCode;
+        const string dbPathVarName = "MAXMIND_BENCHMARK_DB";
+        string dbPath = Environment.GetEnvironmentVariable(dbPathVarName) ??
+                        throw new InvalidOperationException($"{dbPathVarName} was not set");
+        _reader = new Reader(dbPath);
 
-        public Country()
+        const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
+        string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
+        _ipAddresses = ipAddressesStr
+            .Split([','], StringSplitOptions.RemoveEmptyEntries)
+            .Select(IPAddress.Parse)
+            .ToArray();
+        if (_ipAddresses.Length == 0)
         {
-        }
+            Random random = new(Seed: 0);
+            List<IPAddress> list = [];
+            for (int i = 0; i < 1_000; i += 1)
+            {
+                list.Add(new IPAddress(random.Next()));
+            }
 
-        [Constructor]
-        public Country([Parameter("iso_code")] string isoCode)
-        {
-            IsoCode = isoCode;
+            _ipAddresses = list.ToArray();
         }
     }
 
-    public class GeoIP2
+    [GlobalCleanup]
+    public void GlobalCleanup()
     {
-        public Country Country;
-
-        [Constructor]
-        public GeoIP2(Country country)
-        {
-            Country = country ?? new Country();
-        }
+        _reader.Dispose();
     }
 
-    public static class Program
+    [Benchmark]
+    public int City()
     {
-        private const int Count = 500000;
-
-        private static void Main(string[] args)
+        int x = 0;
+        foreach (var ipAddress in _ipAddresses)
         {
-            // first we check if the command-line argument is provided
-            var dbPath = args.Length > 0 ? args[0] : null;
-            if (dbPath != null)
+            if (_reader.Find<CityResponse>(ipAddress) != null)
             {
-                if (!File.Exists(dbPath))
-                {
-                    throw new("Path provided by command-line argument does not exist!");
-                }
+                x += 1;
             }
-            else
-            {
-                // check if environment variable MAXMIND_BENCHMARK_DB is set
-                dbPath = Environment.GetEnvironmentVariable("MAXMIND_BENCHMARK_DB");
-
-                if (!string.IsNullOrEmpty(dbPath))
-                {
-                    if (!File.Exists(dbPath))
-                    {
-                        throw new("Path set as environment variable MAXMIND_BENCHMARK_DB does not exist!");
-                    }
-                }
-                else
-                {
-                    // check if GeoLite2-City.mmdb exists in CWD
-                    dbPath = "GeoLite2-City.mmdb";
-
-                    if (!File.Exists(dbPath))
-                    {
-                        throw new($"{dbPath} does not exist in current directory ({Directory.GetCurrentDirectory()})!");
-                    }
-                }
-            }
-
-            using var reader = new Reader(dbPath, FileAccessMode.Memory);
-            Bench("GeoIP2 class", ip => reader.Find<GeoIP2>(ip));
-            Bench("dictionary", ip => reader.Find<IDictionary<string, object>>(ip));
         }
 
-        private static void Bench(string name, Action<IPAddress> op)
+        return x;
+    }
+}
+
+public abstract class AbstractCountryResponse
+{
+    protected AbstractCountryResponse(
+        Continent? continent = null,
+        Country? country = null,
+        Country? registeredCountry = null)
+    {
+        Continent = continent ?? new Continent();
+        Country = country ?? new Country();
+        RegisteredCountry = registeredCountry ?? new Country();
+    }
+
+    public Continent Continent { get; internal set; }
+    public Country Country { get; internal set; }
+    public Country RegisteredCountry { get; internal set; }
+}
+
+public abstract class AbstractCityResponse : AbstractCountryResponse
+{
+    protected AbstractCityResponse(
+        City? city = null,
+        Continent? continent = null,
+        Country? country = null,
+        Location? location = null,
+        Country? registeredCountry = null,
+        IReadOnlyList<Subdivision>? subdivisions = null)
+        : base(continent, country, registeredCountry)
+    {
+        City = city ?? new City();
+        Location = location ?? new Location();
+        Subdivisions = subdivisions ?? new List<Subdivision>().AsReadOnly();
+    }
+
+    public City City { get; internal set; }
+    public Location Location { get; internal set; }
+    public IReadOnlyList<Subdivision> Subdivisions { get; internal set; }
+}
+
+public class CityResponse : AbstractCityResponse
+{
+    [Constructor]
+    public CityResponse(
+        City? city = null,
+        Continent? continent = null,
+        Country? country = null,
+        Location? location = null,
+        [Parameter("registered_country")] Country? registeredCountry = null)
+        : base(city, continent, country, location, registeredCountry)
+    {
+    }
+}
+
+public class City : NamedEntity
+{
+    [Constructor]
+    public City(int? confidence = null,
+        [Parameter("geoname_id")] long? geoNameId = null,
+        IReadOnlyDictionary<string, string>? names = null,
+        IReadOnlyList<string>? locales = null)
+        : base(geoNameId, names, locales)
+    {
+        Confidence = confidence;
+    }
+
+    public int? Confidence { get; internal set; }
+}
+
+public abstract class NamedEntity
+{
+    [Constructor]
+    protected NamedEntity(long? geoNameId = null, IReadOnlyDictionary<string, string>? names = null,
+        IReadOnlyList<string>? locales = null)
+    {
+        Names = names ?? new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+        GeoNameId = geoNameId;
+        Locales = locales ?? new List<string> { "en" }.AsReadOnly();
+    }
+
+    public IReadOnlyDictionary<string, string> Names { get; internal set; }
+    public long? GeoNameId { get; internal set; }
+    protected internal IReadOnlyList<string> Locales { get; set; }
+    public string? Name
+    {
+        get
         {
-            var rand = new Random(1);
-            var s = Stopwatch.StartNew();
-            for (var i = 0; i < Count; i++)
-            {
-                var ip = new IPAddress(rand.Next(int.MaxValue));
-                op(ip);
-                if (i % 50000 == 0)
-                    Console.WriteLine(i + " " + ip);
-            }
-            s.Stop();
-            Console.WriteLine("{0}: {1:N0} queries per second", name, Count / s.Elapsed.TotalSeconds);
+            var locale = Locales.FirstOrDefault(l => Names.ContainsKey(l));
+            return locale == null ? null : Names[locale];
         }
     }
+}
+
+public class Continent : NamedEntity
+{
+    [Constructor]
+    public Continent(
+        string? code = null,
+        [Parameter("geoname_id")] long? geoNameId = null,
+        IReadOnlyDictionary<string, string>? names = null,
+        IReadOnlyList<string>? locales = null)
+        : base(geoNameId, names, locales)
+    {
+        Code = code;
+    }
+
+    public string? Code { get; internal set; }
+}
+
+public class Country : NamedEntity
+{
+    [Constructor]
+    public Country(
+        int? confidence = null,
+        [Parameter("geoname_id")] long? geoNameId = null,
+        [Parameter("is_in_european_union")] bool isInEuropeanUnion = false,
+        [Parameter("iso_code")] string? isoCode = null,
+        IReadOnlyDictionary<string, string>? names = null,
+        IReadOnlyList<string>? locales = null)
+        : base(geoNameId, names, locales)
+    {
+        Confidence = confidence;
+        IsoCode = isoCode;
+        IsInEuropeanUnion = isInEuropeanUnion;
+    }
+
+    public int? Confidence { get; internal set; }
+    public bool IsInEuropeanUnion { get; internal set; }
+    public string? IsoCode { get; internal set; }
+}
+
+public class Location
+{
+    [Constructor]
+    public Location(
+        [Parameter("accuracy_radius")] int? accuracyRadius = null,
+        double? latitude = null,
+        double? longitude = null,
+        [Parameter("time_zone")] string? timeZone = null)
+    {
+        AccuracyRadius = accuracyRadius;
+        Latitude = latitude;
+        Longitude = longitude;
+        TimeZone = timeZone;
+    }
+
+    public int? AccuracyRadius { get; internal set; }
+    public int? AverageIncome { get; internal set; }
+    public bool HasCoordinates => Latitude.HasValue && Longitude.HasValue;
+    public double? Latitude { get; internal set; }
+    public double? Longitude { get; internal set; }
+    public int? PopulationDensity { get; internal set; }
+    public string? TimeZone { get; internal set; }
+}
+
+public class Subdivision : NamedEntity
+{
+    [Constructor]
+    public Subdivision(
+        int? confidence = null,
+        [Parameter("geoname_id")] long? geoNameId = null,
+        [Parameter("iso_code")] string? isoCode = null,
+        IReadOnlyDictionary<string, string>? names = null,
+        IReadOnlyList<string>? locales = null)
+        : base(geoNameId, names, locales)
+    {
+        Confidence = confidence;
+        IsoCode = isoCode;
+    }
+
+    public int? Confidence { get; internal set; }
+    public string? IsoCode { get; internal set; }
 }
