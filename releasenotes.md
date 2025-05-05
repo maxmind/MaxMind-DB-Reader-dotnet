@@ -1,6 +1,6 @@
 # Release Notes #
 
-## 4.2.0
+## 4.2.0 (2025-05-05) ##
 
 * .NET 6.0 and .NET 7.0 have been removed as targets as they have both
   reach their end of support from Microsoft. If you are using these versions,
