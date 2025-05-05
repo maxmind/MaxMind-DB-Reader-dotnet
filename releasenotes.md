@@ -1,6 +1,6 @@
 # Release Notes #
 
-## 4.2.0
+## 4.2.0 (2025-05-05) ##
 
 * .NET 6.0 and .NET 7.0 have been removed as targets as they have both
   reach their end of support from Microsoft. If you are using these versions,
@@ -10,6 +10,8 @@
   database. This is done to reduce the likelihood of a race condition
   when process are opening a single database when using
   `FileAccessMode.MemoryMappedGlobal`.
+* Performance improvements. Pull requests by Grégoire. GitHub #210, #211
+  and #212.
 
 ## 4.1.0 (2023-12-05) ##
 

@@ -1,7 +1,6 @@
 # MaxMind DB Reader #
 
 [![NuGet](https://img.shields.io/nuget/v/MaxMind.Db)](https://www.nuget.org/packages/MaxMind.Db)
-[![API Docs](https://www.fuget.org/packages/MaxMind.Db/badge.svg)](https://www.fuget.org/packages/MaxMind.Db)
 
 ## Description ##
 
@@ -138,6 +137,6 @@ The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
 ## Copyright and License ##
 
-This software is Copyright (c) 2013-2022 by MaxMind, Inc.
+This software is Copyright (c) 2013-2025 by MaxMind, Inc.
 
 This is free software, licensed under the Apache License, Version 2.0.
