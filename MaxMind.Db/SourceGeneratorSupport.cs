@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace MaxMind.Db
 {
@@ -29,6 +31,10 @@ namespace MaxMind.Db
         /// <returns>True if the type has a registered activator</returns>
         public static bool HasActivator(Type type)
         {
+#if DEBUG
+            if (AreSourceGeneratorsDisabled)
+                return false;
+#endif
             return RegisteredActivators.ContainsKey(type);
         }
 
@@ -56,6 +62,71 @@ namespace MaxMind.Db
             }
             return false;
         }
+
+#if DEBUG
+        private static readonly ThreadLocal<bool> DisableSourceGenerators = new ThreadLocal<bool>(() => false);
+
+        /// <summary>
+        /// Get a snapshot of currently registered activators for testing purposes
+        /// </summary>
+        /// <returns>Dictionary of registered activators</returns>
+        internal static Dictionary<Type, Func<object?[], object>> GetRegisteredActivators()
+        {
+            return new Dictionary<Type, Func<object?[], object>>(RegisteredActivators);
+        }
+
+        /// <summary>
+        /// Clear all registered activators for testing purposes
+        /// </summary>
+        internal static void ClearRegisteredActivators()
+        {
+            RegisteredActivators.Clear();
+        }
+
+        /// <summary>
+        /// Restore registered activators for testing purposes
+        /// </summary>
+        /// <param name="activators">Activators to restore</param>
+        internal static void RestoreRegisteredActivators(Dictionary<Type, Func<object?[], object>> activators)
+        {
+            RegisteredActivators.Clear();
+            foreach (var kvp in activators)
+            {
+                RegisteredActivators[kvp.Key] = kvp.Value;
+            }
+        }
+
+        /// <summary>
+        /// Temporarily disable source generators for the current thread
+        /// </summary>
+        /// <returns>Disposable that restores the previous state</returns>
+        internal static IDisposable DisableSourceGeneratorsForCurrentThread()
+        {
+            var previousValue = DisableSourceGenerators.Value;
+            DisableSourceGenerators.Value = true;
+            return new SourceGeneratorDisabler(previousValue);
+        }
+
+        private sealed class SourceGeneratorDisabler : IDisposable
+        {
+            private readonly bool _previousValue;
+
+            public SourceGeneratorDisabler(bool previousValue)
+            {
+                _previousValue = previousValue;
+            }
+
+            public void Dispose()
+            {
+                DisableSourceGenerators.Value = _previousValue;
+            }
+        }
+
+        /// <summary>
+        /// Check if source generators are disabled for the current thread
+        /// </summary>
+        internal static bool AreSourceGeneratorsDisabled => DisableSourceGenerators.Value;
+#endif
     }
 }
 

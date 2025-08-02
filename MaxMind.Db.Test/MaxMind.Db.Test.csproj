@@ -30,6 +30,16 @@
     <!-- Enable Microsoft Testing Platform for xUnit v3 -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <OutputType>Exe</OutputType>
+    <!-- Test mode configuration: 'All' (default), 'SourceGenerator', or 'Reflection' -->
+    <TestMode Condition="'$(TestMode)' == ''">All</TestMode>
+  </PropertyGroup>
+
+  <!-- Define conditional compilation symbols based on test mode -->
+  <PropertyGroup Condition="'$(TestMode)' == 'SourceGenerator'">
+    <DefineConstants>$(DefineConstants);TEST_SOURCE_GENERATOR_ONLY</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TestMode)' == 'Reflection'">
+    <DefineConstants>$(DefineConstants);TEST_REFLECTION_ONLY</DefineConstants>
   </PropertyGroup>
 
   <!-- AOT Configuration for .NET 9 -->
@@ -49,10 +59,11 @@
   <ItemGroup Condition="'$(PublishAot)' != 'true'">
     <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
     <!-- Include source generator for .NET 8+ to enable AOT-compatible activators -->
+    <!-- Exclude source generator when testing reflection-only mode -->
     <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" 
-                      Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'" />
+                      Condition="('$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0') AND '$(TestMode)' != 'Reflection'" />
   </ItemGroup>
 
   <!-- For AOT, reference the pre-built assembly directly -->
