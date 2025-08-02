@@ -27,16 +27,18 @@ namespace MaxMind.Db.SourceGenerators
         }
 
         /// <summary>
-        /// Execute the generation
+        /// Execute the generation with performance optimizations
         /// </summary>
         public void Execute(GeneratorExecutionContext context)
         {
             try
             {
                 var compilation = context.Compilation;
-                var constructorAttribute = compilation.GetTypeByMetadataName(ConstructorAttributeName);
                 
-                if (constructorAttribute == null)
+                // Cache known type symbols for better performance
+                var knownSymbols = new KnownTypeSymbols(compilation);
+                
+                if (knownSymbols.ConstructorAttribute == null)
                 {
                     // Generate empty activators if attribute not found
                     GenerateEmptyActivators(context);
@@ -45,33 +47,38 @@ namespace MaxMind.Db.SourceGenerators
 
                 var typesToGenerate = new List<TypeToGenerate>();
 
-                // Find all types in the current compilation that have [Constructor] attribute
-                foreach (var syntaxTree in compilation.SyntaxTrees)
+                // Optimize: Only process syntax trees that contain class declarations
+                var relevantTrees = compilation.SyntaxTrees
+                    .Where(tree => tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>().Any())
+                    .ToList();
+
+                foreach (var syntaxTree in relevantTrees)
                 {
                     var semanticModel = compilation.GetSemanticModel(syntaxTree);
                     var root = syntaxTree.GetRoot();
                     
-                    var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+                    // Optimize: Pre-filter classes that might have attributes
+                    var candidateClasses = root.DescendantNodes()
+                        .OfType<ClassDeclarationSyntax>()
+                        .Where(c => c.AttributeLists.Count > 0) // Only classes with attributes
+                        .ToList();
                     
-                    foreach (var classDecl in classes)
+                    foreach (var classDecl in candidateClasses)
                     {
                         var typeSymbol = semanticModel.GetDeclaredSymbol(classDecl) as INamedTypeSymbol;
                         if (typeSymbol == null) continue;
 
-                        // Check if this type has a constructor with [Constructor] attribute
-                        foreach (var constructor in typeSymbol.Constructors)
+                        // Optimize: Check constructors only for types with attributes
+                        var constructorWithAttr = typeSymbol.Constructors
+                            .FirstOrDefault(ctor => ctor.GetAttributes()
+                                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, knownSymbols.ConstructorAttribute)));
+                        
+                        if (constructorWithAttr != null)
                         {
-                            var hasConstructorAttr = constructor.GetAttributes()
-                                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, constructorAttribute));
-                            
-                            if (hasConstructorAttr)
+                            var typeInfo = CreateTypeInfo(typeSymbol, constructorWithAttr, knownSymbols);
+                            if (typeInfo != null)
                             {
-                                var typeInfo = CreateTypeInfo(typeSymbol, constructor, compilation);
-                                if (typeInfo != null)
-                                {
-                                    typesToGenerate.Add(typeInfo);
-                                }
-                                break; // Only one constructor per type
+                                typesToGenerate.Add(typeInfo);
                             }
                         }
                     }
@@ -88,14 +95,12 @@ namespace MaxMind.Db.SourceGenerators
 
 namespace MaxMind.Db.Generated
 {
-    internal static class TypeActivators
+    internal static class TypeActivatorRegistration
     {
-        public static bool IsTypeSupported(System.Type type) => false;
-        public static object CreateInstance(System.Type type, object?[] args) => 
-            throw new System.NotSupportedException(""Source generator error: " + ex.Message + @""");
+        public static void EnsureRegistered() { }
     }
 }";
-                context.AddSource("MaxMind.Db.Generated.TypeActivators.g.cs", SourceText.From(errorCode, Encoding.UTF8));
+                context.AddSource("MaxMind.Db.Generated.TypeActivatorRegistration.g.cs", SourceText.From(errorCode, Encoding.UTF8));
             }
         }
 
@@ -140,8 +145,8 @@ namespace MaxMind.Db.Generated
             sb.AppendLine();
             sb.AppendLine("#nullable enable");
             sb.AppendLine();
-            sb.AppendLine("using System;");
-            sb.AppendLine("using MaxMind.Db;");
+            sb.AppendLine("using global::System;");
+            sb.AppendLine("using global::MaxMind.Db;");
             sb.AppendLine();
             sb.AppendLine("namespace MaxMind.Db.Generated");
             sb.AppendLine("{");
@@ -165,7 +170,7 @@ namespace MaxMind.Db.Generated
                 foreach (var type in types)
                 {
                     sb.AppendLine($"            // Register activator for {type.FullTypeName}");
-                    sb.AppendLine($"            SourceGeneratorSupport.RegisterActivator(typeof({type.FullTypeName}), args => new {type.FullTypeName}(");
+                    sb.AppendLine($"            global::MaxMind.Db.SourceGeneratorSupport.RegisterActivator(typeof({type.FullTypeName}), args => new {type.FullTypeName}(");
                     
                     for (int i = 0; i < type.Parameters.Count; i++)
                     {
@@ -185,16 +190,16 @@ namespace MaxMind.Db.Generated
                 sb.AppendLine("#endif");
                 sb.AppendLine("        }");
                 sb.AppendLine();
-
-                // Generate a method to ensure the static constructor runs
-                sb.AppendLine("        /// <summary>");
-                sb.AppendLine("        /// Ensures that all type activators are registered. This method is called automatically.");
-                sb.AppendLine("        /// </summary>");
-                sb.AppendLine("        public static void EnsureRegistered()");
-                sb.AppendLine("        {");
-                sb.AppendLine("            // Static constructor will run when this method is called");
-                sb.AppendLine("        }");
             }
+
+            // Always generate the EnsureRegistered method
+            sb.AppendLine("        /// <summary>");
+            sb.AppendLine("        /// Ensures that all type activators are registered. This method is called automatically.");
+            sb.AppendLine("        /// </summary>");
+            sb.AppendLine("        public static void EnsureRegistered()");
+            sb.AppendLine("        {");
+            sb.AppendLine("            // Static constructor will run when this method is called");
+            sb.AppendLine("        }");
 
             sb.AppendLine("    }");
             sb.AppendLine("}");
@@ -202,7 +207,7 @@ namespace MaxMind.Db.Generated
             context.AddSource("MaxMind.Db.Generated.TypeActivatorRegistration.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
 
-        private TypeToGenerate? CreateTypeInfo(INamedTypeSymbol typeSymbol, IMethodSymbol constructor, Compilation compilation)
+        private TypeToGenerate? CreateTypeInfo(INamedTypeSymbol typeSymbol, IMethodSymbol constructor, KnownTypeSymbols knownSymbols)
         {
             var parameters = new List<ParameterInfo>();
             
@@ -216,11 +221,10 @@ namespace MaxMind.Db.Generated
                 };
 
                 // Check for Parameter attribute to get the actual parameter name
-                var parameterAttribute = compilation.GetTypeByMetadataName(ParameterAttributeName);
-                if (parameterAttribute != null)
+                if (knownSymbols.ParameterAttribute != null)
                 {
                     var paramAttr = param.GetAttributes()
-                        .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, parameterAttribute));
+                        .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, knownSymbols.ParameterAttribute));
                     if (paramAttr != null && paramAttr.ConstructorArguments.Length > 0)
                     {
                         paramInfo.ParameterName = paramAttr.ConstructorArguments[0].Value?.ToString();
@@ -253,6 +257,23 @@ namespace MaxMind.Db.Generated
             public string Type { get; set; } = "";
             public int Position { get; set; }
             public string? ParameterName { get; set; }
+        }
+
+        /// <summary>
+        /// Caches known type symbols for better performance
+        /// </summary>
+        private sealed class KnownTypeSymbols
+        {
+            public KnownTypeSymbols(Compilation compilation)
+            {
+                Compilation = compilation;
+                ConstructorAttribute = compilation.GetTypeByMetadataName(ConstructorAttributeName);
+                ParameterAttribute = compilation.GetTypeByMetadataName(ParameterAttributeName);
+            }
+
+            public Compilation Compilation { get; }
+            public INamedTypeSymbol? ConstructorAttribute { get; }
+            public INamedTypeSymbol? ParameterAttribute { get; }
         }
     }
 }
