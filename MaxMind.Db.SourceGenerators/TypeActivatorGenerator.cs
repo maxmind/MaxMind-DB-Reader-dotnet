@@ -143,7 +143,9 @@ namespace MaxMind.Db.SourceGenerators
                 for (int i = 0; i < type.Parameters.Count; i++)
                 {
                     var param = type.Parameters[i];
-                    var cast = $"({param.Type})args[{i}]";
+                    var cast = param.Type.Contains("?") || param.Type.StartsWith("string") || param.Type.Contains("[]") || param.Type.Contains("List") || param.Type.Contains("Dictionary") || param.Type.Contains("IReadOnlyList") || param.Type.Contains("IDictionary")
+                        ? $"({param.Type})args[{i}]"
+                        : $"({param.Type})(args[{i}] ?? throw new ArgumentNullException(nameof(args)))";
                     if (i < type.Parameters.Count - 1)
                         sb.AppendLine($"                {cast},");
                     else

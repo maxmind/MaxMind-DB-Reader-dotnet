@@ -44,7 +44,7 @@ namespace MaxMind.Db.AotTest
         {
             Console.Write("Test 1 - AOT Mode Detection: ");
             
-#if NET9_0_OR_GREATER
+#if NET8_0_OR_GREATER || NET9_0_OR_GREATER
             var isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported;
             Console.WriteLine(isAot ? "Running in AOT mode ✓" : "Running in JIT mode");
             
@@ -53,7 +53,7 @@ namespace MaxMind.Db.AotTest
                 throw new Exception("AOT mode detected but UseAotOptimizations is false");
             }
 #else
-            Console.WriteLine("Not running on .NET 9+");
+            Console.WriteLine("Not running on .NET 8+");
 #endif
         }
 

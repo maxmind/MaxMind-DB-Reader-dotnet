@@ -26,7 +26,7 @@
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <LangVersion>13.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <AnalysisLevel>latest</AnalysisLevel>
@@ -38,8 +38,9 @@
   <!-- NativeAOT support for .NET 8+ -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'">
     <IsAotCompatible>true</IsAotCompatible>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2070;IL2067</NoWarn>
   </PropertyGroup>
 
   <!-- Enable AOT mode when publishing with NativeAOT -->
@@ -52,11 +53,13 @@
   </ItemGroup>
 
   <!-- Reference source generator for .NET 8+ -->
+  <!-- Temporarily disabled to test base functionality
   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
+  -->
 
   <ItemGroup>
     <None Include="..\MaxMind-logo.png">
