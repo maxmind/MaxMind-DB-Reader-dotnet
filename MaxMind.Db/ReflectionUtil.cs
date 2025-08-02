@@ -22,6 +22,15 @@ namespace MaxMind.Db
             {
                 throw new ArgumentNullException(nameof(constructor));
             }
+
+#if NET8_0_OR_GREATER && NATIVEAOT
+            // In AOT mode, fall back to ConstructorInfo.Invoke since Expression.Compile is not supported
+            if (AotCompatibility.UseAotOptimizations)
+            {
+                return args => constructor.Invoke(args);
+            }
+#endif
+
             var paramInfo = constructor.GetParameters();
 
             var paramExp = Expression.Parameter(typeof(object[]), "args");
