@@ -27,19 +27,56 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enable Microsoft Testing Platform for xUnit v3 -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- AOT Configuration for .NET 9 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0' AND '$(PublishAot)' == 'true'">
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2104;IL2091;IL2075;IL2072</NoWarn>
+    <!-- Use our custom entry point for AOT -->
+    <StartupObject>MaxMind.Db.Test.Program</StartupObject>
+  </PropertyGroup>
+
+  <!-- Normal project reference for regular builds -->
+  <ItemGroup Condition="'$(PublishAot)' != 'true'">
     <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
   </ItemGroup>
 
+  <!-- For AOT, reference the pre-built assembly directly -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true' AND '$(TargetFramework)' == 'net9.0'">
+    <Reference Include="MaxMind.Db">
+      <HintPath>..\MaxMind.Db\bin\$(Configuration)\net9.0\MaxMind.Db.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <ItemGroup>
+    <!-- Keep for backward compatibility with VSTest -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="xunit" Version="2.9.3" />
+    <!-- xUnit v3 -->
+    <PackageReference Include="xunit.v3" Version="3.0.0" />
+    <!-- Keep for backward compatibility -->
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- Conditionally include our custom entry point for AOT -->
+  <ItemGroup>
+    <Compile Remove="Program.cs" Condition="'$(PublishAot)' != 'true'" />
+  </ItemGroup>
+
+  <!-- Include trimmer configuration for AOT -->
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
   </ItemGroup>
 
 </Project>

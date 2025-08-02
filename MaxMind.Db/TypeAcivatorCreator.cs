@@ -3,6 +3,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET8_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -56,7 +59,11 @@ namespace MaxMind.Db
         internal TypeActivator GetActivator(Type expectedType)
             => _typeConstructors.GetOrAdd(expectedType, ClassActivator);
 
+#if NET8_0_OR_GREATER
+        private static TypeActivator ClassActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type expectedType)
+#else
         private static TypeActivator ClassActivator(Type expectedType)
+#endif
         {
 #if NET8_0_OR_GREATER
             // Try to use AOT-generated activator first
