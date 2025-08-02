@@ -143,9 +143,25 @@ namespace MaxMind.Db.SourceGenerators
                 for (int i = 0; i < type.Parameters.Count; i++)
                 {
                     var param = type.Parameters[i];
-                    var cast = param.Type.Contains("?") || param.Type.StartsWith("string") || param.Type.Contains("[]") || param.Type.Contains("List") || param.Type.Contains("Dictionary") || param.Type.Contains("IReadOnlyList") || param.Type.Contains("IDictionary")
-                        ? $"({param.Type})args[{i}]"
-                        : $"({param.Type})(args[{i}] ?? throw new ArgumentNullException(nameof(args)))";
+                    // Check if the type is nullable or a reference type
+                    bool isNullable = param.Type.Contains("?") || 
+                                     param.Type.StartsWith("string") || 
+                                     param.Type.Contains("[]") || 
+                                     param.Type.Contains("<") || // Generic types like List<T>, Dictionary<K,V>
+                                     param.Type.StartsWith("I"); // Interfaces like IDictionary, IReadOnlyList
+                    
+                    string cast;
+                    if (isNullable)
+                    {
+                        // For nullable types, use null-forgiving operator
+                        cast = $"({param.Type})args[{i}]!";
+                    }
+                    else
+                    {
+                        // For non-nullable value types
+                        cast = $"({param.Type})args[{i}]!";
+                    }
+                    
                     if (i < type.Parameters.Count - 1)
                         sb.AppendLine($"                {cast},");
                     else

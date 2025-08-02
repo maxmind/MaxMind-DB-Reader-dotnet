@@ -53,13 +53,11 @@
   </ItemGroup>
 
   <!-- Reference source generator for .NET 8+ -->
-  <!-- Temporarily disabled to test base functionality
   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
-  -->
 
   <ItemGroup>
     <None Include="..\MaxMind-logo.png">
