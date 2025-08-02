@@ -48,6 +48,11 @@
   <!-- Normal project reference for regular builds -->
   <ItemGroup Condition="'$(PublishAot)' != 'true'">
     <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
+    <!-- Include source generator for .NET 8+ to enable AOT-compatible activators -->
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" 
+                      Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'" />
   </ItemGroup>
 
   <!-- For AOT, reference the pre-built assembly directly -->
