@@ -1,0 +1,239 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace MaxMind.Db.SourceGenerators
+{
+    /// <summary>
+    /// Source generator for creating AOT-compatible type activators for MaxMind.Db
+    /// </summary>
+    [Generator]
+    public class TypeActivatorGenerator : ISourceGenerator
+    {
+        private const string ConstructorAttributeName = "MaxMind.Db.ConstructorAttribute";
+        private const string ParameterAttributeName = "MaxMind.Db.ParameterAttribute";
+        private const string InjectAttributeName = "MaxMind.Db.InjectAttribute";
+        private const string NetworkAttributeName = "MaxMind.Db.NetworkAttribute";
+
+        /// <summary>
+        /// Initialize the generator
+        /// </summary>
+        public void Initialize(GeneratorInitializationContext context)
+        {
+            context.RegisterForSyntaxNotifications(() => new TypeWithConstructorAttributeSyntaxReceiver());
+        }
+
+        /// <summary>
+        /// Execute the generation
+        /// </summary>
+        public void Execute(GeneratorExecutionContext context)
+        {
+            if (context.SyntaxReceiver is not TypeWithConstructorAttributeSyntaxReceiver receiver)
+                return;
+
+            var compilation = context.Compilation;
+            var constructorAttribute = compilation.GetTypeByMetadataName(ConstructorAttributeName);
+            
+            if (constructorAttribute == null)
+            {
+                // MaxMind.Db assembly not referenced, nothing to generate
+                return;
+            }
+
+            var typesToGenerate = new List<TypeToGenerate>();
+
+            foreach (var candidateClass in receiver.CandidateClasses)
+            {
+                var model = compilation.GetSemanticModel(candidateClass.SyntaxTree);
+                var typeSymbol = model.GetDeclaredSymbol(candidateClass);
+                
+                if (typeSymbol == null)
+                    continue;
+
+                var typeInfo = AnalyzeType(typeSymbol, constructorAttribute, compilation);
+                if (typeInfo != null)
+                {
+                    typesToGenerate.Add(typeInfo);
+                }
+            }
+
+            if (typesToGenerate.Count > 0)
+            {
+                var source = GenerateTypeActivators(typesToGenerate);
+                context.AddSource("MaxMind.Db.Generated.TypeActivators.g.cs", SourceText.From(source, Encoding.UTF8));
+            }
+        }
+
+        private TypeToGenerate? AnalyzeType(INamedTypeSymbol typeSymbol, INamedTypeSymbol constructorAttribute, Compilation compilation)
+        {
+            var constructors = typeSymbol.Constructors
+                .Where(c => c.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, constructorAttribute)))
+                .ToList();
+
+            if (constructors.Count != 1)
+                return null;
+
+            var constructor = constructors[0];
+            var parameters = new List<ParameterInfo>();
+
+            foreach (var param in constructor.Parameters)
+            {
+                var paramInfo = new ParameterInfo
+                {
+                    Name = param.Name,
+                    Type = param.Type.ToDisplayString(),
+                    Position = param.Ordinal
+                };
+
+                // Check for Parameter attribute
+                var paramAttr = param.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ParameterAttributeName);
+                if (paramAttr != null && paramAttr.ConstructorArguments.Length > 0)
+                {
+                    paramInfo.ParameterAttributeName = paramAttr.ConstructorArguments[0].Value?.ToString();
+                }
+
+                // Check for Inject attribute
+                paramInfo.HasInjectAttribute = param.GetAttributes()
+                    .Any(a => a.AttributeClass?.ToDisplayString() == InjectAttributeName);
+
+                // Check for Network attribute  
+                paramInfo.HasNetworkAttribute = param.GetAttributes()
+                    .Any(a => a.AttributeClass?.ToDisplayString() == NetworkAttributeName);
+
+                parameters.Add(paramInfo);
+            }
+
+            return new TypeToGenerate
+            {
+                TypeName = typeSymbol.Name,
+                FullTypeName = typeSymbol.ToDisplayString(),
+                Namespace = typeSymbol.ContainingNamespace.ToDisplayString(),
+                Parameters = parameters,
+                IsPublic = typeSymbol.DeclaredAccessibility == Accessibility.Public
+            };
+        }
+
+        private string GenerateTypeActivators(List<TypeToGenerate> types)
+        {
+            var sb = new StringBuilder();
+            
+            sb.AppendLine("// <auto-generated/>");
+            sb.AppendLine("#nullable enable");
+            sb.AppendLine();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.Collections.Generic;");
+            sb.AppendLine();
+            sb.AppendLine("namespace MaxMind.Db.Generated");
+            sb.AppendLine("{");
+            sb.AppendLine("    internal static class TypeActivators");
+            sb.AppendLine("    {");
+            sb.AppendLine("        private static readonly Dictionary<Type, Func<object?[], object>> _activators = new()");
+            sb.AppendLine("        {");
+
+            foreach (var type in types)
+            {
+                sb.AppendLine($"            [typeof({type.FullTypeName})] = args => new {type.FullTypeName}(");
+                
+                for (int i = 0; i < type.Parameters.Count; i++)
+                {
+                    var param = type.Parameters[i];
+                    var cast = $"({param.Type})args[{i}]";
+                    if (i < type.Parameters.Count - 1)
+                        sb.AppendLine($"                {cast},");
+                    else
+                        sb.AppendLine($"                {cast}");
+                }
+                
+                sb.AppendLine("            ),");
+            }
+
+            sb.AppendLine("        };");
+            sb.AppendLine();
+            sb.AppendLine("        public static bool IsTypeSupported(Type type)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return _activators.ContainsKey(type);");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static object CreateInstance(Type type, object?[] args)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            if (_activators.TryGetValue(type, out var activator))");
+            sb.AppendLine("                return activator(args);");
+            sb.AppendLine("            throw new NotSupportedException($\"Type {type} is not registered for AOT activation\");");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static Dictionary<string, int> GetParameterMap(Type type)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return type switch");
+            sb.AppendLine("            {");
+
+            foreach (var type in types)
+            {
+                sb.AppendLine($"                Type t when t == typeof({type.FullTypeName}) => new Dictionary<string, int>");
+                sb.AppendLine("                {");
+                foreach (var param in type.Parameters)
+                {
+                    var name = param.ParameterAttributeName ?? param.Name;
+                    sb.AppendLine($"                    [\"{name}\"] = {param.Position},");
+                }
+                sb.AppendLine("                },");
+            }
+
+            sb.AppendLine("                _ => new Dictionary<string, int>()");
+            sb.AppendLine("            };");
+            sb.AppendLine("        }");
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+
+            return sb.ToString();
+        }
+
+        private class TypeWithConstructorAttributeSyntaxReceiver : ISyntaxReceiver
+        {
+            public List<ClassDeclarationSyntax> CandidateClasses { get; } = new();
+
+            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            {
+                if (syntaxNode is ClassDeclarationSyntax classDeclaration)
+                {
+                    // Look for classes that might have constructors with our attribute
+                    foreach (var member in classDeclaration.Members)
+                    {
+                        if (member is ConstructorDeclarationSyntax constructor)
+                        {
+                            if (constructor.AttributeLists.Count > 0)
+                            {
+                                CandidateClasses.Add(classDeclaration);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private class TypeToGenerate
+        {
+            public string TypeName { get; set; } = "";
+            public string FullTypeName { get; set; } = "";
+            public string Namespace { get; set; } = "";
+            public List<ParameterInfo> Parameters { get; set; } = new();
+            public bool IsPublic { get; set; }
+        }
+
+        private class ParameterInfo
+        {
+            public string Name { get; set; } = "";
+            public string Type { get; set; } = "";
+            public int Position { get; set; }
+            public string? ParameterAttributeName { get; set; }
+            public bool HasInjectAttribute { get; set; }
+            public bool HasNetworkAttribute { get; set; }
+        }
+    }
+}
