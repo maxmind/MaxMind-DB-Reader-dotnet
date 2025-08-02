@@ -6,6 +6,9 @@ using System.Buffers;
 #endif
 using System.Collections;
 using System.Collections.Generic;
+#if NET8_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Numerics;
 using System.Reflection;
 
@@ -73,6 +76,10 @@ namespace MaxMind.Db
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns>An object containing the data read from the stream</returns>
+#if NET8_0_OR_GREATER
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
+#endif
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
             if (Decode(typeof(T), offset, out outOffset, injectables, network) is not T decoded)
@@ -82,6 +89,10 @@ namespace MaxMind.Db
             return decoded;
         }
 
+#if NET8_0_OR_GREATER
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
+#endif
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues? injectables = null, Network? network = null)
         {
             var type = CtrlData(offset, out var size, out offset);
