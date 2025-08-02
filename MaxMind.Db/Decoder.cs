@@ -474,9 +474,11 @@ namespace MaxMind.Db
         }
 
         private readonly TypeAcivatorCreator _typeAcivatorCreator;
+        private readonly CachedDictionary<long, Key> _keyCache = new(512, null);
 
         private Key DecodeKey(long offset, out long outOffset)
         {
+            var originalOffset = offset;
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
             {
@@ -486,7 +488,16 @@ namespace MaxMind.Db
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
-                    return new Key(_database, offset, size);
+                    
+                    // Cache keys to reduce allocations - map keys are often repeated
+                    if (_keyCache.TryGetValue(originalOffset, out var cachedKey))
+                    {
+                        return cachedKey;
+                    }
+                    
+                    var key = new Key(_database, offset, size);
+                    _keyCache.Add(originalOffset, key);
+                    return key;
 
                 default:
                     throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
