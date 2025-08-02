@@ -52,11 +52,20 @@
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
 
-  <!-- Reference source generator for .NET 8+ -->
+  <!-- Reference source generator for .NET 8+ during build -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net8.0'">
     <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Include source generator in NuGet package for user projects -->
+  <ItemGroup>
+    <None Include="..\MaxMind.Db.SourceGenerators\bin\$(Configuration)\netstandard2.0\MaxMind.Db.SourceGenerators.dll" 
+          Pack="true" 
+          PackagePath="analyzers\dotnet\cs\MaxMind.Db.SourceGenerators.dll" 
+          Visible="false" 
+          Condition="Exists('..\MaxMind.Db.SourceGenerators\bin\$(Configuration)\netstandard2.0\MaxMind.Db.SourceGenerators.dll')" />
   </ItemGroup>
 
   <ItemGroup>

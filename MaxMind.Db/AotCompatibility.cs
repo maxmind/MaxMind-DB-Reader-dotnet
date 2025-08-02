@@ -25,17 +25,26 @@ namespace MaxMind.Db
             ;
 
         /// <summary>
+        /// Determines if we should prefer source-generated activators over reflection
+        /// This is separate from UseAotOptimizations and should be true whenever possible
+        /// </summary>
+        public static bool PreferSourceGeneratedActivators { get; } = true;
+
+        /// <summary>
         /// Checks if generated type activators are available
         /// </summary>
         internal static bool HasGeneratedActivators()
         {
-#if NATIVEAOT
-            // When compiled for AOT, check if the generated type exists
-            var generatedType = Type.GetType("MaxMind.Db.Generated.TypeActivators, MaxMind.Db");
-            return generatedType != null;
-#else
-            return false;
-#endif
+            try
+            {
+                // Try to trigger the static constructor to register activators
+                Generated.TypeActivatorRegistration.EnsureRegistered();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -43,27 +52,7 @@ namespace MaxMind.Db
         /// </summary>
         internal static bool TryCreateInstanceAot(Type type, object?[] args, out object? instance)
         {
-            instance = null;
-#if NATIVEAOT
-            try
-            {
-                var generatedType = Type.GetType("MaxMind.Db.Generated.TypeActivators, MaxMind.Db");
-                if (generatedType != null)
-                {
-                    var method = generatedType.GetMethod("CreateInstance");
-                    if (method != null)
-                    {
-                        instance = method.Invoke(null, new object[] { type, args });
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-                // Fall back to reflection-based approach
-            }
-#endif
-            return false;
+            return SourceGeneratorSupport.TryCreateInstance(type, args, out instance);
         }
 
         /// <summary>
@@ -71,25 +60,7 @@ namespace MaxMind.Db
         /// </summary>
         internal static bool IsTypeSupportedAot(Type type)
         {
-#if NATIVEAOT
-            try
-            {
-                var generatedType = Type.GetType("MaxMind.Db.Generated.TypeActivators, MaxMind.Db");
-                if (generatedType != null)
-                {
-                    var method = generatedType.GetMethod("IsTypeSupported");
-                    if (method != null)
-                    {
-                        return (bool)method.Invoke(null, new object[] { type })!;
-                    }
-                }
-            }
-            catch
-            {
-                // Type not supported
-            }
-#endif
-            return false;
+            return SourceGeneratorSupport.HasActivator(type);
         }
     }
 }
