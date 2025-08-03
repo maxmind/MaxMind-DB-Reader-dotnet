@@ -12,9 +12,10 @@ namespace MaxMind.Db.SourceGenerators
 {
     /// <summary>
     /// Source generator for creating AOT-compatible type activators for MaxMind.Db
+    /// DISABLED - replaced by EnhancedTypeActivatorGenerator
     /// </summary>
-    // [Generator] - Original generator (kept for compatibility)
-    internal class TypeActivatorGenerator : IIncrementalGenerator
+    // [Generator] - DISABLED - replaced by enhanced generator
+    internal class TypeActivatorGenerator_DISABLED // : IIncrementalGenerator
     {
         private const string ConstructorAttributeName = "MaxMind.Db.ConstructorAttribute";
         private const string ParameterAttributeName = "MaxMind.Db.ParameterAttribute";
