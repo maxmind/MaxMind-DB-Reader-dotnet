@@ -53,14 +53,30 @@ namespace MaxMind.Db
 
     internal sealed class TypeAcivatorCreator
     {
-        private readonly ConcurrentDictionary<Type, TypeActivator> _typeConstructors =
-            new();
+        // Use sliding expiration cache for automatic memory management in long-running applications
+        private static readonly SlidingExpirationCache<Type, TypeActivator> _typeConstructors =
+            new(TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(5));
         
         // Pre-computed parameter name keys to avoid repeated UTF-8 encoding and ArrayBuffer allocation
         private static readonly ConcurrentDictionary<string, Key> _parameterKeyCache = new();
 
         internal TypeActivator GetActivator(Type expectedType)
-            => _typeConstructors.GetOrAdd(expectedType, ClassActivator);
+        {
+#if DEBUG
+            // Track cache performance in debug builds
+            bool wasInCache = TypeActivatorCache.CacheCount > 0;
+            var result = _typeConstructors.GetOrAdd(expectedType, ClassActivator);
+            
+            if (wasInCache)
+                TypeActivatorCache.PerformanceCounters.RecordCacheHit();
+            else
+                TypeActivatorCache.PerformanceCounters.RecordCacheMiss();
+                
+            return result;
+#else
+            return _typeConstructors.GetOrAdd(expectedType, ClassActivator);
+#endif
+        }
 
         private static Key GetParameterKey(string parameterName)
         {
