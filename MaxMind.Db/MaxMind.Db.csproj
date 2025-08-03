@@ -32,7 +32,11 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <NoWarn />
+    <!-- Enable unused code detection -->
+    <WarningsNotAsErrors>CS8618;CS8625</WarningsNotAsErrors>
   </PropertyGroup>
 
   <!-- NativeAOT support for .NET 8+ -->

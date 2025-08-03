@@ -16,16 +16,6 @@ namespace MaxMind.Db
         private static readonly ConcurrentDictionary<Type, Func<object?[], object>> RegisteredActivators = new();
 
         /// <summary>
-        /// Register a source-generated activator for a specific type
-        /// </summary>
-        /// <param name="type">The type this activator creates</param>
-        /// <param name="activator">The activator function</param>
-        public static void RegisterActivator(Type type, Func<object?[], object> activator)
-        {
-            RegisteredActivators[type] = activator;
-        }
-
-        /// <summary>
         /// Register a complete source-generated activator with all metadata for optimal performance
         /// </summary>
         /// <param name="type">The type this activator creates</param>
@@ -45,11 +35,8 @@ namespace MaxMind.Db
             // For now, just register the activator - the complete metadata could be used for further optimizations
             RegisteredActivators[type] = activator;
             
-            // Store metadata for potential future optimizations
-            RegisteredParameterMappings[type] = parameterMappings;
+            // Metadata could be used for future optimizations if needed
         }
-
-        private static readonly ConcurrentDictionary<Type, FrozenDictionary<string, (int Position, Type ParameterType)>> RegisteredParameterMappings = new();
 
         /// <summary>
         /// Check if a type has a registered source-generated activator

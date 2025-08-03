@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 
 namespace MaxMind.Db
 {
@@ -64,24 +63,5 @@ namespace MaxMind.Db
             return hashCode;
         }
 
-        /// <summary>
-        /// Gets the UTF-8 bytes represented by this key for optimized parameter lookup.
-        /// Used by ParameterRef pattern for embedded key comparison.
-        /// </summary>
-        internal ReadOnlySpan<byte> GetUtf8Bytes()
-        {
-            if (buffer is ArrayBuffer arrayBuffer)
-            {
-                return arrayBuffer.AsSpan(offset, size);
-            }
-            
-            // Fallback: copy bytes to array
-            var bytes = new byte[size];
-            for (int i = 0; i < size; i++)
-            {
-                bytes[i] = buffer.ReadOne(offset + i);
-            }
-            return bytes;
-        }
     }
 }
