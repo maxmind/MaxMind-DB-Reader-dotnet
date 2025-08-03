@@ -132,5 +132,15 @@ namespace MaxMind.Db
                 _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
             };
         }
+
+#if !NETSTANDARD2_0
+        /// <summary>
+        /// Returns a ReadOnlySpan view of the buffer data for optimized comparisons
+        /// </summary>
+        internal ReadOnlySpan<byte> AsSpan(long offset, int count)
+        {
+            return _fileBytes.AsSpan((int)offset, count);
+        }
+#endif
     }
 }

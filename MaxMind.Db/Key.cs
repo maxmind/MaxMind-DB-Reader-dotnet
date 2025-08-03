@@ -1,4 +1,7 @@
 ﻿using System;
+#if !NETSTANDARD2_0
+using System.Runtime.InteropServices;
+#endif
 
 namespace MaxMind.Db
 {
@@ -30,6 +33,15 @@ namespace MaxMind.Db
                 return false;
             }
 
+#if !NETSTANDARD2_0
+            // Use optimized span comparison when available
+            if (buffer is ArrayBuffer arrayBuffer && other.buffer is ArrayBuffer otherArrayBuffer)
+            {
+                return arrayBuffer.AsSpan(offset, size).SequenceEqual(otherArrayBuffer.AsSpan(other.offset, other.size));
+            }
+#endif
+
+            // Fallback to byte-by-byte comparison
             for (var i = 0; i < size; i++)
             {
                 if (buffer.ReadOne(offset + i) != other.buffer.ReadOne(other.offset + i))

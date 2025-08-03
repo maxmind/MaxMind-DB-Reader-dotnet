@@ -474,7 +474,7 @@ namespace MaxMind.Db
         }
 
         private readonly TypeAcivatorCreator _typeAcivatorCreator;
-        private readonly CachedDictionary<long, Key> _keyCache = new(512, null);
+        private readonly CachedDictionary<long, Key> _keyCache = new(2048, null); // Increased cache size for better hit rates
 
         private Key DecodeKey(long offset, out long outOffset)
         {
