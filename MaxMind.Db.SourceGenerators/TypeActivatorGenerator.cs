@@ -139,8 +139,11 @@ namespace MaxMind.Db.Generated
                 
                 foreach (var type in types)
                 {
-                    sb.AppendLine($"            // Register activator for {type.FullTypeName}");
-                    sb.AppendLine($"            global::MaxMind.Db.SourceGeneratorSupport.RegisterActivator(typeof({type.FullTypeName}), args => new {type.FullTypeName}(");
+                    sb.AppendLine($"        // Register optimized activator for {type.FullTypeName}");
+                    sb.AppendLine($"        {{");
+                    
+                    // Generate optimized activator with minimal overhead
+                    sb.AppendLine($"            global::System.Func<object?[], object> activator = args => new {type.FullTypeName}(");
                     
                     for (int i = 0; i < type.Parameters.Count; i++)
                     {
@@ -153,7 +156,42 @@ namespace MaxMind.Db.Generated
                             sb.AppendLine($"                {cast}");
                     }
                     
-                    sb.AppendLine("            ));");
+                    sb.AppendLine("            );");
+                    sb.AppendLine();
+                    
+                    // Generate pre-computed parameter mappings using compile-time constants
+                    sb.AppendLine($"            var parameterMappings = new global::System.Collections.Generic.Dictionary<string, (int Position, global::System.Type ParameterType)>");
+                    sb.AppendLine($"            {{");
+                    
+                    foreach (var param in type.Parameters)
+                    {
+                        var dbName = param.ParameterName ?? param.Name;
+                        // Strip nullable syntax for typeof() - typeof(int?) is invalid, but typeof(int) works
+                        var typeForTypeof = param.Type.EndsWith("?") ? param.Type.Substring(0, param.Type.Length - 1) : param.Type;
+                        sb.AppendLine($"                {{ \"{dbName}\", ({param.Position}, typeof({typeForTypeof})) }},");
+                    }
+                    
+                    sb.AppendLine($"            }};");
+                    sb.AppendLine();
+                    
+                    // Generate empty collections (will be optimized for this specific type)
+                    sb.AppendLine($"            var injectableMappings = new global::System.Collections.Generic.Dictionary<string, int>();");
+                    sb.AppendLine();
+                    
+                    // Generate parameter position arrays for fast access (empty for now - would need additional attributes to populate)
+                    sb.AppendLine($"            var networkParameterPositions = new int[] {{  }};");
+                    sb.AppendLine($"            var alwaysCreatedParameterPositions = new int[] {{  }};");
+                    sb.AppendLine();
+                    
+                    // Register with complete activator (this method must exist based on generated output)
+                    sb.AppendLine($"            global::MaxMind.Db.SourceGeneratorSupport.RegisterCompleteActivator(");
+                    sb.AppendLine($"                typeof({type.FullTypeName}),");
+                    sb.AppendLine($"                activator,");
+                    sb.AppendLine($"                parameterMappings,");
+                    sb.AppendLine($"                injectableMappings,");
+                    sb.AppendLine($"                networkParameterPositions,");
+                    sb.AppendLine($"                alwaysCreatedParameterPositions);");
+                    sb.AppendLine($"        }}");
                     sb.AppendLine();
                 }
 

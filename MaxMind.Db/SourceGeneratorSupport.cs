@@ -25,6 +25,32 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        /// Register a complete source-generated activator with all metadata for optimal performance
+        /// </summary>
+        /// <param name="type">The type this activator creates</param>
+        /// <param name="activator">The activator function</param>
+        /// <param name="parameterMappings">Pre-computed parameter mappings</param>
+        /// <param name="injectableMappings">Injectable parameter mappings</param>
+        /// <param name="networkParameterPositions">Network parameter positions</param>
+        /// <param name="alwaysCreatedParameterPositions">Always created parameter positions</param>
+        public static void RegisterCompleteActivator(
+            Type type,
+            Func<object?[], object> activator,
+            Dictionary<string, (int Position, Type ParameterType)> parameterMappings,
+            Dictionary<string, int> injectableMappings,
+            int[] networkParameterPositions,
+            int[] alwaysCreatedParameterPositions)
+        {
+            // For now, just register the activator - the complete metadata could be used for further optimizations
+            RegisteredActivators[type] = activator;
+            
+            // Store metadata for potential future optimizations
+            RegisteredParameterMappings[type] = parameterMappings;
+        }
+
+        private static readonly ConcurrentDictionary<Type, Dictionary<string, (int Position, Type ParameterType)>> RegisteredParameterMappings = new();
+
+        /// <summary>
         /// Check if a type has a registered source-generated activator
         /// </summary>
         /// <param name="type">The type to check</param>
