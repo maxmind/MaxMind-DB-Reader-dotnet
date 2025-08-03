@@ -1,6 +1,7 @@
 #if NET8_0_OR_GREATER
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
@@ -36,8 +37,8 @@ namespace MaxMind.Db
         public static void RegisterCompleteActivator(
             Type type,
             Func<object?[], object> activator,
-            Dictionary<string, (int Position, Type ParameterType)> parameterMappings,
-            Dictionary<string, int> injectableMappings,
+            FrozenDictionary<string, (int Position, Type ParameterType)> parameterMappings,
+            FrozenDictionary<string, int> injectableMappings,
             int[] networkParameterPositions,
             int[] alwaysCreatedParameterPositions)
         {
@@ -48,7 +49,7 @@ namespace MaxMind.Db
             RegisteredParameterMappings[type] = parameterMappings;
         }
 
-        private static readonly ConcurrentDictionary<Type, Dictionary<string, (int Position, Type ParameterType)>> RegisteredParameterMappings = new();
+        private static readonly ConcurrentDictionary<Type, FrozenDictionary<string, (int Position, Type ParameterType)>> RegisteredParameterMappings = new();
 
         /// <summary>
         /// Check if a type has a registered source-generated activator

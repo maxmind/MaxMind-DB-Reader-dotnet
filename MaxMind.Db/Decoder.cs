@@ -1,9 +1,7 @@
 ﻿#region
 
 using System;
-#if !NETSTANDARD2_0
 using System.Buffers;
-#endif
 using System.Collections;
 using System.Collections.Generic;
 #if NET8_0_OR_GREATER
@@ -380,13 +378,9 @@ namespace MaxMind.Db
         {
             var constructor = _typeAcivatorCreator.GetActivator(expectedType);
 
-#if !NETSTANDARD2_0
             // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
             // number of parameters.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
-#else
-            object?[] parameters = new object?[constructor.DefaultParameters.Length];
-#endif
             constructor.DefaultParameters.CopyTo(parameters, 0);
 
             for (var i = 0; i < size; i++)
@@ -412,9 +406,7 @@ namespace MaxMind.Db
             outOffset = offset;
             object obj = constructor.Activator(parameters);
 
-#if !NETSTANDARD2_0
             ArrayPool<object?>.Shared.Return(parameters);
-#endif
 
             return obj;
         }
@@ -432,11 +424,7 @@ namespace MaxMind.Db
 
                 var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
 
-#if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
-#else
-                object?[] cstorParams = new object?[activator.DefaultParameters.Length];
-#endif
                 activator.DefaultParameters.CopyTo(cstorParams, 0);
 
                 SetInjectables(activator, cstorParams, injectables);
@@ -444,9 +432,7 @@ namespace MaxMind.Db
                 SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
                 parameters[param.Position] = activator.Activator(cstorParams);
 
-#if !NETSTANDARD2_0
                 ArrayPool<object?>.Shared.Return(cstorParams);
-#endif
             }
         }
 

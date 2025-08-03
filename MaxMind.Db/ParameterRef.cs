@@ -1,9 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if !NETSTANDARD2_0
 using System.Runtime.InteropServices;
-#endif
 
 namespace MaxMind.Db
 {
@@ -36,13 +34,7 @@ namespace MaxMind.Db
         /// For longer names, creates a hash-like key + stores the full bytes separately.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong GetKey(
-#if !NETSTANDARD2_0
-            ReadOnlySpan<byte> name
-#else
-            byte[] name
-#endif
-            )
+        public static ulong GetKey(ReadOnlySpan<byte> name)
         {
             if (name.Length == 0) return 0;
 
@@ -83,13 +75,7 @@ namespace MaxMind.Db
         /// Fast parameter name comparison using embedded key optimization.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(
-#if !NETSTANDARD2_0
-            ReadOnlySpan<byte> parameterName,
-#else
-            byte[] parameterName,
-#endif
-            ulong key)
+        public bool Equals(ReadOnlySpan<byte> parameterName, ulong key)
         {
             // Fast path: if keys don't match, names definitely don't match
             if (key != _key) return false;
@@ -98,11 +84,7 @@ namespace MaxMind.Db
             if (parameterName.Length <= 7) return true;
 
             // For long names, we need to compare the full byte sequence
-#if !NETSTANDARD2_0
             return _utf8Name != null && parameterName.SequenceEqual(_utf8Name);
-#else
-            return _utf8Name != null && ByteArrayEqual(parameterName, _utf8Name);
-#endif
         }
 
         /// <summary>
@@ -131,28 +113,7 @@ namespace MaxMind.Db
 
         public override int GetHashCode()
         {
-#if !NETSTANDARD2_0
             return HashCode.Combine(_key, _parameterInfo);
-#else
-            return (int)(_key ^ ((ulong)_parameterInfo.GetHashCode() << 32));
-#endif
         }
-
-#if NETSTANDARD2_0
-        /// <summary>
-        /// Efficient byte array comparison for .NET Standard 2.0 compatibility.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ByteArrayEqual(byte[] a, byte[] b)
-        {
-            if (a.Length != b.Length) return false;
-            
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i]) return false;
-            }
-            return true;
-        }
-#endif
     }
 }

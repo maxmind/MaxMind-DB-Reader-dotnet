@@ -13,7 +13,7 @@ namespace MaxMind.Db
     internal sealed class OptimizedParameterDictionary : IParameterDictionary
     {
         private const int MaxLinearSearchSize = 16;
-        private ParameterRef[] _parameterRefs = Array.Empty<ParameterRef>();
+        private ParameterRef[] _parameterRefs = [];
         private Dictionary<Key, ParameterInfo>? _fallbackDict;
         private int _lastAccessIndex; // Locality of reference optimization
 
@@ -81,25 +81,6 @@ namespace MaxMind.Db
         /// </summary>
         private void ConvertToFallbackDictionary()
         {
-#if NETSTANDARD2_0
-            _fallbackDict = new Dictionary<Key, ParameterInfo>();
-            
-            // We need to reconstruct Key objects for the dictionary
-            // This is less efficient but maintains compatibility
-            foreach (var paramRef in _parameterRefs)
-            {
-                // Create a temporary key from the parameter name for dictionary storage
-                var parameterName = GetParameterName(paramRef.ParameterInfo);
-                var utf8Bytes = System.Text.Encoding.UTF8.GetBytes(parameterName);
-                
-                // Create a memory buffer to construct a Key
-                var buffer = new ArrayBuffer(utf8Bytes);
-                var tempKey = new Key(buffer, 0, utf8Bytes.Length);
-                
-                _fallbackDict.Add(tempKey, paramRef.ParameterInfo);
-            }
-#else
-            // For newer frameworks, we can be more efficient
             _fallbackDict = new Dictionary<Key, ParameterInfo>();
             
             foreach (var paramRef in _parameterRefs)
@@ -111,10 +92,9 @@ namespace MaxMind.Db
                 
                 _fallbackDict.Add(tempKey, paramRef.ParameterInfo);
             }
-#endif
             
             // Clear the array to free memory
-            _parameterRefs = Array.Empty<ParameterRef>();
+            _parameterRefs = [];
             _lastAccessIndex = 0;
         }
 

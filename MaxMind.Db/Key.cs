@@ -1,7 +1,5 @@
 ﻿using System;
-#if !NETSTANDARD2_0
 using System.Runtime.InteropServices;
-#endif
 
 namespace MaxMind.Db
 {
@@ -33,13 +31,11 @@ namespace MaxMind.Db
                 return false;
             }
 
-#if !NETSTANDARD2_0
             // Use optimized span comparison when available
             if (buffer is ArrayBuffer arrayBuffer && other.buffer is ArrayBuffer otherArrayBuffer)
             {
                 return arrayBuffer.AsSpan(offset, size).SequenceEqual(otherArrayBuffer.AsSpan(other.offset, other.size));
             }
-#endif
 
             // Fallback to byte-by-byte comparison
             for (var i = 0; i < size; i++)
@@ -72,20 +68,12 @@ namespace MaxMind.Db
         /// Gets the UTF-8 bytes represented by this key for optimized parameter lookup.
         /// Used by ParameterRef pattern for embedded key comparison.
         /// </summary>
-        internal
-#if !NETSTANDARD2_0
-        ReadOnlySpan<byte>
-#else
-        byte[]
-#endif
-        GetUtf8Bytes()
+        internal ReadOnlySpan<byte> GetUtf8Bytes()
         {
-#if !NETSTANDARD2_0
             if (buffer is ArrayBuffer arrayBuffer)
             {
                 return arrayBuffer.AsSpan(offset, size);
             }
-#endif
             
             // Fallback: copy bytes to array
             var bytes = new byte[size];

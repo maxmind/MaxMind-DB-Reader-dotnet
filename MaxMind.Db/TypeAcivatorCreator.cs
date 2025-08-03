@@ -269,15 +269,7 @@ namespace MaxMind.Db
             else
             {
                 // Convert to Dictionary for large parameter sets
-#if NETSTANDARD2_0
-                _fallbackDict = new Dictionary<Key, ParameterInfo>();
-                foreach (var item in _items)
-                {
-                    _fallbackDict.Add(item.Key, item.Value);
-                }
-#else
                 _fallbackDict = new Dictionary<Key, ParameterInfo>(_items);
-#endif
                 _fallbackDict.Add(key, value);
                 _items.Clear(); // Free memory
             }

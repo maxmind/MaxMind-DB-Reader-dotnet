@@ -343,29 +343,21 @@ namespace MaxMind.Db
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)
         {
-#if NETSTANDARD2_0
-            byte[] rawAddress;
-#else
             Span<byte> rawAddress = stackalloc byte[address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16];
             if (address.TryWriteBytes(rawAddress, out int rawAddressLength))
             {
                 rawAddress = rawAddress[..rawAddressLength];
             }
             else
-#endif
             {
-                // Defensive check.
+                // Defensive check - fallback to heap allocation only if needed
                 rawAddress = address.GetAddressBytes();
             }
 
             return FindAddressInTree(rawAddress, out prefixLength);
         }
 
-#if NETSTANDARD2_0
-        private int FindAddressInTree(byte[] rawAddress, out int prefixLength)
-#else
         private int FindAddressInTree(ReadOnlySpan<byte> rawAddress, out int prefixLength)
-#endif
         {
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);

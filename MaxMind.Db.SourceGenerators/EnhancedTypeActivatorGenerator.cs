@@ -138,6 +138,7 @@ namespace MaxMind.Db.SourceGenerators
             code.AppendLine();
             code.AppendLine("using global::System;");
             code.AppendLine("using global::System.Collections.Generic;");
+            code.AppendLine("using global::System.Collections.Frozen;");
             code.AppendLine("using global::MaxMind.Db;");
             code.AppendLine();
 
@@ -262,7 +263,7 @@ namespace MaxMind.Db.SourceGenerators
                 code.AppendLine($"                {{ \"{dbName}\", ({param.Position}, typeof({typeForTypeof})) }},");
             }
             
-            code.AppendLine("            };");
+            code.AppendLine("            }.ToFrozenDictionary();");
             code.AppendLine();
 
             // Generate injectable mappings
@@ -275,7 +276,7 @@ namespace MaxMind.Db.SourceGenerators
                 code.AppendLine($"                {{ \"{injectName}\", {param.Position} }},");
             }
             
-            code.AppendLine("            };");
+            code.AppendLine("            }.ToFrozenDictionary();");
             code.AppendLine();
         }
 

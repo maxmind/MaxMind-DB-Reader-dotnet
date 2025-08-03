@@ -133,7 +133,6 @@ namespace MaxMind.Db
             };
         }
 
-#if !NETSTANDARD2_0
         /// <summary>
         /// Returns a ReadOnlySpan view of the buffer data for optimized comparisons
         /// </summary>
@@ -141,6 +140,5 @@ namespace MaxMind.Db
         {
             return _fileBytes.AsSpan((int)offset, count);
         }
-#endif
     }
 }
