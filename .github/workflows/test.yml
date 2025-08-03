@@ -32,6 +32,7 @@ jobs:
               dotnet build MaxMind.Db
               dotnet build MaxMind.Db.Benchmark
               dotnet build MaxMind.Db.Test
+              dotnet build MaxMind.Db.AotTest
 
       - name: Run benchmark
         run: dotnet run -f net8.0 --project MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
@@ -42,3 +43,24 @@ jobs:
         run: dotnet test MaxMind.Db.Test/MaxMind.Db.Test.csproj
         env:
           MAXMIND_TEST_BASE_DIR: ${{ github.workspace }}/MaxMind.Db.Test
+
+      - name: Test NativeAOT compatibility (JIT mode)
+        run: dotnet run --project MaxMind.Db.AotTest/MaxMind.Db.AotTest.csproj
+
+      - name: Test NativeAOT compatibility (AOT publish - Linux)
+        if: runner.os == 'Linux'
+        run: |
+              dotnet publish MaxMind.Db.AotTest/MaxMind.Db.AotTest.csproj -c Release -r linux-x64 --self-contained
+              ./MaxMind.Db.AotTest/bin/Release/net9.0/linux-x64/publish/MaxMind.Db.AotTest
+
+      - name: Test NativeAOT compatibility (AOT publish - Windows)
+        if: runner.os == 'Windows'
+        run: |
+              dotnet publish MaxMind.Db.AotTest/MaxMind.Db.AotTest.csproj -c Release -r win-x64 --self-contained
+              ./MaxMind.Db.AotTest/bin/Release/net9.0/win-x64/publish/MaxMind.Db.AotTest.exe
+
+      - name: Test NativeAOT compatibility (AOT publish - macOS)
+        if: runner.os == 'macOS'
+        run: |
+              dotnet publish MaxMind.Db.AotTest/MaxMind.Db.AotTest.csproj -c Release -r osx-x64 --self-contained
+              ./MaxMind.Db.AotTest/bin/Release/net9.0/osx-x64/publish/MaxMind.Db.AotTest
