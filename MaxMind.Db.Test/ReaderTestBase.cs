@@ -152,18 +152,18 @@ namespace MaxMind.Db.Test
             Assert.NotNull(result);
             Assert.Equal("1.1.1.1", result["ip"]);
 
-            // Verify we're actually using the expected activation path
+            // Verify we're using the expected activation path
             if (wrapper.IsSourceGeneratedReader)
             {
-#if NET8_0_OR_GREATER
-                // Verify source generator is being used by checking if activators are registered
-                Assert.True(SourceGeneratorSupport.HasActivator(typeof(Dictionary<string, object>)) ||
-                           SourceGeneratorSupport.GetRegisteredActivators().Count >= 0);
+#if NET8_0_OR_GREATER && DEBUG
+                // In debug builds, verify source generator is working by checking if any activators are registered
+                var registeredActivators = SourceGeneratorSupport.GetRegisteredActivators();
+                Assert.True(registeredActivators.Count > 0, "Source generator should have registered some activators");
 #endif
             }
             else
             {
-                // For reflection wrapper, source generators should be temporarily disabled
+                // For reflection wrapper, source generators should be disabled
                 Assert.False(wrapper.IsSourceGeneratedReader);
             }
         }

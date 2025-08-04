@@ -133,12 +133,5 @@ namespace MaxMind.Db
             };
         }
 
-        /// <summary>
-        /// Returns a ReadOnlySpan view of the buffer data for optimized comparisons
-        /// </summary>
-        internal ReadOnlySpan<byte> AsSpan(long offset, int count)
-        {
-            return _fileBytes.AsSpan((int)offset, count);
-        }
     }
 }

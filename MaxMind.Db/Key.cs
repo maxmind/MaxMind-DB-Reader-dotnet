@@ -30,13 +30,7 @@ namespace MaxMind.Db
                 return false;
             }
 
-            // Use optimized span comparison when available
-            if (buffer is ArrayBuffer arrayBuffer && other.buffer is ArrayBuffer otherArrayBuffer)
-            {
-                return arrayBuffer.AsSpan(offset, size).SequenceEqual(otherArrayBuffer.AsSpan(other.offset, other.size));
-            }
-
-            // Fallback to byte-by-byte comparison
+            // Byte-by-byte comparison
             for (var i = 0; i < size; i++)
             {
                 if (buffer.ReadOne(offset + i) != other.buffer.ReadOne(other.offset + i))
