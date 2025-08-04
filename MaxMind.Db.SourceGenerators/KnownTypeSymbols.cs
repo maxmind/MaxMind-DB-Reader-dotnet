@@ -60,6 +60,23 @@ namespace MaxMind.Db.SourceGenerators
             "System.Collections.Generic.Dictionary`2", ref _dictionaryType);
         private Option<INamedTypeSymbol?> _dictionaryType;
 
+        public INamedTypeSymbol? FrozenDictionaryType => GetOrResolveType(
+            "System.Collections.Frozen.FrozenDictionary`2", ref _frozenDictionaryType);
+        private Option<INamedTypeSymbol?> _frozenDictionaryType;
+
+        // MaxMind.Db specific types
+        public INamedTypeSymbol? NetworkType => GetOrResolveType(
+            "MaxMind.Db.Network", ref _networkType);
+        private Option<INamedTypeSymbol?> _networkType;
+
+        public INamedTypeSymbol? InjectableValuesType => GetOrResolveType(
+            "MaxMind.Db.InjectableValues", ref _injectableValuesType);
+        private Option<INamedTypeSymbol?> _injectableValuesType;
+
+        public INamedTypeSymbol? ReaderType => GetOrResolveType(
+            "MaxMind.Db.Reader", ref _readerType);
+        private Option<INamedTypeSymbol?> _readerType;
+
         /// <summary>
         /// Gets or resolves a type symbol with caching using the Option pattern.
         /// This avoids repeated expensive metadata lookups during compilation.
