@@ -1,8 +1,8 @@
 ﻿#region
 
-using MaxMind.Db.Test.Helper;
 using System.Collections.Generic;
 using System.IO;
+using MaxMind.Db.Test.Helper;
 using Xunit;
 
 #endregion

@@ -474,13 +474,13 @@ namespace MaxMind.Db
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
-                    
+
                     // Cache keys to reduce allocations - map keys are often repeated
                     if (_keyCache.TryGetValue(originalOffset, out var cachedKey))
                     {
                         return cachedKey;
                     }
-                    
+
                     var key = new Key(_database, offset, size);
                     _keyCache.Add(originalOffset, key);
                     return key;

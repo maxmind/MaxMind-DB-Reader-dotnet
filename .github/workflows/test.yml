@@ -27,6 +27,9 @@ jobs:
             8.0.x
             9.0.x
 
+      - name: Check code formatting
+        run: dotnet format --verify-no-changes
+
       - name: Build
         run: |
               dotnet build MaxMind.Db

@@ -71,18 +71,18 @@ namespace MaxMind.Db.Test
             var injectables = new InjectableValues();
             injectables.AddValue("injected", "injected string");
             var record = Find<TypeHolder>(reader, IPAddress.Parse("1.1.1.1"), injectables);
-            
+
             Assert.NotNull(record);
             Assert.True(record.Boolean);
             Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
         }
 
-        [Fact] 
+        [Fact]
         public void TestSimpleTypeWithSourceGenerator()
         {
             using var reader = CreateReader("MaxMind-DB-test-ipv4-24.mmdb");
             var result = Find<Dictionary<string, object>>(reader, IPAddress.Parse("1.1.1.1"));
-            
+
             Assert.NotNull(result);
             Assert.Equal("1.1.1.1", result["ip"]);
         }
@@ -112,7 +112,7 @@ namespace MaxMind.Db.Test
             var injectables = new InjectableValues();
             injectables.AddValue("injected", "injected string");
             var record = Find<TypeHolder>(reader, IPAddress.Parse("1.1.1.1"), injectables);
-            
+
             Assert.NotNull(record);
             Assert.True(record.Boolean);
             Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
@@ -123,7 +123,7 @@ namespace MaxMind.Db.Test
         {
             using var reader = CreateReader("MaxMind-DB-test-ipv4-24.mmdb");
             var result = Find<Dictionary<string, object>>(reader, IPAddress.Parse("1.1.1.1"));
-            
+
             Assert.NotNull(result);
             Assert.Equal("1.1.1.1", result["ip"]);
         }
@@ -147,7 +147,7 @@ namespace MaxMind.Db.Test
         {
             using var testBase = new TestableReaderBase(wrapper);
             using var reader = testBase.CreateReader("MaxMind-DB-test-ipv4-24.mmdb");
-            
+
             var result = testBase.Find<Dictionary<string, object>>(reader, IPAddress.Parse("1.1.1.1"));
             Assert.NotNull(result);
             Assert.Equal("1.1.1.1", result["ip"]);
@@ -174,10 +174,10 @@ namespace MaxMind.Db.Test
         {
             using var testBase = new TestableReaderBase(wrapper);
             using var reader = testBase.CreateReader("MaxMind-DB-test-decoder.mmdb");
-            
+
             var injectables = new InjectableValues();
             injectables.AddValue("injected", "test value");
-            
+
             var record = testBase.Find<TypeHolder>(reader, IPAddress.Parse("1.1.1.1"), injectables);
             Assert.NotNull(record);
             Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
@@ -192,7 +192,7 @@ namespace MaxMind.Db.Test
         private class TestableReaderBase : ReaderTestBase, IDisposable
         {
             public TestableReaderBase(ReaderWrapper wrapper) : base(wrapper) { }
-            
+
             public new void Dispose()
             {
                 base.Dispose();

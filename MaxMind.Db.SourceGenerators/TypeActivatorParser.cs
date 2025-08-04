@@ -1,9 +1,9 @@
-using MaxMind.Db.SourceGenerators.Model;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using MaxMind.Db.SourceGenerators.Model;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MaxMind.Db.SourceGenerators
 {

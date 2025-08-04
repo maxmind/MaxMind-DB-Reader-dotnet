@@ -1,8 +1,8 @@
 #if NET8_0_OR_GREATER
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -34,7 +34,7 @@ namespace MaxMind.Db
         {
             // For now, just register the activator - the complete metadata could be used for further optimizations
             RegisteredActivators[type] = activator;
-            
+
             // Metadata could be used for future optimizations if needed
         }
 

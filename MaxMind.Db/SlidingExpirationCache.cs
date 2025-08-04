@@ -32,13 +32,13 @@ namespace MaxMind.Db
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
             var entry = _cache.GetOrAdd(key, k => new CacheEntry(valueFactory(k)));
-            
+
             // Update last used timestamp for sliding expiration
             Volatile.Write(ref entry.LastUsedTicks, DateTime.UtcNow.Ticks);
-            
+
             // Periodic cleanup of expired entries
             TryEvictExpiredEntries();
-            
+
             return entry.Value;
         }
 
@@ -63,7 +63,7 @@ namespace MaxMind.Db
         private void TryEvictExpiredEntries()
         {
             long currentTicks = DateTime.UtcNow.Ticks;
-            
+
             // Only evict if enough time has passed since last eviction
             if (currentTicks - Volatile.Read(ref _lastEvictedTicks) < _evictionIntervalTicks)
                 return;
@@ -117,11 +117,11 @@ namespace MaxMind.Db
     {
         // Default expiration: 30 minutes of inactivity
         private static readonly TimeSpan DefaultSlidingExpiration = TimeSpan.FromMinutes(30);
-        
+
         // Eviction check interval: every 5 minutes
         private static readonly TimeSpan DefaultEvictionInterval = TimeSpan.FromMinutes(5);
 
-        private static readonly SlidingExpirationCache<Type, TypeActivator> _cache = 
+        private static readonly SlidingExpirationCache<Type, TypeActivator> _cache =
             new(DefaultSlidingExpiration, DefaultEvictionInterval);
 
         /// <summary>
@@ -164,8 +164,8 @@ namespace MaxMind.Db
 
             public static long CacheHits => Volatile.Read(ref _cacheHits);
             public static long CacheMisses => Volatile.Read(ref _cacheMisses);
-            
-            public static double CacheHitRatio => 
+
+            public static double CacheHitRatio =>
                 _cacheHits + _cacheMisses == 0 ? 0.0 : (double)_cacheHits / (_cacheHits + _cacheMisses);
 
             internal static void Reset()

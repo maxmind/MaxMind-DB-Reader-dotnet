@@ -56,7 +56,7 @@ namespace MaxMind.Db
         // Use sliding expiration cache for automatic memory management in long-running applications
         private static readonly SlidingExpirationCache<Type, TypeActivator> _typeConstructors =
             new(TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(5));
-        
+
         // Pre-computed parameter name keys to avoid repeated UTF-8 encoding and ArrayBuffer allocation
         private static readonly ConcurrentDictionary<string, Key> _parameterKeyCache = new();
 
@@ -66,12 +66,12 @@ namespace MaxMind.Db
             // Track cache performance in debug builds
             bool wasInCache = TypeActivatorCache.CacheCount > 0;
             var result = _typeConstructors.GetOrAdd(expectedType, ClassActivator);
-            
+
             if (wasInCache)
                 TypeActivatorCache.PerformanceCounters.RecordCacheHit();
             else
                 TypeActivatorCache.PerformanceCounters.RecordCacheMiss();
-                
+
             return result;
 #else
             return _typeConstructors.GetOrAdd(expectedType, ClassActivator);
@@ -175,7 +175,7 @@ namespace MaxMind.Db
                 expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
                     .ToList();
-            
+
             if (constructors.Count != 1)
             {
                 throw new DeserializationException(
@@ -188,7 +188,7 @@ namespace MaxMind.Db
             var injectables = new List<KeyValuePair<string, ParameterInfo>>();
             var networkParams = new List<ParameterInfo>();
             var alwaysCreated = new List<ParameterInfo>();
-            
+
             foreach (var param in parameters)
             {
                 var injectableAttribute = param.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
@@ -296,7 +296,7 @@ namespace MaxMind.Db
             return false;
         }
 
-        public IEnumerable<ParameterInfo> Values => 
+        public IEnumerable<ParameterInfo> Values =>
             _fallbackDict?.Values ?? _items.Select(kvp => kvp.Value);
     }
 }

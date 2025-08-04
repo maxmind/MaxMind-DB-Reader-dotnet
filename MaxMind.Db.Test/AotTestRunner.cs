@@ -16,7 +16,7 @@ namespace MaxMind.Db.Test
         {
             Console.WriteLine("MaxMind.Db AOT Direct Test Runner");
             Console.WriteLine("==================================");
-            
+
             // Check if we're in AOT mode
 #if NET8_0_OR_GREATER
             var isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported;
@@ -37,7 +37,7 @@ namespace MaxMind.Db.Test
                     // Try alternate path
                     testDb = Path.Combine("..", "MaxMind.Db.Test", "TestData", "MaxMind-DB", "test-data", "MaxMind-DB-test-decoder.mmdb");
                 }
-                
+
                 using var reader = new Reader(testDb);
                 var metadata = reader.Metadata;
                 if (metadata.DatabaseType == "MaxMind DB Decoder Test")
@@ -66,7 +66,7 @@ namespace MaxMind.Db.Test
                 {
                     testDb = Path.Combine("..", "MaxMind.Db.Test", "TestData", "MaxMind-DB", "test-data", "MaxMind-DB-test-ipv4-24.mmdb");
                 }
-                
+
                 using var reader = new Reader(testDb);
                 var ip = IPAddress.Parse("1.1.1.1");
                 var result = reader.Find<Dictionary<string, object>>(ip);
@@ -96,7 +96,7 @@ namespace MaxMind.Db.Test
                 {
                     testDb = Path.Combine("..", "MaxMind.Db.Test", "TestData", "MaxMind-DB", "test-data", "GeoIP2-City-Test.mmdb");
                 }
-                
+
                 using var reader = new Reader(testDb);
                 var ip = IPAddress.Parse("81.2.69.160");
                 var result = reader.Find<TestModel>(ip);
@@ -126,7 +126,7 @@ namespace MaxMind.Db.Test
                 {
                     testDb = Path.Combine("..", "MaxMind.Db.Test", "TestData", "MaxMind-DB", "test-data", "MaxMind-DB-test-decoder.mmdb");
                 }
-                
+
                 using var reader = new Reader(testDb, FileAccessMode.Memory);
                 var metadata = reader.Metadata;
                 if (metadata != null)
