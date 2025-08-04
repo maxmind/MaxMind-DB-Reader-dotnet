@@ -45,15 +45,11 @@ namespace MaxMind.Db.AotTest
         {
             Console.Write("Test 1 - AOT Mode Detection: ");
 
-#if NET8_0_OR_GREATER
             var isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported;
             Console.WriteLine(isAot ? "Running in AOT mode ✓" : "Running in JIT mode");
 
             // AotCompatibility is internal, so we can't check it directly
             // The test itself demonstrates AOT is working if it compiles and runs
-#else
-            Console.WriteLine("Not running on .NET 8+");
-#endif
         }
 
         private static void TestTypeCreation()

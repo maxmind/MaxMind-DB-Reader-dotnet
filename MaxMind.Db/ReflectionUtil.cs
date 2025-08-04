@@ -23,7 +23,7 @@ namespace MaxMind.Db
                 throw new ArgumentNullException(nameof(constructor));
             }
 
-#if NET8_0_OR_GREATER && NATIVEAOT
+#if NATIVEAOT
             // In AOT mode, fall back to ConstructorInfo.Invoke since Expression.Compile is not supported
             if (AotCompatibility.UseAotOptimizations)
             {

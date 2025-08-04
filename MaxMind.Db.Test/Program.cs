@@ -15,7 +15,6 @@ namespace MaxMind.Db.Test
                 return AotTestRunner.RunDirectTests();
             }
 
-#if NET8_0_OR_GREATER
             // Auto-detect AOT mode
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
@@ -24,7 +23,6 @@ namespace MaxMind.Db.Test
                 Console.WriteLine();
                 return AotTestRunner.RunDirectTests();
             }
-#endif
 
             // In JIT mode, try to run xUnit tests
             // This would normally be handled by the auto-generated entry point

@@ -155,7 +155,7 @@ namespace MaxMind.Db.Test
             // Verify we're using the expected activation path
             if (wrapper.IsSourceGeneratedReader)
             {
-#if NET8_0_OR_GREATER && DEBUG
+#if DEBUG
                 // In debug builds, verify source generator is working by checking if any activators are registered
                 var registeredActivators = SourceGeneratorSupport.GetRegisteredActivators();
                 Assert.True(registeredActivators.Count > 0, "Source generator should have registered some activators");

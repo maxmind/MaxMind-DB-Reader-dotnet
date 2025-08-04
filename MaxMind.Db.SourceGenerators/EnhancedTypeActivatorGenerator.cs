@@ -184,14 +184,12 @@ namespace MaxMind.Db.SourceGenerators
         {
             code.AppendLine("        static TypeActivatorRegistration()");
             code.AppendLine("        {");
-            code.AppendLine("#if NET8_0_OR_GREATER");
 
             foreach (var spec in specs)
             {
                 GenerateOptimizedActivator(code, spec, parameterMappingCache);
             }
 
-            code.AppendLine("#endif");
             code.AppendLine("        }");
             code.AppendLine();
         }

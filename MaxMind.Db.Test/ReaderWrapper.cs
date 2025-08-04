@@ -90,7 +90,7 @@ namespace MaxMind.Db.Test
 
         private static T DisableSourceGenerators<T>(Func<T> operation)
         {
-#if NET8_0_OR_GREATER && DEBUG
+#if DEBUG
             // Temporarily disable source generators for this thread only
             using var disabler = SourceGeneratorSupport.DisableSourceGeneratorsForCurrentThread();
             return operation();

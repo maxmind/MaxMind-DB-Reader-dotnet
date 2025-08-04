@@ -3,9 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NET8_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
-#endif
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -70,13 +68,8 @@ namespace MaxMind.Db
             });
         }
 
-#if NET8_0_OR_GREATER
         private static TypeActivator ClassActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type expectedType)
-#else
-        private static TypeActivator ClassActivator(Type expectedType)
-#endif
         {
-#if NET8_0_OR_GREATER
             // Ensure generated activators are registered
             try
             {
@@ -92,7 +85,6 @@ namespace MaxMind.Db
             {
                 return CreateRegisteredActivator(expectedType);
             }
-#endif
             var constructors =
                 expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
@@ -150,7 +142,6 @@ namespace MaxMind.Db
             return clsConstructor;
         }
 
-#if NET8_0_OR_GREATER
         private static TypeActivator CreateRegisteredActivator(Type expectedType)
         {
             // Use reflection ONCE to get parameter information, but use fast activator for creation
@@ -216,7 +207,6 @@ namespace MaxMind.Db
             return new TypeActivator(fastActivator, paramNameTypes, injectables.ToArray(),
                 networkParams.ToArray(), alwaysCreated.ToArray());
         }
-#endif
     }
 
     /// <summary>

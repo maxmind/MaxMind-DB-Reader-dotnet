@@ -2,9 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-#if NET8_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
-#endif
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -232,10 +230,8 @@ namespace MaxMind.Db
         /// <param name="ipAddress">The IP address.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
-#if NET8_0_OR_GREATER
         [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
         [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
-#endif
         public T? Find<T>(IPAddress ipAddress, InjectableValues? injectables = null) where T : class
         {
             return Find<T>(ipAddress, out _, injectables);
@@ -248,10 +244,8 @@ namespace MaxMind.Db
         /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
-#if NET8_0_OR_GREATER
         [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
         [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
-#endif
         public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);

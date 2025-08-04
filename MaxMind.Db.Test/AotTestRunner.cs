@@ -18,10 +18,8 @@ namespace MaxMind.Db.Test
             Console.WriteLine("==================================");
 
             // Check if we're in AOT mode
-#if NET8_0_OR_GREATER
             var isAot = !System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported;
             Console.WriteLine($"AOT Mode: {(isAot ? "Yes" : "No")}");
-#endif
             Console.WriteLine();
 
             int passed = 0;
