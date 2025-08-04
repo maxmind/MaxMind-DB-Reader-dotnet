@@ -110,6 +110,28 @@ This API fully supports use in multi-threaded applications. In such
 applications, we suggest creating one `Reader` object and sharing that among
 threads.
 
+## NativeAOT Support ##
+
+Starting with version 4.2.0, this library includes support for NativeAOT compilation on .NET 8+.
+
+### Usage ###
+
+The library works with NativeAOT compilation without requiring code changes. Custom model classes
+must use the `[Constructor]` attribute (as shown in the example above), which is required for
+all deserialization scenarios, not just NativeAOT.
+
+To publish with NativeAOT:
+
+```bash
+dotnet publish -c Release -r linux-x64 --self-contained -p:PublishAot=true
+```
+
+### Limitations ###
+
+When compiled with NativeAOT, the library uses reflection-based fallbacks instead of
+expression compilation for type instantiation. This may impact performance compared to
+JIT-compiled applications.
+
 ## Format ##
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>.NET reader for the MaxMind DB file format</Description>
     <VersionPrefix>4.2.0</VersionPrefix>
-    <TargetFrameworks>net9.0;net8.0;netstandard2.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>MaxMind.Db</AssemblyName>
     <AssemblyOriginatorKeyFile>../MaxMind.snk</AssemblyOriginatorKeyFile>
@@ -26,7 +26,7 @@
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <LangVersion>13.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <AnalysisLevel>latest</AnalysisLevel>
@@ -35,11 +35,40 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- NativeAOT support for .NET 8+ -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2070;IL2067</NoWarn>
+  </PropertyGroup>
+
+  <!-- Enable AOT mode when publishing with NativeAOT -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
 
-    <ItemGroup>
+  <!-- Reference source generator for .NET 8+ during build -->
+  <ItemGroup>
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Include source generator in NuGet package for user projects -->
+  <ItemGroup>
+    <None Include="..\MaxMind.Db.SourceGenerators\bin\$(Configuration)\net8.0\MaxMind.Db.SourceGenerators.dll" 
+          Pack="true" 
+          PackagePath="analyzers\dotnet\cs\MaxMind.Db.SourceGenerators.dll" 
+          Visible="false" 
+          Condition="Exists('..\MaxMind.Db.SourceGenerators\bin\$(Configuration)\net8.0\MaxMind.Db.SourceGenerators.dll')" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\MaxMind-logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>

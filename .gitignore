@@ -122,3 +122,9 @@ UPgradeLog.htm
 # MonoDevelop
 *.userprefs
 test-results
+
+# AOT test output
+aot-test-output/
+
+# IDE files  
+.idea/
