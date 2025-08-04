@@ -132,5 +132,6 @@ namespace MaxMind.Db
                 _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
             };
         }
+
     }
 }

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -229,6 +230,8 @@ namespace MaxMind.Db
         /// <param name="ipAddress">The IP address.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
         public T? Find<T>(IPAddress ipAddress, InjectableValues? injectables = null) where T : class
         {
             return Find<T>(ipAddress, out _, injectables);
@@ -241,6 +244,8 @@ namespace MaxMind.Db
         /// <param name="prefixLength">The network prefix length for the network record in the database containing the IP address looked up.</param>
         /// <param name="injectables">Value to inject during deserialization</param>
         /// <returns>An object containing the IP related data</returns>
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
         public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
@@ -332,29 +337,21 @@ namespace MaxMind.Db
 
         private int FindAddressInTree(IPAddress address, out int prefixLength)
         {
-#if NETSTANDARD2_0
-            byte[] rawAddress;
-#else
             Span<byte> rawAddress = stackalloc byte[address.AddressFamily == AddressFamily.InterNetwork ? 4 : 16];
             if (address.TryWriteBytes(rawAddress, out int rawAddressLength))
             {
                 rawAddress = rawAddress[..rawAddressLength];
             }
             else
-#endif
             {
-                // Defensive check.
+                // Defensive check - fallback to heap allocation only if needed
                 rawAddress = address.GetAddressBytes();
             }
 
             return FindAddressInTree(rawAddress, out prefixLength);
         }
 
-#if NETSTANDARD2_0
-        private int FindAddressInTree(byte[] rawAddress, out int prefixLength)
-#else
         private int FindAddressInTree(ReadOnlySpan<byte> rawAddress, out int prefixLength)
-#endif
         {
             var bitLength = rawAddress.Length * 8;
             var record = StartNode(bitLength);

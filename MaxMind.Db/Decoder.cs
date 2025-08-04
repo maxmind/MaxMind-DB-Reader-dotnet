@@ -1,11 +1,10 @@
 ﻿#region
 
 using System;
-#if !NETSTANDARD2_0
 using System.Buffers;
-#endif
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 
@@ -73,6 +72,8 @@ namespace MaxMind.Db
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns>An object containing the data read from the stream</returns>
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
             if (Decode(typeof(T), offset, out outOffset, injectables, network) is not T decoded)
@@ -82,6 +83,8 @@ namespace MaxMind.Db
             return decoded;
         }
 
+        [RequiresUnreferencedCode("This method uses reflection to deserialize data. For NativeAOT, ensure types have [Constructor] attribute.")]
+        [RequiresDynamicCode("This method may generate code at runtime for optimal performance. For NativeAOT, types with [Constructor] attribute will use pre-generated code.")]
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues? injectables = null, Network? network = null)
         {
             var type = CtrlData(offset, out var size, out offset);
@@ -369,13 +372,9 @@ namespace MaxMind.Db
         {
             var constructor = _typeAcivatorCreator.GetActivator(expectedType);
 
-#if !NETSTANDARD2_0
             // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
             // number of parameters.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
-#else
-            object?[] parameters = new object?[constructor.DefaultParameters.Length];
-#endif
             constructor.DefaultParameters.CopyTo(parameters, 0);
 
             for (var i = 0; i < size; i++)
@@ -401,9 +400,7 @@ namespace MaxMind.Db
             outOffset = offset;
             object obj = constructor.Activator(parameters);
 
-#if !NETSTANDARD2_0
             ArrayPool<object?>.Shared.Return(parameters);
-#endif
 
             return obj;
         }
@@ -421,11 +418,7 @@ namespace MaxMind.Db
 
                 var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
 
-#if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
-#else
-                object?[] cstorParams = new object?[activator.DefaultParameters.Length];
-#endif
                 activator.DefaultParameters.CopyTo(cstorParams, 0);
 
                 SetInjectables(activator, cstorParams, injectables);
@@ -433,9 +426,7 @@ namespace MaxMind.Db
                 SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
                 parameters[param.Position] = activator.Activator(cstorParams);
 
-#if !NETSTANDARD2_0
                 ArrayPool<object?>.Shared.Return(cstorParams);
-#endif
             }
         }
 
@@ -463,9 +454,11 @@ namespace MaxMind.Db
         }
 
         private readonly TypeAcivatorCreator _typeAcivatorCreator;
+        private readonly CachedDictionary<long, Key> _keyCache = new(2048, null); // Increased cache size for better hit rates
 
         private Key DecodeKey(long offset, out long outOffset)
         {
+            var originalOffset = offset;
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
             {
@@ -475,7 +468,16 @@ namespace MaxMind.Db
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
-                    return new Key(_database, offset, size);
+
+                    // Cache keys to reduce allocations - map keys are often repeated
+                    if (_keyCache.TryGetValue(originalOffset, out var cachedKey))
+                    {
+                        return cachedKey;
+                    }
+
+                    var key = new Key(_database, offset, size);
+                    _keyCache.Add(originalOffset, key);
+                    return key;
 
                 default:
                     throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
