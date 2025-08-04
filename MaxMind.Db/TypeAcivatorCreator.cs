@@ -51,7 +51,7 @@ namespace MaxMind.Db
 
     internal sealed class TypeAcivatorCreator
     {
-        private static readonly ConcurrentDictionary<Type, TypeActivator> _typeConstructors = new();
+        private static readonly TypeActivatorCache _typeConstructors = new();
 
         // Pre-computed parameter name keys to avoid repeated UTF-8 encoding and ArrayBuffer allocation
         private static readonly ConcurrentDictionary<string, Key> _parameterKeyCache = new();
@@ -85,22 +85,8 @@ namespace MaxMind.Db
             {
                 return CreateRegisteredActivator(expectedType);
             }
-            var constructors =
-                expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
-                    .ToList();
-            if (constructors.Count == 0)
-            {
-                throw new DeserializationException(
-                    $"No constructors found for {expectedType} found with MaxMind.Db.Constructor attribute");
-            }
-            if (constructors.Count > 1)
-            {
-                throw new DeserializationException(
-                    $"More than one constructor found for {expectedType} found with MaxMind.Db/Constructor attribute");
-            }
-
-            var constructor = constructors[0];
+            
+            var constructor = ConstructorResolver.ResolveConstructor(expectedType);
             var parameters = constructor.GetParameters();
             var paramNameTypes = new SmallParameterDictionary();
             var injectables = new List<KeyValuePair<string, ParameterInfo>>();
@@ -131,7 +117,10 @@ namespace MaxMind.Db
                     name = param.Name;
                     if (name == null)
                     {
-                        throw new DeserializationException("Unexpected null parameter name");
+                        throw ReflectionErrorHandling.CreateDeserializationException(
+                            "Unexpected null parameter name",
+                            expectedType,
+                            param.Name);
                     }
                 }
                 paramNameTypes.Add(GetParameterKey(name), param);
@@ -145,18 +134,7 @@ namespace MaxMind.Db
         private static TypeActivator CreateRegisteredActivator(Type expectedType)
         {
             // Use reflection ONCE to get parameter information, but use fast activator for creation
-            var constructors =
-                expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
-                    .ToList();
-
-            if (constructors.Count != 1)
-            {
-                throw new DeserializationException(
-                    $"Expected exactly one constructor with [Constructor] attribute for {expectedType}, found {constructors.Count}");
-            }
-
-            var constructor = constructors[0];
+            var constructor = ConstructorResolver.ResolveConstructor(expectedType);
             var parameters = constructor.GetParameters();
             var paramNameTypes = new SmallParameterDictionary();
             var injectables = new List<KeyValuePair<string, ParameterInfo>>();
@@ -188,7 +166,10 @@ namespace MaxMind.Db
                     name = param.Name;
                     if (name == null)
                     {
-                        throw new DeserializationException("Unexpected null parameter name");
+                        throw ReflectionErrorHandling.CreateDeserializationException(
+                            "Unexpected null parameter name",
+                            expectedType,
+                            param.Name);
                     }
                 }
                 paramNameTypes.Add(GetParameterKey(name), param);
@@ -201,7 +182,9 @@ namespace MaxMind.Db
                 {
                     return instance!;
                 }
-                throw new InvalidOperationException($"Failed to create instance of {expectedType} using registered activator");
+                throw ReflectionErrorHandling.CreateDeserializationException(
+                    "Failed to create instance using registered activator",
+                    expectedType);
             };
 
             return new TypeActivator(fastActivator, paramNameTypes, injectables.ToArray(),
