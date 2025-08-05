@@ -30,6 +30,7 @@ namespace MaxMind.Db
                 return false;
             }
 
+            // Byte-by-byte comparison
             for (var i = 0; i < size; i++)
             {
                 if (buffer.ReadOne(offset + i) != other.buffer.ReadOne(other.offset + i))
@@ -55,5 +56,6 @@ namespace MaxMind.Db
         {
             return hashCode;
         }
+
     }
 }
