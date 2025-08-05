@@ -31,6 +31,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
+
+    <!-- Exclude source generator when testing reflection-only mode -->
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerators\MaxMind.Db.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" 
+                      Condition="'$(TestMode)' != 'Reflection'" />
   </ItemGroup>
 
   <ItemGroup>
