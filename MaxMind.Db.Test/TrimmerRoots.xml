@@ -1,0 +1,28 @@
+<linker>
+  <!-- Preserve MaxMind.Db types with Constructor attribute -->
+  <assembly fullname="MaxMind.Db">
+    <!-- Preserve Metadata class and its constructor -->
+    <type fullname="MaxMind.Db.Metadata" preserve="all">
+      <method signature="System.Void .ctor(System.Int32,System.Int32,System.UInt64,System.String,System.Collections.Generic.IDictionary`2&lt;System.String,System.String&gt;,System.Int32,System.Collections.Generic.IReadOnlyList`1&lt;System.String&gt;,System.Int64,System.Int32)" />
+    </type>
+    
+    <!-- Preserve all attributes -->
+    <type fullname="MaxMind.Db.ConstructorAttribute" preserve="all" />
+    <type fullname="MaxMind.Db.ParameterAttribute" preserve="all" />
+    <type fullname="MaxMind.Db.InjectAttribute" preserve="all" />
+    <type fullname="MaxMind.Db.NetworkAttribute" preserve="all" />
+    
+    <!-- Preserve internal types needed for reflection -->
+    <type fullname="MaxMind.Db.TypeAcivatorCreator" preserve="all" />
+    <type fullname="MaxMind.Db.TypeActivator" preserve="all" />
+    <type fullname="MaxMind.Db.ReflectionUtil" preserve="all" />
+  </assembly>
+
+  <!-- Preserve test types -->
+  <assembly fullname="MaxMind.Db.Test">
+    <type fullname="MaxMind.Db.Test.AotTestRunner" preserve="all" />
+    <type fullname="MaxMind.Db.Test.AotTestRunner/TestModel" preserve="all">
+      <method signature="System.Void .ctor(System.Collections.Generic.Dictionary`2&lt;System.String,System.Object&gt;)" />
+    </type>
+  </assembly>
+</linker>
