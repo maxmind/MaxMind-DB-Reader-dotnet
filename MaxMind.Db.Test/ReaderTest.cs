@@ -23,7 +23,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public void Test()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -50,7 +50,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public async Task TestAsync()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -77,7 +77,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public void TestStream()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -102,7 +102,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public async Task TestStreamAsync()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -127,7 +127,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public void TestNonSeekableStream()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -153,7 +153,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public async Task TestNonSeekableStreamAsync()
         {
-            foreach (var recordSize in new long[] { 24, 28, 32 })
+            foreach (var recordSize in new[] { 24, 28, 32 })
             {
                 foreach (var ipVersion in new[] { 4, 6 })
                 {
@@ -346,7 +346,7 @@ namespace MaxMind.Db.Test
             }
             Assert.True((bool)record["boolean"]);
 
-            Assert.Equal(new byte[] { 0, 0, 0, 42 }, (byte[])record["bytes"]);
+            Assert.Equal([0, 0, 0, 42], (byte[])record["bytes"]);
 
             Assert.Equal("unicode! ☯ - ♫", record["utf8_string"]);
 
@@ -392,7 +392,7 @@ namespace MaxMind.Db.Test
                 throw new Xunit.Sdk.XunitException("unexpected null record value");
             }
             Assert.True(record.Boolean);
-            Assert.Equal(new byte[] { 0, 0, 0, 42 }, record.Bytes);
+            Assert.Equal([0, 0, 0, 42], record.Bytes);
             Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
 
             Assert.Equal(new List<long> { 1, 2, 3 }, record.Array);
