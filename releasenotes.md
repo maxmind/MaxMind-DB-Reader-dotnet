@@ -1,5 +1,10 @@
 # Release Notes #
 
+## 4.3.0 (Unreleased) ##
+
+* .NET 10.0 has been added as a target.
+* The language version has been updated to C# 14.0.
+
 ## 4.2.0 (2025-05-05) ##
 
 * .NET 6.0 and .NET 7.0 have been removed as targets as they have both

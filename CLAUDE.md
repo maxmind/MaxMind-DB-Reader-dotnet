@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **MaxMind-DB-Reader-dotnet** is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file format that stores data indexed by IP address subnets (IPv4 or IPv6). This is the lower-level library used by the GeoIP2-dotnet client library.
 
 **Key Technologies:**
-- .NET 9.0, .NET 8.0, .NET Standard 2.1, and .NET Standard 2.0
+- .NET 10.0, .NET 9.0, .NET 8.0, .NET Standard 2.1, and .NET Standard 2.0
 - xUnit for testing
 - BenchmarkDotNet for performance benchmarking
 - Modern C# features (nullable reference types, unsafe code, Span<T>)
@@ -44,7 +44,7 @@ dotnet test --filter "FullyQualifiedName~ReaderTest.TestMany"
 
 ```bash
 # Run benchmarks (must specify target framework)
-dotnet run -c Release -f net9.0 -p MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
+dotnet run -c Release -f net10.0 -p MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
 ```
 
 ### Test Data Submodule
@@ -345,8 +345,8 @@ public ReturnType MethodName(ParamType paramName)
 
 ## Version Requirements
 
-- **Target Frameworks**: net9.0, net8.0, netstandard2.1, netstandard2.0
-- **Language Version**: C# 13.0
+- **Target Frameworks**: net10.0, net9.0, net8.0, netstandard2.1, netstandard2.0
+- **Language Version**: C# 14.0
 - **Key Dependencies**:
   - `xunit.v3`: 3.0.0 (testing framework)
   - `BenchmarkDotNet`: For performance benchmarking
