@@ -26,12 +26,10 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: Build
-        run: |
-              dotnet build MaxMind.Db
-              dotnet build MaxMind.Db.Benchmark
-              dotnet build MaxMind.Db.Test
+        run: dotnet build
 
       - name: Run benchmark
         run: dotnet run -f net8.0 --project MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
@@ -39,6 +37,6 @@ jobs:
           MAXMIND_BENCHMARK_DB: ${{ github.workspace }}/MaxMind.Db.Test/TestData/MaxMind-DB/test-data/GeoIP2-City-Test.mmdb
 
       - name: Run tests
-        run: dotnet test MaxMind.Db.Test/MaxMind.Db.Test.csproj
+        run: dotnet test
         env:
           MAXMIND_TEST_BASE_DIR: ${{ github.workspace }}/MaxMind.Db.Test
