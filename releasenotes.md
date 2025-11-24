@@ -1,5 +1,9 @@
 # Release Notes #
 
+## 4.3.1 (2025-11-24) ##
+
+* First release via Trusted Publishing. No other changes.
+
 ## 4.3.0 (2025-11-20) ##
 
 * .NET 10.0 has been added as a target.
