@@ -122,3 +122,6 @@ UPgradeLog.htm
 # MonoDevelop
 *.userprefs
 test-results
+
+# Claude Code
+.claude
