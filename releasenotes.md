@@ -1,5 +1,9 @@
 # Release Notes #
 
+## 4.3.3 (2025-11-24) ##
+
+* Third attempt at Trusted Publishing. No other changes.
+
 ## 4.3.2 (2025-11-24) ##
 
 * Second attempt at Trusted Publishing. No other changes.
