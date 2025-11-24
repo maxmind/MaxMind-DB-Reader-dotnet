@@ -22,7 +22,12 @@ fi
 
 changelog=$(cat releasenotes.md)
 
-regex='([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?) \(([0-9]{4}-[0-9]{2}-[0-9]{2})\)'
+regex='
+## ([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?) \(([0-9]{4}-[0-9]{2}-[0-9]{2})\) ##
+
+((.|
+)*)
+'
 
 if [[ ! $changelog =~ $regex ]]; then
     echo "Could not find version/date in releasenotes.md!"
@@ -31,6 +36,7 @@ fi
 
 version="${BASH_REMATCH[1]}"
 date="${BASH_REMATCH[3]}"
+notes="$(echo "${BASH_REMATCH[4]}" | sed -n -e '/^## [0-9]\+\.[0-9]\+\.[0-9]\+/,$!p')"
 
 if [[ "$date" != "$(date +"%Y-%m-%d")" ]]; then
     echo "$date is not today!"
@@ -54,6 +60,9 @@ dotnet test -c Release
 echo $'\nDiff:'
 git diff
 
+echo $'\nRelease notes:'
+echo "$notes"
+
 read -e -p "Commit changes and create release? (y/n) " should_continue
 
 if [ "$should_continue" != "y" ]; then
@@ -65,4 +74,4 @@ git commit -m "Prepare for $version" -a
 
 git push
 
-gh release create --target "$(git branch --show-current)" -t "$version" "$tag"
+gh release create --target "$(git branch --show-current)" -t "$version" -n "$notes" "$tag"
