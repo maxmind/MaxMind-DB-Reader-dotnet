@@ -67,6 +67,9 @@ jobs:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Push to NuGet
-        run: dotnet nuget push packages/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+        run: |
+          foreach ($file in Get-ChildItem packages/*.nupkg) {
+            dotnet nuget push $file.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+          }
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
