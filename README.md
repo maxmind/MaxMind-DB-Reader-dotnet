@@ -28,7 +28,7 @@ the reader object takes a `string` with the path to the MaxMind DB file.
 Optionally you may pass a second parameter with a `FileAccessMode` enum with
 the value `MemoryMapped` or `Memory`. The default mode is `MemoryMapped`,
 which maps the file to virtual memory. This often provides performance
-comparable to loading the file into real memory with the `Memory`  mode while
+comparable to loading the file into real memory with the `Memory` mode while
 using significantly less memory.
 
 To look up an IP address, pass a `System.Net.IPAddress` object to the
@@ -65,7 +65,7 @@ namespace MyCode
     public class Asn
     {
         [Constructor]
-        public AsnResponse(
+        public Asn(
             // The Parameter attribute tells the reader to map the database
             // key to the specified constructor parameter.
             [Parameter("autonomous_system_number")] long? autonomousSystemNumber,
@@ -73,12 +73,12 @@ namespace MyCode
 
             // The Inject attribute allows you to inject arbitrary values
             // when deserializing.
-            [Inject("ip_address")] IPAddress ipAddress),
+            [Inject("ip_address")] IPAddress ipAddress,
 
             // The Network attribute tells the reader to set the constructor
             // parameter to be the network associated with the record in the
             // database.
-            [Network] Network network
+            [Network] Network network)
         {
           ...
         }
