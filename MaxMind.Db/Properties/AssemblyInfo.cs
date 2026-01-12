@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MaxMind, Inc.")]
 [assembly: AssemblyProduct("MaxMind.Db")]
-[assembly: AssemblyCopyright("Copyright © 2013-2025 MaxMind, Inc.")]
+[assembly: AssemblyCopyright("Copyright © 2013-2026 MaxMind, Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
