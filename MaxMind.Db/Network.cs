@@ -18,7 +18,7 @@ namespace MaxMind.Db
 // Align the type on a 16 byte boundary. Ignore the compiler warning. The
 // alignment improves performance on aarch64 and linux x64.
 #pragma warning disable CS0169
-        private int _Padding;
+        private int _padding;
 #pragma warning restore CS0169
 
         /// <summary>
