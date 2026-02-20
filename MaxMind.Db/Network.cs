@@ -5,7 +5,7 @@ namespace MaxMind.Db
     /// <summary>
     ///   <c>Network</c> represents an IP network.
     /// </summary>
-    public sealed class Network
+    public struct Network
     {
         private readonly IPAddress ip;
 
