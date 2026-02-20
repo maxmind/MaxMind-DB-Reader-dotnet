@@ -14,7 +14,12 @@ namespace MaxMind.Db
         ///     subnet mask. Sometimes also known as netmask length.
         /// </summary>
         public int PrefixLength { get; }
+
+// Align the type on a 16 byte boundary. Ignore the compiler warning. The
+// alignment improves performance on aarch64 and linux x64.
+#pragma warning disable CS0169
         private int _Padding;
+#pragma warning restore CS0169
 
         /// <summary>
         ///     The first address in the network.
