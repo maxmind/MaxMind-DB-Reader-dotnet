@@ -14,6 +14,7 @@ namespace MaxMind.Db
         ///     subnet mask. Sometimes also known as netmask length.
         /// </summary>
         public int PrefixLength { get; }
+        private int _Padding;
 
         /// <summary>
         ///     The first address in the network.
