@@ -17,7 +17,7 @@ public class CityBenchmark
 {
     // A random IP that has city info.
     private Reader _reader = null!;
-    private Reader _stringInternedReader = null!;
+    private Reader? _stringInternedReader = null!;
     private Reader _ArrayBufferReader = null!;
 
     private IPAddress[] _ipAddresses = [];
@@ -94,7 +94,7 @@ public class CityBenchmark
         int x = 0;
         foreach (var ipAddress in _ipAddresses)
         {
-            if (_stringInternedReader.Find<CityResponse>(ipAddress) != null)
+            if (_stringInternedReader?.Find<CityResponse>(ipAddress) != null)
             {
                 x += 1;
             }
@@ -322,7 +322,7 @@ public static class InternedStrings
         }
 
         Debug.Assert(returnValue is not null);
-        return returnValue ?? new string();
+        return returnValue;
     }
 }
 
