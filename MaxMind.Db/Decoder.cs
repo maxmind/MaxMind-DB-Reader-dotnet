@@ -167,7 +167,7 @@ namespace MaxMind.Db
                         return pointer;
                     }
 
-                    var result = Decode(expectedType, Convert.ToInt32(pointer), out _, injectables, network);
+                    var result = Decode(expectedType, pointer, out _, injectables, network);
                     return result;
 
                 case ObjectType.Map:

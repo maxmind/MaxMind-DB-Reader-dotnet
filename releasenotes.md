@@ -1,5 +1,11 @@
 # Release Notes #
 
+## 4.3.5 ##
+
+* Fixed `OverflowException` when reading databases larger than 2 GiB where
+  data section pointers resolved to offsets exceeding the 32-bit integer
+  maximum. Reported by Yuri Simernitski. GitHub #263.
+
 ## 4.3.4 (2025-11-24) ##
 
 * Fourth attempt at Trusted Publishing. No other changes.
