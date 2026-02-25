@@ -302,19 +302,10 @@ public sealed class ReadOnlyMemoryByteComparer : IEqualityComparer<ReadOnlyMemor
     }
 }
 
-
-/// <summary>
-/// 
-/// </summary>
 public static class InternedStrings
 {
     internal static Dictionary<ReadOnlyMemory<byte>, string> s_Dictionary = new (ReadOnlyMemoryByteComparer.Default);
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="bytes"></param>
-    /// <returns></returns>
+    
     public static string GetString(ReadOnlyMemory<byte> bytes)
     {
         bool found = s_Dictionary.TryGetValue(bytes, out string? returnValue);
