@@ -61,7 +61,7 @@ namespace MaxMind.Db
             _followPointers = followPointers;
             _listActivatorCreator = new ListActivatorCreator();
             _dictionaryActivatorCreator = new DictionaryActivatorCreator();
-            _typeAcivatorCreator = new TypeAcivatorCreator();
+            _typeActivatorCreator = new TypeActivatorCreator();
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace MaxMind.Db
             Network? network
             )
         {
-            var constructor = _typeAcivatorCreator.GetActivator(expectedType);
+            var constructor = _typeActivatorCreator.GetActivator(expectedType);
 
 #if !NETSTANDARD2_0
             // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
@@ -418,7 +418,7 @@ namespace MaxMind.Db
             {
                 if (parameters[param.Position] != null) continue;
 
-                var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                var activator = _typeActivatorCreator.GetActivator(param.ParameterType);
 
 #if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
@@ -461,7 +461,7 @@ namespace MaxMind.Db
             }
         }
 
-        private readonly TypeAcivatorCreator _typeAcivatorCreator;
+        private readonly TypeActivatorCreator _typeActivatorCreator;
 
         private Key DecodeKey(long offset, out long outOffset)
         {

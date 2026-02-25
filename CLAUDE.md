@@ -79,7 +79,7 @@ The library has three main architectural layers:
 
 3. **Decoder Layer** - Binary format deserialization
    - `Decoder`: Converts binary MaxMind DB format to .NET objects
-   - `TypeAcivatorCreator`: Compiles LINQ expression trees for fast object instantiation
+   - `TypeActivatorCreator`: Compiles LINQ expression trees for fast object instantiation
    - `DictionaryActivatorCreator`, `ListActivatorCreator`: Specialized activators for collections
 
 ### MaxMind DB Binary Format
@@ -189,7 +189,7 @@ public class AsnResponse
 If adding new deserialization features:
 
 1. Create attribute class inheriting from `System.Attribute`
-2. Update `TypeAcivatorCreator` to handle new attribute in parameter array building
+2. Update `TypeActivatorCreator` to handle new attribute in parameter array building
 3. Add tests in `DecoderTest.cs` or `ReaderTest.cs`
 4. Update XML documentation for the new attribute
 
