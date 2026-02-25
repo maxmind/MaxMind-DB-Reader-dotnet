@@ -613,7 +613,9 @@ namespace MaxMind.Db
         {
             var pointerSize = ((size >> 3) & 0x3) + 1;
             var b = pointerSize == 4 ? 0 : size & 0x7;
-            var packed = (b << (8 * pointerSize)) | _database.ReadVarInt(offset, pointerSize);
+            // Cast through uint so that 4-byte values >= 2^31 are
+            // zero-extended to long rather than sign-extended.
+            var packed = ((long)b << (8 * pointerSize)) | (long)(uint)_database.ReadVarInt(offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }

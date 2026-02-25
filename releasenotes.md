@@ -8,6 +8,9 @@
 * Fixed search tree record handling to correctly interpret unsigned 32-bit
   record values that exceed the signed 32-bit integer maximum, so that
   databases with large data sections are supported.
+* Fixed data section pointer decoding to correctly read unsigned 32-bit
+  pointer values, so that pointers to offsets beyond 2 GiB in the data
+  section are resolved correctly.
 
 ## 4.3.4 (2025-11-24) ##
 

@@ -54,6 +54,55 @@ namespace MaxMind.Db.Test
         }
 
         /// <summary>
+        ///     Verify that the decoder correctly reads unsigned 32-bit pointer
+        ///     values. A 4-byte (pointerSize=4) data section pointer whose raw
+        ///     value is &gt;= 2^31 must be treated as unsigned. Before the fix,
+        ///     <c>ReadVarInt</c> returned a signed <see cref="int" />, so
+        ///     values like 0x80000000 became negative and resolved to an
+        ///     invalid offset.
+        /// </summary>
+        [Fact]
+        public void TestUnsigned32BitPointerDecoding()
+        {
+            // Target string "test" encoded as MaxMind DB UTF-8 string:
+            // 0x44 = type 2 (UTF-8 string) in top 3 bits, size 4 in bottom 5 bits
+            var targetData = new byte[] { 0x44, 0x74, 0x65, 0x73, 0x74 };
+
+            // 4-byte pointer record with packed value 0x80000000:
+            // 0x38 = type 1 (pointer) in top 3 bits, size bits = 11 000
+            //   size = 0x38 & 0x1F = 0x18
+            //   pointerSize = ((0x18 >> 3) & 0x3) + 1 = 4
+            // Followed by 4 bytes: 0x80, 0x00, 0x00, 0x00
+            var pointerData = new byte[] { 0x38, 0x80, 0x00, 0x00, 0x00 };
+
+            // Layout: [pointer @ offset 0] [target string @ offset 5]
+            var raw = new byte[pointerData.Length + targetData.Length];
+            Array.Copy(pointerData, 0, raw, 0, pointerData.Length);
+            Array.Copy(targetData, 0, raw, pointerData.Length, targetData.Length);
+
+            // DecodePointer computes: packed + pointerBase + pointerValueOffset[4]
+            //   packed = 0x80000000, pointerValueOffset[4] = 0
+            //   so resolved = 0x80000000 + pointerBase.
+            // We want the resolved offset to point to the target string at
+            // inner buffer offset 5, which the OffsetBuffer maps to
+            // baseOffset + 5. So:
+            //   0x80000000 + pointerBase = baseOffset + 5
+            //   pointerBase = baseOffset + 5 - 0x80000000
+            // With baseOffset = 0x80000000, pointerBase = 5.
+            var baseOffset = (long)int.MaxValue + 1;
+            var pointerBase = baseOffset + pointerData.Length - 0x80000000L;
+
+            var innerBuffer = new ArrayBuffer(raw);
+            using var offsetBuffer = new OffsetBuffer(innerBuffer, baseOffset);
+            var decoder = new Decoder(offsetBuffer, pointerBase);
+
+            // Before the fix, ReadVarInt returned a negative int for
+            // 0x80000000, causing the resolved pointer to be wrong.
+            var result = decoder.Decode<string>(baseOffset, out _);
+            Assert.Equal("test", result);
+        }
+
+        /// <summary>
         ///     A Buffer wrapper that simulates large file offsets by adding a
         ///     base offset to all reads. This allows testing decoder behavior
         ///     with offsets exceeding <see cref="int.MaxValue" /> without
