@@ -87,6 +87,7 @@ public class CityBenchmark
         return x;
     }
 
+#if NETCOREAPP2_1_OR_GREATER
     [Benchmark]
     public int CityInternedStringsLookup()
     {
@@ -101,6 +102,8 @@ public class CityBenchmark
 
         return x;
     }
+#endif
+
 }
 
 public abstract class AbstractCountryResponse
@@ -275,6 +278,8 @@ public class Subdivision : NamedEntity
     public string? IsoCode { get; internal set; }
 }
 
+#if NETCOREAPP2_1_OR_GREATER
+
 public sealed class ReadOnlyMemoryByteComparer : IEqualityComparer<ReadOnlyMemory<byte>>
 
 {
@@ -312,15 +317,13 @@ public static class InternedStrings
 
         if (!found)
         {
-#if NETCOREAPP2_1_OR_GREATER
             returnValue = Encoding.UTF8.GetString(bytes.Span);
-#else
-            returnValue = Encoding.UTF8.GetString(bytes.Span.ToArray());
-#endif
             s_Dictionary.TryAdd(bytes, returnValue);
         }
 
         Debug.Assert(returnValue is not null);
-        return returnValue;
+        return returnValue ?? new string();
     }
 }
+
+#endif
