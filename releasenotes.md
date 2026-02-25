@@ -5,6 +5,9 @@
 * Fixed `OverflowException` when reading databases larger than 2 GiB where
   data section pointers resolved to offsets exceeding the 32-bit integer
   maximum. Reported by Yuri Simernitski. GitHub #263.
+* Fixed search tree record handling to correctly interpret unsigned 32-bit
+  record values that exceed the signed 32-bit integer maximum, so that
+  databases with large data sections are supported.
 
 ## 4.3.4 (2025-11-24) ##
 
