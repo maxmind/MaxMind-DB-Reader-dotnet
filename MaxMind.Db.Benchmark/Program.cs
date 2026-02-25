@@ -312,7 +312,11 @@ public static class InternedStrings
 
         if (!found)
         {
+#if NETCOREAPP2_1_OR_GREATER
             returnValue = Encoding.UTF8.GetString(bytes.Span);
+#else
+            returnValue = Encoding.UTF8.GetString(bytes.Span.ToArray());
+#endif
             s_Dictionary.TryAdd(bytes, returnValue);
         }
 
