@@ -282,18 +282,11 @@ public sealed class ReadOnlyMemoryByteComparer : IEqualityComparer<ReadOnlyMemor
 
     public bool Equals(ReadOnlyMemory<byte> x, ReadOnlyMemory<byte> y)
     {
-        // Use the sequence equal method to compare the contents
         return x.Span.SequenceEqual(y.Span);
     }
 
     public int GetHashCode(ReadOnlyMemory<byte> obj)
     {
-        // This is a simple, non-cryptographic hash code generation based on the content.
-        // For production use, consider a more robust hashing algorithm for byte sequences.
-        // The implementation below sums up bytes in chunks of int32 for performance.
-        // This is a basic approach and might not be suitable for high-security scenarios
-        // due to potential hash collisions (similar to string hashing behavior in dictionaries).
-        
         unchecked
         {
             int hash = 17;
