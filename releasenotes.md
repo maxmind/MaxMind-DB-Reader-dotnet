@@ -11,6 +11,9 @@
 * Fixed data section pointer decoding to correctly read unsigned 32-bit
   pointer values, so that pointers to offsets beyond 2 GiB in the data
   section are resolved correctly.
+* `FileAccessMode.Memory` and the `Reader(Stream)` constructor now support
+  databases larger than 2 GiB. These previously used a `byte[]` internally,
+  which is limited to ~2.1 GiB. They now use memory-mapped files.
 
 ## 4.3.4 (2025-11-24) ##
 

@@ -16,7 +16,7 @@ namespace MaxMind.Db.Test
         {
             var path = Path.Combine(TestUtils.TestDirectory, "TestData", "MaxMind-DB", "test-data", "maps-with-pointers.raw");
 
-            using var database = new ArrayBuffer(path);
+            using var database = new ArrayBuffer(File.ReadAllBytes(path));
             var decoder = new Decoder(database, 0);
 
             var node = decoder.Decode<Dictionary<string, object>>(0, out _);
