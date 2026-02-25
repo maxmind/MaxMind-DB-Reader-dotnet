@@ -134,7 +134,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Decodes the type of the by.
+        ///     Decodes the value by type.
         /// </summary>
         /// <param name="expectedType"></param>
         /// <param name="type">The type.</param>
@@ -208,7 +208,7 @@ namespace MaxMind.Db
                     return DecodeBigInteger(expectedType, offset, size);
 
                 default:
-                    throw new InvalidDatabaseException("Unable to handle type:" + type);
+                    throw new InvalidDatabaseException("Unable to handle type: " + type);
             }
         }
 
@@ -369,7 +369,7 @@ namespace MaxMind.Db
             var constructor = _typeActivatorCreator.GetActivator(expectedType);
 
 #if !NETSTANDARD2_0
-            // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
+            // N.B. Rent can return larger arrays. This is fine because constructors allow arrays larger than the
             // number of parameters.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
 #else

@@ -56,7 +56,7 @@ namespace MaxMind.Db
                 catch (Exception ex) when (ex is IOException or NotImplementedException or PlatformNotSupportedException)
                 {
                     // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
-                    // When executed on unsupported platform, we get the PNSE. In which case, we consruct the memory map by
+                    // When executed on unsupported platform, we get the PNSE. In which case, we construct the memory map by
                     // setting mapName to null.
                     if (ex is PlatformNotSupportedException)
                         mapName = null;

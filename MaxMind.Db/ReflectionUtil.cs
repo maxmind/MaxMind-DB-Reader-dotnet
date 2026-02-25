@@ -12,7 +12,7 @@ namespace MaxMind.Db
 
     internal static class ReflectionUtil
     {
-        // Activator.CreateInstance is extremely slow and ConstuctorInfo.Invoke is
+        // Activator.CreateInstance is extremely slow and ConstructorInfo.Invoke is
         // somewhat slow. This faster alternative (when cached) is largely based off
         // of:
         // http://rogeralsing.com/2008/02/28/linq-expressions-creating-objects/

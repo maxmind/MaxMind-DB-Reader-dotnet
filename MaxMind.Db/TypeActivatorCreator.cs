@@ -65,12 +65,12 @@ namespace MaxMind.Db
             if (constructors.Count == 0)
             {
                 throw new DeserializationException(
-                    $"No constructors found for {expectedType} found with MaxMind.Db.Constructor attribute");
+                    $"No constructors found for {expectedType} with the MaxMind.Db.Constructor attribute");
             }
             if (constructors.Count > 1)
             {
                 throw new DeserializationException(
-                    $"More than one constructor found for {expectedType} found with MaxMind.Db/Constructor attribute");
+                    $"More than one constructor found for {expectedType} with the MaxMind.Db.Constructor attribute");
             }
 
             var constructor = constructors[0];

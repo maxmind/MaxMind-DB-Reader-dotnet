@@ -179,7 +179,7 @@ namespace MaxMind.Db
         /// <summary>
         /// Attempts to get a value given a key. If the key is not found in memory, it is
         /// possible for derived classes to search an external source to find the value. In cases where this
-        /// is done, the newly found item may replace the leased used item if the dictionary is at max count.
+        /// is done, the newly found item may replace the least used item if the dictionary is at max count.
         /// </summary>
         /// <param name="key">Key to find</param>
         /// <param name="value">Found value (default of TValue if not found)</param>
@@ -192,7 +192,7 @@ namespace MaxMind.Db
         /// <summary>
         /// Attempts to get a value given a key. If the key is not found in memory, it is
         /// possible for derived classes to search an external source to find the value. In cases where this
-        /// is done, the newly found item may replace the leased used item if the dictionary is at max count.
+        /// is done, the newly found item may replace the least used item if the dictionary is at max count.
         /// </summary>
         /// <param name="key">Key to find (receives the found key)</param>
         /// <param name="value">Found value (default of TValue if not found)</param>
