@@ -5,8 +5,10 @@ using MaxMind.Db;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Text;
 
 BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
 
@@ -15,6 +17,9 @@ public class CityBenchmark
 {
     // A random IP that has city info.
     private Reader _reader = null!;
+    private Reader _stringInternedReader = null!;
+    private Reader _ArrayBufferReader = null!;
+
     private IPAddress[] _ipAddresses = [];
 
     [GlobalSetup]
@@ -24,6 +29,8 @@ public class CityBenchmark
         string dbPath = Environment.GetEnvironmentVariable(dbPathVarName) ??
                         throw new InvalidOperationException($"{dbPathVarName} was not set");
         _reader = new Reader(dbPath);
+        _ArrayBufferReader = new Reader(dbPath, FileAccessMode.Memory);
+        _stringInternedReader = new Reader(dbPath, FileAccessMode.Memory);
 
         const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
         string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
@@ -51,12 +58,42 @@ public class CityBenchmark
     }
 
     [Benchmark]
-    public int City()
+    public int CityMemoryMappedLookup()
     {
         int x = 0;
         foreach (var ipAddress in _ipAddresses)
         {
             if (_reader.Find<CityResponse>(ipAddress) != null)
+            {
+                x += 1;
+            }
+        }
+
+        return x;
+    }
+
+    [Benchmark]
+    public int CityMemoryLookup()
+    {
+        int x = 0;
+        foreach (var ipAddress in _ipAddresses)
+        {
+            if (_ArrayBufferReader.Find<CityResponse>(ipAddress) != null)
+            {
+                x += 1;
+            }
+        }
+
+        return x;
+    }
+
+    [Benchmark]
+    public int CityInternedStringsLookup()
+    {
+        int x = 0;
+        foreach (var ipAddress in _ipAddresses)
+        {
+            if (_stringInternedReader.Find<CityResponse>(ipAddress) != null)
             {
                 x += 1;
             }
@@ -236,4 +273,66 @@ public class Subdivision : NamedEntity
 
     public int? Confidence { get; internal set; }
     public string? IsoCode { get; internal set; }
+}
+
+public sealed class ReadOnlyMemoryByteComparer : IEqualityComparer<ReadOnlyMemory<byte>>
+
+{
+    public static ReadOnlyMemoryByteComparer Default { get; } = new ReadOnlyMemoryByteComparer();
+
+    public bool Equals(ReadOnlyMemory<byte> x, ReadOnlyMemory<byte> y)
+    {
+        // Use the sequence equal method to compare the contents
+        return x.Span.SequenceEqual(y.Span);
+    }
+
+    public int GetHashCode(ReadOnlyMemory<byte> obj)
+    {
+        // This is a simple, non-cryptographic hash code generation based on the content.
+        // For production use, consider a more robust hashing algorithm for byte sequences.
+        // The implementation below sums up bytes in chunks of int32 for performance.
+        // This is a basic approach and might not be suitable for high-security scenarios
+        // due to potential hash collisions (similar to string hashing behavior in dictionaries).
+        
+        unchecked
+        {
+            int hash = 17;
+            ReadOnlySpan<byte> span = obj.Span;
+            
+            // Simple hashing of the sequence
+            foreach (byte b in span)
+            {
+                hash = hash * 31 + b;
+            }
+            return hash;
+        }
+    }
+}
+
+
+/// <summary>
+/// 
+/// </summary>
+public static class InternedStrings
+{
+    internal static Dictionary<ReadOnlyMemory<byte>, string> s_Dictionary = new (ReadOnlyMemoryByteComparer.Default);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <returns></returns>
+    public static string GetString(ReadOnlyMemory<byte> bytes)
+    {
+        bool found = s_Dictionary.TryGetValue(bytes, out string? returnValue);
+
+        if (!found)
+        {
+            returnValue = Encoding.UTF8.GetString(bytes.Span);
+            s_Dictionary.TryAdd(bytes, returnValue);
+        }
+
+        Debug.Assert(returnValue is not null);
+        return returnValue;
+    }
 }

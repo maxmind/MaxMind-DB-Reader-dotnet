@@ -54,7 +54,8 @@ namespace MaxMind.Db
         /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
         /// <param name="followPointers">Whether to follow pointers. For testing.</param>
-        internal Decoder(Buffer database, long pointerBase, bool followPointers = true)
+        /// <param name="stringAllocator">Optional method to allocate strings</param>
+        internal Decoder(Buffer database, long pointerBase, bool followPointers = true, AllocatorDelegates.GetString? stringAllocator = null)
         {
             _pointerBase = pointerBase;
             _database = database;

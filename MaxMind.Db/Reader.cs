@@ -106,7 +106,8 @@ namespace MaxMind.Db
         ///     Initializes a new instance of the <see cref="Reader" /> class.
         /// </summary>
         /// <param name="file">The file.</param>
-        public Reader(string file) : this(file, FileAccessMode.MemoryMapped)
+        public Reader(string file)
+            : this(file, FileAccessMode.MemoryMapped)
         {
         }
 
@@ -115,7 +116,8 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="file">The MaxMind DB file.</param>
         /// <param name="mode">The mode by which to access the DB file.</param>
-        public Reader(string file, FileAccessMode mode) : this(BufferForMode(file, mode), file)
+        public Reader(string file, FileAccessMode mode)
+            : this(BufferForMode(file, mode), file)
         {
         }
 
@@ -161,7 +163,8 @@ namespace MaxMind.Db
         ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by reading the specified file into a memory-mapped region.
         /// </summary>
         /// <param name="file">The file.</param>
-        public static async Task<Reader> CreateAsync(string file)
+        /// <param name="stringAllocator">Optional allocator method for strings created from byte arrays.</param>
+        public static async Task<Reader> CreateAsync(string file, AllocatorDelegates.GetString? stringAllocator = null)
         {
             return new Reader(await MemoryMapBuffer.CreateAsync(file).ConfigureAwait(false), file);
         }
@@ -170,8 +173,9 @@ namespace MaxMind.Db
         ///     Asynchronously initialize with Stream.
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
+        /// <param name="stringAllocator">Optional allocator method for strings created from byte arrays.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<Reader> CreateAsync(Stream stream)
+        public static async Task<Reader> CreateAsync(Stream stream,  AllocatorDelegates.GetString? stringAllocator = null)
         {
             return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }

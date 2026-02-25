@@ -22,6 +22,24 @@ namespace MaxMind.Db
         public long Length { get; protected set; }
 
         /// <summary>
+        /// Return a slice of the buffer as a read only span. Prefer over the 
+        /// Read method
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public abstract ReadOnlySpan<byte> AsSpan(long offset, int size);
+
+        /// <summary>
+        /// Return a slice of the buffer as a read only memory. Prefer over the 
+        /// Read method
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public abstract ReadOnlyMemory<byte> AsMemory(long offset, int size);
+
+        /// <summary>
         ///     Read a big integer from the buffer.
         /// </summary>
         internal BigInteger ReadBigInteger(long offset, int size)
