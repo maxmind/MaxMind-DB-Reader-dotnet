@@ -17,7 +17,11 @@ public class CityBenchmark
 {
     // A random IP that has city info.
     private Reader _reader = null!;
+
+#if NETCOREAPP2_1_OR_GREATER
     private Reader? _stringInternedReader = null!;
+#endif 
+
     private Reader _ArrayBufferReader = null!;
 
     private IPAddress[] _ipAddresses = [];
