@@ -87,11 +87,6 @@ namespace MaxMind.Db
                                               FileShare.Delete | FileShare.Read);
             Length = stream.Length;
 
-            if (Length == 0)
-            {
-                throw new InvalidDatabaseException("The database file is empty.");
-            }
-
             (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
         }
 
@@ -106,12 +101,6 @@ namespace MaxMind.Db
             {
                 Length = stream.Length - stream.Position;
 
-                if (Length == 0)
-                {
-                    throw new InvalidDatabaseException(
-                        "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
-                }
-
                 (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
                 return;
             }
@@ -123,12 +112,6 @@ namespace MaxMind.Db
                 {
                     stream.CopyTo(tempStream);
                     Length = tempStream.Length;
-
-                    if (Length == 0)
-                    {
-                        throw new InvalidDatabaseException(
-                            "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
-                    }
 
                     tempStream.Position = 0;
                     (_memoryMappedFile, _view) = CreateMmapFromStream(tempStream, Length);
@@ -176,12 +159,6 @@ namespace MaxMind.Db
             {
                 var length = stream.Length - stream.Position;
 
-                if (length == 0)
-                {
-                    throw new InvalidDatabaseException(
-                        "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
-                }
-
                 var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(stream, length).ConfigureAwait(false);
 
                 return new MemoryMapBuffer(memoryMappedFile, view, length);
@@ -194,12 +171,6 @@ namespace MaxMind.Db
                 {
                     await stream.CopyToAsync(tempStream).ConfigureAwait(false);
                     var length = tempStream.Length;
-
-                    if (length == 0)
-                    {
-                        throw new InvalidDatabaseException(
-                            "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
-                    }
 
                     tempStream.Position = 0;
                     var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(tempStream, length).ConfigureAwait(false);
@@ -226,6 +197,11 @@ namespace MaxMind.Db
 
         private static (MemoryMappedFile File, MemoryMappedViewAccessor View) CreateMmapFromStream(Stream source, long length)
         {
+            if (length == 0)
+            {
+                throw new InvalidDatabaseException("The database is empty.");
+            }
+
             var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
             try
             {
@@ -245,6 +221,11 @@ namespace MaxMind.Db
 
         private static async Task<(MemoryMappedFile File, MemoryMappedViewAccessor View)> CreateMmapFromStreamAsync(Stream source, long length)
         {
+            if (length == 0)
+            {
+                throw new InvalidDatabaseException("The database is empty.");
+            }
+
             var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
             try
             {

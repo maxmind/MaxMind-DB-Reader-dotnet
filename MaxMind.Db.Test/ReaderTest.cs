@@ -204,7 +204,7 @@ namespace MaxMind.Db.Test
             using var stream = new MemoryStream();
             var ex = Assert.Throws<InvalidDatabaseException>(
                 () => new Reader(stream));
-            Assert.Contains("zero bytes left in the stream", ex.Message);
+            Assert.Contains("The database is empty.", ex.Message);
         }
 
         [Fact]
@@ -213,7 +213,7 @@ namespace MaxMind.Db.Test
             using var stream = new MemoryStream();
             var ex = await Assert.ThrowsAsync<InvalidDatabaseException>(
                 async () => await Reader.CreateAsync(stream));
-            Assert.Contains("zero bytes left in the stream", ex.Message);
+            Assert.Contains("The database is empty.", ex.Message);
         }
 
         [Fact]
