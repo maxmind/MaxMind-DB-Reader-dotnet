@@ -27,20 +27,7 @@ namespace MaxMind.Db
                 throw new InvalidDatabaseException("The database file is empty.");
             }
 
-            _memoryMappedFile = MemoryMappedFile.CreateNew(null, Length);
-            try
-            {
-                using (var viewStream = _memoryMappedFile.CreateViewStream(0, Length, MemoryMappedFileAccess.Write))
-                {
-                    stream.CopyTo(viewStream);
-                }
-                _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-            }
-            catch
-            {
-                _memoryMappedFile.Dispose();
-                throw;
-            }
+            (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
         }
 
         internal MemoryBuffer(Stream stream)
@@ -60,20 +47,7 @@ namespace MaxMind.Db
                         "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
                 }
 
-                _memoryMappedFile = MemoryMappedFile.CreateNew(null, Length);
-                try
-                {
-                    using (var viewStream = _memoryMappedFile.CreateViewStream(0, Length, MemoryMappedFileAccess.Write))
-                    {
-                        stream.CopyTo(viewStream);
-                    }
-                    _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-                }
-                catch
-                {
-                    _memoryMappedFile.Dispose();
-                    throw;
-                }
+                (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
                 return;
             }
 
@@ -91,21 +65,8 @@ namespace MaxMind.Db
                             "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
                     }
 
-                    _memoryMappedFile = MemoryMappedFile.CreateNew(null, Length);
-                    try
-                    {
-                        using (var viewStream = _memoryMappedFile.CreateViewStream(0, Length, MemoryMappedFileAccess.Write))
-                        {
-                            tempStream.Position = 0;
-                            tempStream.CopyTo(viewStream);
-                        }
-                        _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-                    }
-                    catch
-                    {
-                        _memoryMappedFile.Dispose();
-                        throw;
-                    }
+                    tempStream.Position = 0;
+                    (_memoryMappedFile, _view) = CreateMmapFromStream(tempStream, Length);
                 }
             }
             finally
@@ -125,19 +86,11 @@ namespace MaxMind.Db
             }
         }
 
-        private MemoryBuffer(MemoryMappedFile memoryMappedFile, long length)
+        private MemoryBuffer(MemoryMappedFile memoryMappedFile, MemoryMappedViewAccessor view, long length)
         {
             Length = length;
             _memoryMappedFile = memoryMappedFile;
-            try
-            {
-                _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-            }
-            catch
-            {
-                _memoryMappedFile.Dispose();
-                throw;
-            }
+            _view = view;
         }
 
         internal static async Task<MemoryBuffer> CreateAsync(string file)
@@ -164,21 +117,9 @@ namespace MaxMind.Db
                         "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
                 }
 
-                var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
-                try
-                {
-                    using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
-                    {
-                        await stream.CopyToAsync(viewStream).ConfigureAwait(false);
-                    }
-                }
-                catch
-                {
-                    memoryMappedFile.Dispose();
-                    throw;
-                }
+                var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(stream, length).ConfigureAwait(false);
 
-                return new MemoryBuffer(memoryMappedFile, length);
+                return new MemoryBuffer(memoryMappedFile, view, length);
             }
 
             var tempFile = Path.GetTempFileName();
@@ -195,22 +136,10 @@ namespace MaxMind.Db
                             "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
                     }
 
-                    var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
-                    try
-                    {
-                        using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
-                        {
-                            tempStream.Position = 0;
-                            await tempStream.CopyToAsync(viewStream).ConfigureAwait(false);
-                        }
-                    }
-                    catch
-                    {
-                        memoryMappedFile.Dispose();
-                        throw;
-                    }
+                    tempStream.Position = 0;
+                    var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(tempStream, length).ConfigureAwait(false);
 
-                    return new MemoryBuffer(memoryMappedFile, length);
+                    return new MemoryBuffer(memoryMappedFile, view, length);
                 }
             }
             finally
@@ -227,6 +156,44 @@ namespace MaxMind.Db
                     // successful construction into a failure and leak the
                     // mmap resources.
                 }
+            }
+        }
+
+        private static (MemoryMappedFile File, MemoryMappedViewAccessor View) CreateMmapFromStream(Stream source, long length)
+        {
+            var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
+            try
+            {
+                using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
+                {
+                    source.CopyTo(viewStream);
+                }
+                var view = memoryMappedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                return (memoryMappedFile, view);
+            }
+            catch
+            {
+                memoryMappedFile.Dispose();
+                throw;
+            }
+        }
+
+        private static async Task<(MemoryMappedFile File, MemoryMappedViewAccessor View)> CreateMmapFromStreamAsync(Stream source, long length)
+        {
+            var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
+            try
+            {
+                using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
+                {
+                    await source.CopyToAsync(viewStream).ConfigureAwait(false);
+                }
+                var view = memoryMappedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                return (memoryMappedFile, view);
+            }
+            catch
+            {
+                memoryMappedFile.Dispose();
+                throw;
             }
         }
 
