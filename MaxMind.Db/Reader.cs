@@ -128,7 +128,7 @@ namespace MaxMind.Db
         /// <param name="stream">The stream to use. It will be used from its
         ///                      current position. </param>
         /// <exception cref="ArgumentNullException"></exception>
-        public Reader(Stream stream) : this(new MemoryBuffer(stream), null)
+        public Reader(Stream stream) : this(new MemoryMapBuffer(stream), null)
         {
         }
 
@@ -163,7 +163,7 @@ namespace MaxMind.Db
         /// <param name="file">The file.</param>
         public static async Task<Reader> CreateAsync(string file)
         {
-            return new Reader(await MemoryBuffer.CreateAsync(file).ConfigureAwait(false), file);
+            return new Reader(await MemoryMapBuffer.CreateAsync(file).ConfigureAwait(false), file);
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace MaxMind.Db
         /// <exception cref="ArgumentNullException"></exception>
         public static async Task<Reader> CreateAsync(Stream stream)
         {
-            return new Reader(await MemoryBuffer.CreateAsync(stream).ConfigureAwait(false), null);
+            return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
         private static Buffer BufferForMode(string file, FileAccessMode mode)
@@ -182,7 +182,7 @@ namespace MaxMind.Db
             {
                 FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
                 FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
-                FileAccessMode.Memory => new MemoryBuffer(file),
+                FileAccessMode.Memory => new MemoryMapBuffer(file),
                 _ => throw new ArgumentException("Unknown file access mode"),
             };
         }

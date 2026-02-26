@@ -69,8 +69,7 @@ The library has three main architectural layers:
 
 1. **Buffer Layer** - File access abstraction
    - `Buffer` (abstract base): Defines read interface for binary data
-   - `MemoryMapBuffer`: Named memory-mapped file implementation (default, supports cross-process sharing)
-   - `MemoryBuffer`: Anonymous memory-mapped file implementation (used by `FileAccessMode.Memory` and stream construction)
+   - `MemoryMapBuffer`: Memory-mapped file implementation for all file access modes (named mmap for cross-process sharing, anonymous mmap for `FileAccessMode.Memory` and stream construction)
    - `ArrayBuffer`: In-memory byte array implementation (used internally for small buffers in `TypeActivatorCreator` and tests)
 
 2. **Reader Layer** - Database navigation and IP lookup
