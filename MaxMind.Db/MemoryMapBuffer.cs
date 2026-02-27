@@ -90,6 +90,8 @@ namespace MaxMind.Db
             (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
         }
 
+        // Reads the stream into an anonymous memory-mapped region that is
+        // private to this process.
         internal MemoryMapBuffer(Stream stream)
         {
             if (stream == null)
