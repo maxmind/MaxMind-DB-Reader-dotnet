@@ -158,7 +158,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by loading the specified file into memory.
+        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by reading the specified file into a memory-mapped region.
         /// </summary>
         /// <param name="file">The file.</param>
         public static async Task<Reader> CreateAsync(string file)
