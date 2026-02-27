@@ -121,7 +121,7 @@ namespace MaxMind.Db
 
         /// <summary>
         ///     Initialize with <c>Stream</c>. The current position of the
-        ///     string must point to the start of the database. The content
+        ///     stream must point to the start of the database. The content
         ///     between the current position and the end of the stream must
         ///     be a valid MaxMind DB.
         /// </summary>
