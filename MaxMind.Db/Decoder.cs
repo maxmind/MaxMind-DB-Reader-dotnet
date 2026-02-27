@@ -61,7 +61,7 @@ namespace MaxMind.Db
             _followPointers = followPointers;
             _listActivatorCreator = new ListActivatorCreator();
             _dictionaryActivatorCreator = new DictionaryActivatorCreator();
-            _typeAcivatorCreator = new TypeAcivatorCreator();
+            _typeActivatorCreator = new TypeActivatorCreator();
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Decodes the type of the by.
+        ///     Decodes the value by type.
         /// </summary>
         /// <param name="expectedType"></param>
         /// <param name="type">The type.</param>
@@ -167,7 +167,7 @@ namespace MaxMind.Db
                         return pointer;
                     }
 
-                    var result = Decode(expectedType, Convert.ToInt32(pointer), out _, injectables, network);
+                    var result = Decode(expectedType, pointer, out _, injectables, network);
                     return result;
 
                 case ObjectType.Map:
@@ -208,7 +208,7 @@ namespace MaxMind.Db
                     return DecodeBigInteger(expectedType, offset, size);
 
                 default:
-                    throw new InvalidDatabaseException("Unable to handle type:" + type);
+                    throw new InvalidDatabaseException("Unable to handle type: " + type);
             }
         }
 
@@ -366,10 +366,10 @@ namespace MaxMind.Db
             Network? network
             )
         {
-            var constructor = _typeAcivatorCreator.GetActivator(expectedType);
+            var constructor = _typeActivatorCreator.GetActivator(expectedType);
 
 #if !NETSTANDARD2_0
-            // N.B. Rent can return a larger arrays. This is fine because constructors allow arrays larger than the
+            // N.B. Rent can return larger arrays. This is fine because constructors allow arrays larger than the
             // number of parameters.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
 #else
@@ -418,7 +418,7 @@ namespace MaxMind.Db
             {
                 if (parameters[param.Position] != null) continue;
 
-                var activator = _typeAcivatorCreator.GetActivator(param.ParameterType);
+                var activator = _typeActivatorCreator.GetActivator(param.ParameterType);
 
 #if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
@@ -461,7 +461,7 @@ namespace MaxMind.Db
             }
         }
 
-        private readonly TypeAcivatorCreator _typeAcivatorCreator;
+        private readonly TypeActivatorCreator _typeActivatorCreator;
 
         private Key DecodeKey(long offset, out long outOffset)
         {
@@ -613,7 +613,9 @@ namespace MaxMind.Db
         {
             var pointerSize = ((size >> 3) & 0x3) + 1;
             var b = pointerSize == 4 ? 0 : size & 0x7;
-            var packed = (b << (8 * pointerSize)) | _database.ReadVarInt(offset, pointerSize);
+            // Cast through uint so that 4-byte values >= 2^31 are
+            // zero-extended to long rather than sign-extended.
+            var packed = ((long)b << (8 * pointerSize)) | (long)(uint)_database.ReadVarInt(offset, pointerSize);
             outOffset = offset + pointerSize;
             return packed + _pointerBase + _pointerValueOffset[pointerSize];
         }

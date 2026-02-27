@@ -79,7 +79,7 @@ namespace MaxMind.Db
         {
             public byte[] IPBytes { get; set; }
             public int Bit { get; set; }
-            public int Pointer { get; set; }
+            public long Pointer { get; set; }
         }
 
         private const int DataSectionSeparatorSize = 16;
@@ -100,7 +100,7 @@ namespace MaxMind.Db
         ];
 
         private bool _disposed;
-        private readonly int _ipV4Start;
+        private readonly long _ipV4Start;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Reader" /> class.
@@ -121,14 +121,14 @@ namespace MaxMind.Db
 
         /// <summary>
         ///     Initialize with <c>Stream</c>. The current position of the
-        ///     string must point to the start of the database. The content
+        ///     stream must point to the start of the database. The content
         ///     between the current position and the end of the stream must
         ///     be a valid MaxMind DB.
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its
         ///                      current position. </param>
         /// <exception cref="ArgumentNullException"></exception>
-        public Reader(Stream stream) : this(new ArrayBuffer(stream), null)
+        public Reader(Stream stream) : this(new MemoryMapBuffer(stream), null)
         {
         }
 
@@ -148,7 +148,7 @@ namespace MaxMind.Db
 
             if (_dbIPVersion == 6)
             {
-                var node = 0;
+                long node = 0;
                 for (var i = 0; i < 96 && node < _nodeCount; i++)
                 {
                     node = ReadNode(node, 0);
@@ -158,12 +158,12 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by loading the specified file into memory.
+        ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by reading the specified file into a memory-mapped region.
         /// </summary>
         /// <param name="file">The file.</param>
         public static async Task<Reader> CreateAsync(string file)
         {
-            return new Reader(await ArrayBuffer.CreateAsync(file).ConfigureAwait(false), file);
+            return new Reader(await MemoryMapBuffer.CreateAsync(file).ConfigureAwait(false), file);
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace MaxMind.Db
         /// <exception cref="ArgumentNullException"></exception>
         public static async Task<Reader> CreateAsync(Stream stream)
         {
-            return new Reader(await ArrayBuffer.CreateAsync(stream).ConfigureAwait(false), null);
+            return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
         private static Buffer BufferForMode(string file, FileAccessMode mode)
@@ -182,7 +182,7 @@ namespace MaxMind.Db
             {
                 FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
                 FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
-                FileAccessMode.Memory => new ArrayBuffer(file),
+                FileAccessMode.Memory => new MemoryMapBuffer(file),
                 _ => throw new ArgumentException("Unknown file access mode"),
             };
         }
@@ -261,7 +261,7 @@ namespace MaxMind.Db
             var nodes = new List<NetNode>();
             var root = new NetNode { IPBytes = new byte[byteCount] };
             nodes.Add(root);
-            var dataCache = new CachedDictionary<int, T>(cacheSize, null);
+            var dataCache = new CachedDictionary<long, T>(cacheSize, null);
             while (nodes.Count > 0)
             {
                 var node = nodes[nodes.Count - 1];
@@ -316,7 +316,7 @@ namespace MaxMind.Db
             }
         }
 
-        private T ResolveDataPointer<T>(int pointer, InjectableValues? injectables, Network? network) where T : class
+        private T ResolveDataPointer<T>(long pointer, InjectableValues? injectables, Network? network) where T : class
         {
             var resolved = pointer + _dataPointerOffset;
 
@@ -330,7 +330,7 @@ namespace MaxMind.Db
             return Decoder.Decode<T>(resolved, out _, injectables, network);
         }
 
-        private int FindAddressInTree(IPAddress address, out int prefixLength)
+        private long FindAddressInTree(IPAddress address, out int prefixLength)
         {
 #if NETSTANDARD2_0
             byte[] rawAddress;
@@ -351,9 +351,9 @@ namespace MaxMind.Db
         }
 
 #if NETSTANDARD2_0
-        private int FindAddressInTree(byte[] rawAddress, out int prefixLength)
+        private long FindAddressInTree(byte[] rawAddress, out int prefixLength)
 #else
-        private int FindAddressInTree(ReadOnlySpan<byte> rawAddress, out int prefixLength)
+        private long FindAddressInTree(ReadOnlySpan<byte> rawAddress, out int prefixLength)
 #endif
         {
             var bitLength = rawAddress.Length * 8;
@@ -380,7 +380,7 @@ namespace MaxMind.Db
             throw new InvalidDatabaseException("Something bad happened");
         }
 
-        private int StartNode(int bitLength)
+        private long StartNode(int bitLength)
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
             // is the case, we can skip over the first 96 nodes.
@@ -418,7 +418,7 @@ namespace MaxMind.Db
                 $"Could not find a MaxMind Db metadata marker in this file ({_fileName}). Is this a valid MaxMind Db file?");
         }
 
-        private int ReadNode(int nodeNumber, int index)
+        private long ReadNode(long nodeNumber, int index)
         {
             var baseOffset = nodeNumber * _nodeByteSize;
 
@@ -443,7 +443,13 @@ namespace MaxMind.Db
                 case 32:
                     {
                         var offset = baseOffset + (index * 4);
-                        return _database.ReadInt(offset);
+                        // Cast through uint so the sign bit is treated as a
+                        // value bit. The implicit uint -> long widening then
+                        // preserves the unsigned value. We use ReadInt rather
+                        // than ReadLong because ReadLong loops over ReadOne
+                        // (one virtual dispatch per byte), while ReadInt reads
+                        // all 4 bytes in a single virtual call.
+                        return (uint)_database.ReadInt(offset);
                     }
             }
 

@@ -1,5 +1,24 @@
 # Release Notes #
 
+## 5.0.0 ##
+
+* Fixed `OverflowException` when reading databases larger than 2 GiB where
+  data section pointers resolved to offsets exceeding the 32-bit integer
+  maximum. Reported by Yuri Simernitski. GitHub #263.
+* Fixed search tree record handling to correctly interpret unsigned 32-bit
+  record values that exceed the signed 32-bit integer maximum, so that
+  databases with large data sections are supported.
+* Fixed data section pointer decoding to correctly read unsigned 32-bit
+  pointer values, so that pointers to offsets beyond 2 GiB in the data
+  section are resolved correctly.
+* **BREAKING:** `FileAccessMode.Memory` and the `Reader(Stream)` constructor
+  now use anonymous memory-mapped files internally instead of `byte[]`. This
+  removes the previous ~2.1 GiB size limitation but may break environments
+  where memory-mapped files are not supported, such as WASM/browser runtimes,
+  some mobile/sandboxed runtimes, or hardened containers with restricted
+  shared-memory syscalls. Non-seekable streams also now require a writable
+  temp directory.
+
 ## 4.3.4 (2025-11-24) ##
 
 * Fourth attempt at Trusted Publishing. No other changes.

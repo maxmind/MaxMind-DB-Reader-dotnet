@@ -14,10 +14,10 @@ namespace MaxMind.Db
         internal IDictionary<string, object> Values { get; } = new Dictionary<string, object>();
 
         /// <summary>
-        ///     Add a value to be injected into the class during serialization
+        ///     Add a value to be injected into the class during deserialization
         /// </summary>
         /// <param name="key">
-        ///     The key name as set with the <c>InectAttribute</c> used to determine
+        ///     The key name as set with the <c>InjectAttribute</c> used to determine
         ///     where to inject the value.
         /// </param>
         /// <param name="value">The value to be injected.</param>

@@ -69,8 +69,8 @@ The library has three main architectural layers:
 
 1. **Buffer Layer** - File access abstraction
    - `Buffer` (abstract base): Defines read interface for binary data
-   - `MemoryMapBuffer`: Memory-mapped file implementation (default, best balance)
-   - `ArrayBuffer`: In-memory byte array implementation (fastest lookups, highest RAM usage)
+   - `MemoryMapBuffer`: Memory-mapped file implementation for all file access modes (named mmap for cross-process sharing, anonymous mmap for `FileAccessMode.Memory` and stream construction)
+   - `ArrayBuffer`: In-memory byte array implementation (used internally for small buffers in `TypeActivatorCreator` and tests)
 
 2. **Reader Layer** - Database navigation and IP lookup
    - `Reader`: Main entry point for IP address lookups
@@ -79,7 +79,7 @@ The library has three main architectural layers:
 
 3. **Decoder Layer** - Binary format deserialization
    - `Decoder`: Converts binary MaxMind DB format to .NET objects
-   - `TypeAcivatorCreator`: Compiles LINQ expression trees for fast object instantiation
+   - `TypeActivatorCreator`: Compiles LINQ expression trees for fast object instantiation
    - `DictionaryActivatorCreator`, `ListActivatorCreator`: Specialized activators for collections
 
 ### MaxMind DB Binary Format
@@ -189,7 +189,7 @@ public class AsnResponse
 If adding new deserialization features:
 
 1. Create attribute class inheriting from `System.Attribute`
-2. Update `TypeAcivatorCreator` to handle new attribute in parameter array building
+2. Update `TypeActivatorCreator` to handle new attribute in parameter array building
 3. Add tests in `DecoderTest.cs` or `ReaderTest.cs`
 4. Update XML documentation for the new attribute
 

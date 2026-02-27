@@ -20,8 +20,10 @@ namespace MaxMind.Db.Test
         private readonly string _testDataRoot =
             Path.Combine(TestUtils.TestDirectory, "TestData", "MaxMind-DB", "test-data");
 
-        [Fact]
-        public void Test()
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.Memory)]
+        public void Test(FileAccessMode mode)
         {
             foreach (var recordSize in new[] { 24, 28, 32 })
             {
@@ -29,19 +31,16 @@ namespace MaxMind.Db.Test
                 {
                     var file = Path.Combine(_testDataRoot,
                         "MaxMind-DB-test-ipv" + ipVersion + "-" + recordSize + ".mmdb");
-                    var reader = new Reader(file);
-                    using (reader)
-                    {
-                        TestMetadata(reader, ipVersion);
+                    using var reader = new Reader(file, mode);
+                    TestMetadata(reader, ipVersion);
 
-                        if (ipVersion == 4)
-                        {
-                            TestIPV4(reader, file);
-                        }
-                        else
-                        {
-                            TestIPV6(reader, file);
-                        }
+                    if (ipVersion == 4)
+                    {
+                        TestIPV4(reader, file);
+                    }
+                    else
+                    {
+                        TestIPV6(reader, file);
                     }
                 }
             }
@@ -204,7 +203,7 @@ namespace MaxMind.Db.Test
             using var stream = new MemoryStream();
             var ex = Assert.Throws<InvalidDatabaseException>(
                 () => new Reader(stream));
-            Assert.Contains("zero bytes left in the stream", ex.Message);
+            Assert.Contains("The database is empty.", ex.Message);
         }
 
         [Fact]
@@ -213,7 +212,7 @@ namespace MaxMind.Db.Test
             using var stream = new MemoryStream();
             var ex = await Assert.ThrowsAsync<InvalidDatabaseException>(
                 async () => await Reader.CreateAsync(stream));
-            Assert.Contains("zero bytes left in the stream", ex.Message);
+            Assert.Contains("The database is empty.", ex.Message);
         }
 
         [Fact]

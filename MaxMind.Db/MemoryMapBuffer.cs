@@ -6,6 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 #endregion
 
@@ -17,6 +18,8 @@ namespace MaxMind.Db
         private readonly MemoryMappedViewAccessor _view;
         private bool _disposed;
 
+        // Creates a named memory-mapped file backed directly by the file on
+        // disk, suitable for cross-process sharing.
         internal MemoryMapBuffer(string file, bool useGlobalNamespace) : this(file, useGlobalNamespace, new FileInfo(file))
         {
         }
@@ -56,7 +59,7 @@ namespace MaxMind.Db
                 catch (Exception ex) when (ex is IOException or NotImplementedException or PlatformNotSupportedException)
                 {
                     // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
-                    // When executed on unsupported platform, we get the PNSE. In which case, we consruct the memory map by
+                    // When executed on unsupported platform, we get the PNSE. In which case, we construct the memory map by
                     // setting mapName to null.
                     if (ex is PlatformNotSupportedException)
                         mapName = null;
@@ -74,6 +77,172 @@ namespace MaxMind.Db
             }
 
             _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
+        }
+
+        // Reads the file into an anonymous memory-mapped region that is
+        // private to this process.
+        internal MemoryMapBuffer(string file)
+        {
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
+                                              FileShare.Delete | FileShare.Read);
+            Length = stream.Length;
+
+            (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
+        }
+
+        // Reads the stream into an anonymous memory-mapped region that is
+        // private to this process.
+        internal MemoryMapBuffer(Stream stream)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
+            }
+
+            if (stream.CanSeek)
+            {
+                Length = stream.Length - stream.Position;
+
+                (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
+                return;
+            }
+
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                {
+                    stream.CopyTo(tempStream);
+                    Length = tempStream.Length;
+
+                    tempStream.Position = 0;
+                    (_memoryMappedFile, _view) = CreateMmapFromStream(tempStream, Length);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch
+                {
+                    // Best-effort cleanup. If deletion fails, the temp
+                    // file is orphaned but the mmap may already be valid.
+                    // Letting this exception propagate would turn a
+                    // successful construction into a failure and leak the
+                    // mmap resources.
+                }
+            }
+        }
+
+        private MemoryMapBuffer(MemoryMappedFile memoryMappedFile, MemoryMappedViewAccessor view, long length)
+        {
+            Length = length;
+            _memoryMappedFile = memoryMappedFile;
+            _view = view;
+        }
+
+        internal static async Task<MemoryMapBuffer> CreateAsync(string file)
+        {
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
+                                              FileShare.Delete | FileShare.Read, 4096, true);
+            return await CreateAsync(stream).ConfigureAwait(false);
+        }
+
+        internal static async Task<MemoryMapBuffer> CreateAsync(Stream stream)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
+            }
+
+            if (stream.CanSeek)
+            {
+                var length = stream.Length - stream.Position;
+
+                var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(stream, length).ConfigureAwait(false);
+
+                return new MemoryMapBuffer(memoryMappedFile, view, length);
+            }
+
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var tempStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, true))
+                {
+                    await stream.CopyToAsync(tempStream).ConfigureAwait(false);
+                    var length = tempStream.Length;
+
+                    tempStream.Position = 0;
+                    var (memoryMappedFile, view) = await CreateMmapFromStreamAsync(tempStream, length).ConfigureAwait(false);
+
+                    return new MemoryMapBuffer(memoryMappedFile, view, length);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch
+                {
+                    // Best-effort cleanup. If deletion fails, the temp
+                    // file is orphaned but the mmap may already be valid.
+                    // Letting this exception propagate would turn a
+                    // successful construction into a failure and leak the
+                    // mmap resources.
+                }
+            }
+        }
+
+        private static (MemoryMappedFile File, MemoryMappedViewAccessor View) CreateMmapFromStream(Stream source, long length)
+        {
+            if (length == 0)
+            {
+                throw new InvalidDatabaseException("The database is empty.");
+            }
+
+            var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
+            try
+            {
+                using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
+                {
+                    source.CopyTo(viewStream);
+                }
+                var view = memoryMappedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                return (memoryMappedFile, view);
+            }
+            catch
+            {
+                memoryMappedFile.Dispose();
+                throw;
+            }
+        }
+
+        private static async Task<(MemoryMappedFile File, MemoryMappedViewAccessor View)> CreateMmapFromStreamAsync(Stream source, long length)
+        {
+            if (length == 0)
+            {
+                throw new InvalidDatabaseException("The database is empty.");
+            }
+
+            var memoryMappedFile = MemoryMappedFile.CreateNew(null, length);
+            try
+            {
+                using (var viewStream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Write))
+                {
+                    await source.CopyToAsync(viewStream).ConfigureAwait(false);
+                }
+                var view = memoryMappedFile.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                return (memoryMappedFile, view);
+            }
+            catch
+            {
+                memoryMappedFile.Dispose();
+                throw;
+            }
         }
 
         public override byte[] Read(long offset, int count)
