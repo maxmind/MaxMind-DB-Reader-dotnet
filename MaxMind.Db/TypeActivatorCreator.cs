@@ -11,31 +11,75 @@ using System.Text;
 
 namespace MaxMind.Db
 {
+    /// <summary>
+    ///     Wraps either a <see cref="ParameterInfo"/> (constructor-based activation)
+    ///     or a <see cref="PropertyInfo"/> (property-based activation) so the decoder
+    ///     can treat both uniformly.
+    /// </summary>
+    internal sealed class DeserializationMember
+    {
+        internal int Position { get; }
+        internal Type MemberType { get; }
+        internal string? Name { get; }
+
+        internal DeserializationMember(ParameterInfo param)
+        {
+            Position = param.Position;
+            MemberType = param.ParameterType;
+            Name = param.Name;
+        }
+
+        internal DeserializationMember(int position, Type memberType, string? name)
+        {
+            if (position < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+            Position = position;
+            MemberType = memberType ?? throw new ArgumentNullException(nameof(memberType));
+            Name = name;
+        }
+    }
+
     internal class TypeActivator
     {
         internal readonly ObjectActivator Activator;
-        internal readonly ParameterInfo[] AlwaysCreatedParameters;
+        internal readonly DeserializationMember[] AlwaysCreatedParameters;
         internal readonly object?[] DefaultParameters;
-        internal readonly Dictionary<Key, ParameterInfo> DeserializationParameters;
-        internal readonly KeyValuePair<string, ParameterInfo>[] InjectableParameters;
-        internal readonly ParameterInfo[] NetworkParameters;
+        internal readonly Dictionary<Key, DeserializationMember> DeserializationParameters;
+        internal readonly KeyValuePair<string, DeserializationMember>[] InjectableParameters;
+        internal readonly DeserializationMember[] NetworkParameters;
 
         internal TypeActivator(
             ObjectActivator activator,
-            Dictionary<Key, ParameterInfo> deserializationParameters,
-            KeyValuePair<string, ParameterInfo>[] injectables,
-            ParameterInfo[] networkParameters,
-            ParameterInfo[] alwaysCreatedParameters
+            Dictionary<Key, DeserializationMember> deserializationParameters,
+            KeyValuePair<string, DeserializationMember>[] injectables,
+            DeserializationMember[] networkParameters,
+            DeserializationMember[] alwaysCreatedParameters,
+            object?[]? defaultParameters = null
             )
         {
             Activator = activator;
             AlwaysCreatedParameters = alwaysCreatedParameters;
             DeserializationParameters = deserializationParameters;
             InjectableParameters = injectables;
-
             NetworkParameters = networkParameters;
-            Type[] parameterTypes = deserializationParameters.Values.OrderBy(x => x.Position).Select(x => x.ParameterType).ToArray();
-            DefaultParameters = parameterTypes.Select(DefaultValue).ToArray();
+
+            // The deserializationParameters dictionary must contain ALL members
+            // (MapKey + Inject + Network) so that DefaultParameters.Length correctly
+            // sizes the parameter array used by both constructor and MemberInit activators.
+            if (defaultParameters != null)
+            {
+                DefaultParameters = defaultParameters;
+            }
+            else
+            {
+                Type[] parameterTypes = deserializationParameters.Values
+                    .OrderBy(x => x.Position)
+                    .Select(x => x.MemberType)
+                    .ToArray();
+                DefaultParameters = parameterTypes.Select(DefaultValue).ToArray();
+            }
         }
 
         private static object? DefaultValue(Type type)
@@ -62,34 +106,41 @@ namespace MaxMind.Db
                 expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
                     .ToList();
-            if (constructors.Count == 0)
-            {
-                throw new DeserializationException(
-                    $"No constructors found for {expectedType} with the MaxMind.Db.Constructor attribute");
-            }
+
             if (constructors.Count > 1)
             {
                 throw new DeserializationException(
                     $"More than one constructor found for {expectedType} with the MaxMind.Db.Constructor attribute");
             }
 
-            var constructor = constructors[0];
+            if (constructors.Count == 1)
+            {
+                return ConstructorBasedActivator(constructors[0]);
+            }
+
+            return PropertyBasedActivator(expectedType);
+        }
+
+        private static TypeActivator ConstructorBasedActivator(ConstructorInfo constructor)
+        {
             var parameters = constructor.GetParameters();
-            var paramNameTypes = new Dictionary<Key, ParameterInfo>();
-            var injectables = new List<KeyValuePair<string, ParameterInfo>>();
-            var networkParams = new List<ParameterInfo>();
-            var alwaysCreated = new List<ParameterInfo>();
+            var paramNameTypes = new Dictionary<Key, DeserializationMember>();
+            var injectables = new List<KeyValuePair<string, DeserializationMember>>();
+            var networkParams = new List<DeserializationMember>();
+            var alwaysCreated = new List<DeserializationMember>();
             foreach (var param in parameters)
             {
+                var member = new DeserializationMember(param);
+
                 var injectableAttribute = param.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
                 if (injectableAttribute != null)
                 {
-                    injectables.Add(new KeyValuePair<string, ParameterInfo>(injectableAttribute.ParameterName, param));
+                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.ParameterName, member));
                 }
                 var networkAttribute = param.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
                 if (networkAttribute != null)
                 {
-                    networkParams.Add(param);
+                    networkParams.Add(member);
                 }
                 var paramAttribute = param.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
                 string? name;
@@ -97,7 +148,9 @@ namespace MaxMind.Db
                 {
                     name = paramAttribute.ParameterName;
                     if (paramAttribute.AlwaysCreate)
-                        alwaysCreated.Add(param);
+                    {
+                        alwaysCreated.Add(member);
+                    }
                 }
                 else
                 {
@@ -108,12 +161,119 @@ namespace MaxMind.Db
                     }
                 }
                 var bytes = Encoding.UTF8.GetBytes(name);
-                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), param);
+                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), member);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
             var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
                 networkParams.ToArray(), alwaysCreated.ToArray());
             return clsConstructor;
+        }
+
+        private static TypeActivator PropertyBasedActivator(Type expectedType)
+        {
+            var parameterlessCtor = expectedType.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null, Type.EmptyTypes, null);
+
+            if (parameterlessCtor == null)
+            {
+                throw new DeserializationException(
+                    $"No constructor found for {expectedType} with the MaxMind.Db.Constructor attribute "
+                    + "and no parameterless constructor found for property-based activation");
+            }
+
+            var properties = expectedType
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(p => p.IsDefined(typeof(ParameterAttribute), true)
+                         || p.IsDefined(typeof(InjectAttribute), true)
+                         || p.IsDefined(typeof(NetworkAttribute), true))
+                .OrderBy(p => p.Name)
+                .ToArray();
+
+            if (properties.Length == 0)
+            {
+                throw new DeserializationException(
+                    $"No properties found on {expectedType} with the MapKey, Inject, or Network "
+                    + "attributes for property-based activation");
+            }
+
+            var paramNameTypes = new Dictionary<Key, DeserializationMember>();
+            var injectables = new List<KeyValuePair<string, DeserializationMember>>();
+            var networkParams = new List<DeserializationMember>();
+            var alwaysCreated = new List<DeserializationMember>();
+            var orderedProperties = new List<PropertyInfo>();
+
+            var position = 0;
+            foreach (var prop in properties)
+            {
+                if (!prop.CanWrite)
+                {
+                    throw new DeserializationException(
+                        $"Property {prop.Name} on {expectedType} must have a setter or init accessor "
+                        + "for property-based activation");
+                }
+
+                var member = new DeserializationMember(position, prop.PropertyType, prop.Name);
+
+                var injectableAttribute = prop.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
+                if (injectableAttribute != null)
+                {
+                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.ParameterName, member));
+                }
+                var networkAttribute = prop.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
+                if (networkAttribute != null)
+                {
+                    networkParams.Add(member);
+                }
+                var paramAttribute = prop.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
+                string? name;
+                if (paramAttribute != null)
+                {
+                    name = paramAttribute.ParameterName;
+                    if (paramAttribute.AlwaysCreate)
+                    {
+                        alwaysCreated.Add(member);
+                    }
+                }
+                else
+                {
+                    name = prop.Name;
+                }
+                var bytes = Encoding.UTF8.GetBytes(name);
+                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), member);
+                orderedProperties.Add(prop);
+                position++;
+            }
+
+            // Compute defaults from a temporary instance so property initializers
+            // are preserved (e.g., = new Dictionary<string,string>()).
+            object? tempInstance;
+            try
+            {
+                tempInstance = parameterlessCtor.Invoke(null);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw new DeserializationException(
+                    $"The parameterless constructor for {expectedType} threw an exception "
+                    + "during property-based activation default value detection",
+                    ex.InnerException ?? ex);
+            }
+            var defaultParameters = new object?[orderedProperties.Count];
+            for (var i = 0; i < orderedProperties.Count; i++)
+            {
+                defaultParameters[i] = orderedProperties[i].GetValue(tempInstance);
+            }
+            // Override AlwaysCreate defaults to null so SetAlwaysCreatedParams triggers.
+            foreach (var ac in alwaysCreated)
+            {
+                defaultParameters[ac.Position] = null;
+            }
+
+            var activator = ReflectionUtil.CreateMemberInitActivator(
+                parameterlessCtor, orderedProperties.ToArray());
+            return new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
+                networkParams.ToArray(), alwaysCreated.ToArray(), defaultParameters);
         }
     }
 }

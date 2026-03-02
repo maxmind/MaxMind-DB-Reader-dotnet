@@ -15,7 +15,7 @@ namespace MaxMind.Db
     ///     is not present in the database. If this is false, the default value will be used
     ///     (null for nullable types)
     /// </param>
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public sealed class ParameterAttribute(string parameterName, bool alwaysCreate = false) : Attribute
     {
         /// <summary>

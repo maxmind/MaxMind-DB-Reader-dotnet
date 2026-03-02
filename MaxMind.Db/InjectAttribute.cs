@@ -10,7 +10,7 @@ namespace MaxMind.Db
     ///     Instruct <c>Reader</c> to map database key to constructor parameter.
     /// </summary>
     /// <param name="parameterName">The name to use for the property.</param>
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public sealed class InjectAttribute(string parameterName) : Attribute
     {
         /// <summary>

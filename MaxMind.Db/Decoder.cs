@@ -369,8 +369,8 @@ namespace MaxMind.Db
             var constructor = _typeActivatorCreator.GetActivator(expectedType);
 
 #if !NETSTANDARD2_0
-            // N.B. Rent can return larger arrays. This is fine because constructors allow arrays larger than the
-            // number of parameters.
+            // N.B. Rent can return larger arrays. This is fine because both constructor invocations and
+            // MemberInit activators only access elements up to their parameter/property count.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
 #else
             object?[] parameters = new object?[constructor.DefaultParameters.Length];
@@ -383,7 +383,7 @@ namespace MaxMind.Db
                 if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
                     var param = v;
-                    var paramType = param.ParameterType;
+                    var paramType = param.MemberType;
                     var value = Decode(paramType, offset, out offset, injectables, network);
                     parameters[param.Position] = value;
                 }
@@ -418,7 +418,7 @@ namespace MaxMind.Db
             {
                 if (parameters[param.Position] != null) continue;
 
-                var activator = _typeActivatorCreator.GetActivator(param.ParameterType);
+                var activator = _typeActivatorCreator.GetActivator(param.MemberType);
 
 #if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
