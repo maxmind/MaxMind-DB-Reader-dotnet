@@ -48,7 +48,7 @@ namespace MaxMind.Db
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
-        private readonly SNEGenericCache? _cache;
+        private readonly SNECache? _cache;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.

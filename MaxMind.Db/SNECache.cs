@@ -9,13 +9,13 @@ using System.Diagnostics;
 /// <summary>
 /// Simple non-evicting cache
 /// </summary>
-internal class SNEGenericCache
+internal class SNECache
 {
     private readonly ConcurrentDictionary<(long, int, Type), (object, long)> _Cache;
 
     // Long for interlocked operations. Explicitly maintain our own size to avoid
     // paying for locking all buckets when alternatively checking this.Cache.Size().
-    private ulong _Size;
+    private int _Size;
 
     private readonly int _Capacity;
     private const int DEFAULT_CAPACITY = 4_096;
@@ -24,7 +24,7 @@ internal class SNEGenericCache
     /// Simple non-evicting cache
     /// </summary>
     /// <param name="maxCapacity"></param>
-    public SNEGenericCache(int maxCapacity = DEFAULT_CAPACITY)
+    public SNECache(int maxCapacity = DEFAULT_CAPACITY)
     {
         this._Cache = new();
 
@@ -43,20 +43,20 @@ internal class SNEGenericCache
     public bool TryAdd(long offset, int size, Type type, ValueTuple<object, long> item)
     {
         // Try a half fence first, to check if we have hit the cache limits.
-        if (Volatile.Read(ref this._Size) > (ulong)this._Capacity)
+        if (Volatile.Read(ref this._Size) > this._Capacity)
         {
             return false;
         }
 
         // Half fence came back fine, take the full fence to increment the size.
-        ulong incrementedValue = Interlocked.Increment(ref this._Size);
+        int incrementedValue = Interlocked.Increment(ref this._Size);
         
         --incrementedValue;
 
         // Half fence is an optimization, it may read a stale value. Here we know
         // that the capacity has been exceeded. Hopefully the next half fence
         // read will have propogated the value sufficiently.
-        if (incrementedValue >= (ulong)this._Capacity)
+        if (incrementedValue >= this._Capacity)
         {
             return false;
         }
