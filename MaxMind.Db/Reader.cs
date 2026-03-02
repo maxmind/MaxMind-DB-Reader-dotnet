@@ -106,7 +106,8 @@ namespace MaxMind.Db
         ///     Initializes a new instance of the <see cref="Reader" /> class.
         /// </summary>
         /// <param name="file">The file.</param>
-        public Reader(string file) : this(file, FileAccessMode.MemoryMapped)
+        public Reader(string file)
+            : this(file, FileAccessMode.MemoryMapped)
         {
         }
 
@@ -115,7 +116,19 @@ namespace MaxMind.Db
         /// </summary>
         /// <param name="file">The MaxMind DB file.</param>
         /// <param name="mode">The mode by which to access the DB file.</param>
-        public Reader(string file, FileAccessMode mode) : this(BufferForMode(file, mode), file)
+        public Reader(string file, FileAccessMode mode)
+            : this(BufferForMode(file, mode), file)
+        {
+        }
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="Reader" /> class.
+        /// </summary>
+        /// <param name="file">The MaxMind DB file.</param>
+        /// <param name="mode">The mode by which to access the DB file.</param>
+        /// <param name="cacheSize">Cache size for optional internal cache</param>
+        public Reader(string file, FileAccessMode mode, int cacheSize)
+            : this(BufferForMode(file, mode), file, cacheSize)
         {
         }
 
@@ -132,7 +145,7 @@ namespace MaxMind.Db
         {
         }
 
-        private Reader(Buffer buffer, string? file)
+        private Reader(Buffer buffer, string? file, int? cacheSize = null)
         {
             _fileName = file;
             _database = buffer;
@@ -144,7 +157,7 @@ namespace MaxMind.Db
             _nodeByteSize = Metadata.NodeByteSize;
             _nodeCount = Metadata.NodeCount;
             _recordSize = Metadata.RecordSize;
-            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize, defaultCacheSize: cacheSize);
 
             if (_dbIPVersion == 6)
             {
@@ -221,6 +234,15 @@ namespace MaxMind.Db
             }
 
             _disposed = true;
+        }
+
+        /// <summary>
+        /// Cache size
+        /// </summary>
+        /// <returns></returns>
+        public int CacheSize()
+        {
+            return Decoder.CacheSize();
         }
 
         /// <summary>
