@@ -9,7 +9,7 @@ using System.Diagnostics;
 /// <summary>
 /// Simple non-evicting cache
 /// </summary>
-public class SNEGenericCache
+internal class SNEGenericCache
 {
     private readonly ConcurrentDictionary<(long, int, Type), (object, long)> _Cache;
 
