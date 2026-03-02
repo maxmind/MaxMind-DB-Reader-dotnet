@@ -85,6 +85,15 @@ namespace MaxMind.Db
             return decoded;
         }
 
+        /// <summary>
+        /// Get cache size
+        /// </summary>
+        /// <returns></returns>
+        internal int CacheSize()
+        {
+            return _cache is null ? 0 : _cache.Size();
+        }
+
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues? injectables = null, Network? network = null)
         {
             var type = CtrlData(offset, out var size, out offset);

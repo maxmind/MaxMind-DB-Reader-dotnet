@@ -237,6 +237,15 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        /// Cache size
+        /// </summary>
+        /// <returns></returns>
+        public int CacheSize()
+        {
+            return Decoder.CacheSize();
+        }
+
+        /// <summary>
         ///     Finds the data related to the specified address.
         /// </summary>
         /// <param name="ipAddress">The IP address.</param>

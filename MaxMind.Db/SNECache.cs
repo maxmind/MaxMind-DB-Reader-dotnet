@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Diagnostics;
+using System.Drawing;
+
 
 /// <summary>
 /// Simple non-evicting cache
@@ -31,6 +33,8 @@ internal class SNECache
         this._Capacity = maxCapacity;
         this._Size = 0;
     }
+
+    public int Size() => Volatile.Read(ref this._Size);
 
     /// <summary>
     /// Attempt to add an item to the cache.
