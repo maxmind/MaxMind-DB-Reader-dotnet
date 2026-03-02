@@ -106,9 +106,9 @@ The library uses an attribute-based deserialization system that maps MaxMind DB 
 
 1. **`[Constructor]`**: Marks the constructor to use for deserialization (one per class)
 
-2. **`[Parameter("db_field_name")]`**: Maps database field to constructor parameter
+2. **`[MapKey("db_field_name")]`**: Maps database field to a constructor parameter or property
    - Supports `AlwaysCreate = true` to instantiate nested objects even when database field is missing
-   - If no attribute, uses parameter name as database key
+   - If no attribute, uses parameter/property name as database key
 
 3. **`[Inject("injectable_name")]`**: Injects runtime values not in database
    - Pass values via `InjectableValues` dictionary to `Find<T>()`
@@ -116,7 +116,9 @@ The library uses an attribute-based deserialization system that maps MaxMind DB 
 
 4. **`[Network]`**: Injects the network CIDR (prefix length + network address) for the matched IP
 
-#### Example Model Class
+#### Example Model Classes
+
+**Constructor-based activation** (explicit `[Constructor]` attribute):
 
 ```csharp
 using MaxMind.Db;
@@ -125,8 +127,8 @@ public class AsnResponse
 {
     [Constructor]
     public AsnResponse(
-        [Parameter("autonomous_system_number")] long? autonomousSystemNumber = null,
-        [Parameter("autonomous_system_organization")] string? autonomousSystemOrganization = null,
+        [MapKey("autonomous_system_number")] long? autonomousSystemNumber = null,
+        [MapKey("autonomous_system_organization")] string? autonomousSystemOrganization = null,
         [Inject("ip_address")] IPAddress? ipAddress = null,
         [Network] Network? network = null
     )
@@ -141,6 +143,27 @@ public class AsnResponse
     public string? AutonomousSystemOrganization { get; }
     public IPAddress? IpAddress { get; }
     public Network? Network { get; }
+}
+```
+
+**Property-based activation** (no `[Constructor]`, uses parameterless ctor + `init` properties):
+
+```csharp
+using MaxMind.Db;
+
+public class AsnResponse
+{
+    [MapKey("autonomous_system_number")]
+    public long? AutonomousSystemNumber { get; init; }
+
+    [MapKey("autonomous_system_organization")]
+    public string? AutonomousSystemOrganization { get; init; }
+
+    [Inject("ip_address")]
+    public IPAddress? IpAddress { get; init; }
+
+    [Network]
+    public Network? Network { get; init; }
 }
 ```
 
@@ -189,7 +212,7 @@ public class AsnResponse
 If adding new deserialization features:
 
 1. Create attribute class inheriting from `System.Attribute`
-2. Update `TypeActivatorCreator` to handle new attribute in parameter array building
+2. Update `TypeActivatorCreator` to handle new attribute in both the constructor-based and property-based activation paths
 3. Add tests in `DecoderTest.cs` or `ReaderTest.cs`
 4. Update XML documentation for the new attribute
 

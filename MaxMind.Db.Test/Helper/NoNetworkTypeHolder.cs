@@ -54,7 +54,7 @@ namespace MaxMind.Db.Test.Helper
     {
         [Constructor]
         public NNNonexistant(
-            [Parameter("innerNonexistant", true)] NNInnerNonexistant innerNonexistant,
+            [MapKey("innerNonexistant", true)] NNInnerNonexistant innerNonexistant,
             // To test this is set even if the parent map doesn't exist
             // in the database.
             [Inject("injected")] string injected
@@ -81,10 +81,10 @@ namespace MaxMind.Db.Test.Helper
             int int32,
             bool boolean,
             ICollection<long> array,
-            [Parameter("double")] double mmDouble,
-            [Parameter("float")] float mmFloat,
-            [Parameter("map")] NNInnerMap map,
-            [Parameter("nonexistant", true)] NNNonexistant nonexistant
+            [MapKey("double")] double mmDouble,
+            [MapKey("float")] float mmFloat,
+            [MapKey("map")] NNInnerMap map,
+            [MapKey("nonexistant", true)] NNNonexistant nonexistant
             )
         {
             Array = array;

@@ -27,15 +27,15 @@ namespace MaxMind.Db
         [Constructor]
         [CLSCompliant(false)]
         public Metadata(
-            [Parameter("binary_format_major_version")] int binaryFormatMajorVersion,
-            [Parameter("binary_format_minor_version")] int binaryFormatMinorVersion,
-            [Parameter("build_epoch")] ulong buildEpoch,
-            [Parameter("database_type")] string databaseType,
+            [MapKey("binary_format_major_version")] int binaryFormatMajorVersion,
+            [MapKey("binary_format_minor_version")] int binaryFormatMinorVersion,
+            [MapKey("build_epoch")] ulong buildEpoch,
+            [MapKey("database_type")] string databaseType,
             IDictionary<string, string> description,
-            [Parameter("ip_version")] int ipVersion,
+            [MapKey("ip_version")] int ipVersion,
             IReadOnlyList<string> languages,
-            [Parameter("node_count")] long nodeCount,
-            [Parameter("record_size")] int recordSize
+            [MapKey("node_count")] long nodeCount,
+            [MapKey("record_size")] int recordSize
             )
         {
             BinaryFormatMajorVersion = binaryFormatMajorVersion;

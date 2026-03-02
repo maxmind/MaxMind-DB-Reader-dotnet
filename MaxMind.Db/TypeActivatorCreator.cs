@@ -135,18 +135,18 @@ namespace MaxMind.Db
                 var injectableAttribute = param.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
                 if (injectableAttribute != null)
                 {
-                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.ParameterName, member));
+                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.Name, member));
                 }
                 var networkAttribute = param.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
                 if (networkAttribute != null)
                 {
                     networkParams.Add(member);
                 }
-                var paramAttribute = param.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
+                var paramAttribute = param.GetCustomAttributes<MapKeyAttribute>().FirstOrDefault();
                 string? name;
                 if (paramAttribute != null)
                 {
-                    name = paramAttribute.ParameterName;
+                    name = paramAttribute.Name;
                     if (paramAttribute.AlwaysCreate)
                     {
                         alwaysCreated.Add(member);
@@ -184,7 +184,7 @@ namespace MaxMind.Db
 
             var properties = expectedType
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(p => p.IsDefined(typeof(ParameterAttribute), true)
+                .Where(p => p.IsDefined(typeof(MapKeyAttribute), true)
                          || p.IsDefined(typeof(InjectAttribute), true)
                          || p.IsDefined(typeof(NetworkAttribute), true))
                 .OrderBy(p => p.Name)
@@ -218,18 +218,18 @@ namespace MaxMind.Db
                 var injectableAttribute = prop.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
                 if (injectableAttribute != null)
                 {
-                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.ParameterName, member));
+                    injectables.Add(new KeyValuePair<string, DeserializationMember>(injectableAttribute.Name, member));
                 }
                 var networkAttribute = prop.GetCustomAttributes<NetworkAttribute>().FirstOrDefault();
                 if (networkAttribute != null)
                 {
                     networkParams.Add(member);
                 }
-                var paramAttribute = prop.GetCustomAttributes<ParameterAttribute>().FirstOrDefault();
+                var paramAttribute = prop.GetCustomAttributes<MapKeyAttribute>().FirstOrDefault();
                 string? name;
                 if (paramAttribute != null)
                 {
-                    name = paramAttribute.ParameterName;
+                    name = paramAttribute.Name;
                     if (paramAttribute.AlwaysCreate)
                     {
                         alwaysCreated.Add(member);

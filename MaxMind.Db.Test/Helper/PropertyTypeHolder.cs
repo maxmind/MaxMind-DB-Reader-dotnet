@@ -13,19 +13,19 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropInnerMapX
     {
-        [Parameter("utf8_stringX")]
+        [MapKey("utf8_stringX")]
         public string Utf8StringX { get; init; } = "";
 
         [Network]
         public Network? Network { get; init; }
 
-        [Parameter("arrayX")]
+        [MapKey("arrayX")]
         public LinkedList<long> ArrayX { get; init; } = new();
     }
 
     public class PropInnerMap
     {
-        [Parameter("mapX")]
+        [MapKey("mapX")]
         public PropInnerMapX MapX { get; init; } = new();
     }
 
@@ -40,7 +40,7 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropNonexistant
     {
-        [Parameter("innerNonexistant", true)]
+        [MapKey("innerNonexistant", true)]
         public PropInnerNonexistant InnerNonexistant { get; init; } = new();
 
         [Inject("injected")]
@@ -55,43 +55,43 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropTypeHolder
     {
-        [Parameter("utf8_string")]
+        [MapKey("utf8_string")]
         public string Utf8String { get; init; } = "";
 
-        [Parameter("bytes")]
+        [MapKey("bytes")]
         public byte[] Bytes { get; init; } = [];
 
-        [Parameter("uint16")]
+        [MapKey("uint16")]
         public int Uint16 { get; init; }
 
-        [Parameter("uint32")]
+        [MapKey("uint32")]
         public long Uint32 { get; init; }
 
-        [Parameter("uint64")]
+        [MapKey("uint64")]
         public ulong Uint64 { get; init; }
 
-        [Parameter("uint128")]
+        [MapKey("uint128")]
         public BigInteger Uint128 { get; init; }
 
-        [Parameter("int32")]
+        [MapKey("int32")]
         public int Int32 { get; init; }
 
-        [Parameter("boolean")]
+        [MapKey("boolean")]
         public bool Boolean { get; init; }
 
-        [Parameter("array")]
+        [MapKey("array")]
         public ICollection<long> Array { get; init; } = new List<long>();
 
-        [Parameter("double")]
+        [MapKey("double")]
         public double Double { get; init; }
 
-        [Parameter("float")]
+        [MapKey("float")]
         public float Float { get; init; }
 
-        [Parameter("map")]
+        [MapKey("map")]
         public PropInnerMap Map { get; init; } = new();
 
-        [Parameter("nonexistant", true)]
+        [MapKey("nonexistant", true)]
         public PropNonexistant Nonexistant { get; init; } = new();
 
         public string UnannotatedDefault { get; init; } = "should stay default";
@@ -101,16 +101,16 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropNNInnerMapX
     {
-        [Parameter("utf8_stringX")]
+        [MapKey("utf8_stringX")]
         public string Utf8StringX { get; init; } = "";
 
-        [Parameter("arrayX")]
+        [MapKey("arrayX")]
         public LinkedList<long> ArrayX { get; init; } = new();
     }
 
     public class PropNNInnerMap
     {
-        [Parameter("mapX")]
+        [MapKey("mapX")]
         public PropNNInnerMapX MapX { get; init; } = new();
     }
 
@@ -122,7 +122,7 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropNNNonexistant
     {
-        [Parameter("innerNonexistant", true)]
+        [MapKey("innerNonexistant", true)]
         public PropNNInnerNonexistant InnerNonexistant { get; init; } = new();
 
         [Inject("injected")]
@@ -131,43 +131,43 @@ namespace MaxMind.Db.Test.Helper
 
     public class PropNoNetworkTypeHolder
     {
-        [Parameter("utf8_string")]
+        [MapKey("utf8_string")]
         public string Utf8String { get; init; } = "";
 
-        [Parameter("bytes")]
+        [MapKey("bytes")]
         public byte[] Bytes { get; init; } = [];
 
-        [Parameter("uint16")]
+        [MapKey("uint16")]
         public int Uint16 { get; init; }
 
-        [Parameter("uint32")]
+        [MapKey("uint32")]
         public long Uint32 { get; init; }
 
-        [Parameter("uint64")]
+        [MapKey("uint64")]
         public ulong Uint64 { get; init; }
 
-        [Parameter("uint128")]
+        [MapKey("uint128")]
         public BigInteger Uint128 { get; init; }
 
-        [Parameter("int32")]
+        [MapKey("int32")]
         public int Int32 { get; init; }
 
-        [Parameter("boolean")]
+        [MapKey("boolean")]
         public bool Boolean { get; init; }
 
-        [Parameter("array")]
+        [MapKey("array")]
         public ICollection<long> Array { get; init; } = new List<long>();
 
-        [Parameter("double")]
+        [MapKey("double")]
         public double Double { get; init; }
 
-        [Parameter("float")]
+        [MapKey("float")]
         public float Float { get; init; }
 
-        [Parameter("map")]
+        [MapKey("map")]
         public PropNNInnerMap Map { get; init; } = new();
 
-        [Parameter("nonexistant", true)]
+        [MapKey("nonexistant", true)]
         public PropNNNonexistant Nonexistant { get; init; } = new();
     }
 
