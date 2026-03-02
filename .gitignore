@@ -125,3 +125,6 @@ test-results
 
 # Claude Code
 .claude
+
+# Worktrees
+.worktrees
