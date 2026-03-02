@@ -13,8 +13,8 @@ internal class SNECache
 {
     private readonly ConcurrentDictionary<(long, int, Type), (object, long)> _Cache;
 
-    // Long for interlocked operations. Explicitly maintain our own size to avoid
-    // paying for locking all buckets when alternatively checking this.Cache.Size().
+    // Explicitly maintain our own size to avoid paying for locking all buckets 
+    // when alternatively checking this.Cache.Size().
     private int _Size;
 
     private readonly int _Capacity;
