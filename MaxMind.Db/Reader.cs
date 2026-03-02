@@ -122,6 +122,17 @@ namespace MaxMind.Db
         }
 
         /// <summary>
+        ///     Initializes a new instance of the <see cref="Reader" /> class.
+        /// </summary>
+        /// <param name="file">The MaxMind DB file.</param>
+        /// <param name="mode">The mode by which to access the DB file.</param>
+        /// <param name="cacheSize">Cache size for optional internal cache</param>
+        public Reader(string file, FileAccessMode mode, int cacheSize)
+            : this(BufferForMode(file, mode), file, cacheSize)
+        {
+        }
+
+        /// <summary>
         ///     Initialize with <c>Stream</c>. The current position of the
         ///     stream must point to the start of the database. The content
         ///     between the current position and the end of the stream must
@@ -134,7 +145,7 @@ namespace MaxMind.Db
         {
         }
 
-        private Reader(Buffer buffer, string? file)
+        private Reader(Buffer buffer, string? file, int? cacheSize = null)
         {
             _fileName = file;
             _database = buffer;
@@ -146,7 +157,7 @@ namespace MaxMind.Db
             _nodeByteSize = Metadata.NodeByteSize;
             _nodeCount = Metadata.NodeCount;
             _recordSize = Metadata.RecordSize;
-            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize);
+            Decoder = new Decoder(_database, Metadata.SearchTreeSize + DataSectionSeparatorSize, defaultCacheSize: cacheSize);
 
             if (_dbIPVersion == 6)
             {
@@ -163,8 +174,7 @@ namespace MaxMind.Db
         ///     Asynchronously initializes a new instance of the <see cref="Reader" /> class by reading the specified file into a memory-mapped region.
         /// </summary>
         /// <param name="file">The file.</param>
-        /// <param name="stringAllocator">Optional allocator method for strings created from byte arrays.</param>
-        public static async Task<Reader> CreateAsync(string file, AllocatorDelegates.GetString? stringAllocator = null)
+        public static async Task<Reader> CreateAsync(string file)
         {
             return new Reader(await MemoryMapBuffer.CreateAsync(file).ConfigureAwait(false), file);
         }
@@ -173,9 +183,8 @@ namespace MaxMind.Db
         ///     Asynchronously initialize with Stream.
         /// </summary>
         /// <param name="stream">The stream to use. It will be used from its current position. </param>
-        /// <param name="stringAllocator">Optional allocator method for strings created from byte arrays.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public static async Task<Reader> CreateAsync(Stream stream,  AllocatorDelegates.GetString? stringAllocator = null)
+        public static async Task<Reader> CreateAsync(Stream stream)
         {
             return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
