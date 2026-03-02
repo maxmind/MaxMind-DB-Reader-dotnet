@@ -321,7 +321,7 @@ namespace MaxMind.Db
 
             return (byte[])DecodeFromCacheOrCreate(offset, size, expectedType, static (Buffer database, long offset, int size) =>
             {
-                return (database.ReadString(offset, size), offset + size);
+                return (database.Read(offset, size), offset + size);
             }).Item1;
         }
 
