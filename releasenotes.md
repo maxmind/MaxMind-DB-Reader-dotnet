@@ -2,6 +2,13 @@
 
 ## 5.0.0 ##
 
+* **BREAKING:** Added property-based activation for MMDB deserialization.
+  Types with `[MapKey]`-annotated `init` properties can now be deserialized
+  without a `[Constructor]`-annotated constructor.
+* **BREAKING:** `[Parameter]` attribute renamed to `[MapKey]`.
+  `[Parameter("field")]` should be replaced with `[MapKey("field")]`.
+* **BREAKING:** `InjectAttribute.ParameterName` renamed to
+  `InjectAttribute.Name`.
 * Fixed `OverflowException` when reading databases larger than 2 GiB where
   data section pointers resolved to offsets exceeding the 32-bit integer
   maximum. Reported by Yuri Simernitski. GitHub #263.
