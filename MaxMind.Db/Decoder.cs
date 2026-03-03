@@ -220,7 +220,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private static bool DecodeBoolean(Type expectedType, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(bool));
+            if (expectedType != typeof(bool) && expectedType != typeof(bool?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(bool));
+            }
 
             return size switch
             {
@@ -237,7 +240,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private double DecodeDouble(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(double));
+            if (expectedType != typeof(double) && expectedType != typeof(double?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(double));
+            }
 
             if (size != 8)
             {
@@ -254,7 +260,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private float DecodeFloat(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(float));
+            if (expectedType != typeof(float) && expectedType != typeof(float?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(float));
+            }
 
             if (size != 4)
             {
@@ -523,7 +532,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private long DecodeLong(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(long));
+            if (expectedType != typeof(long) && expectedType != typeof(long?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(long));
+            }
             return _database.ReadLong(offset, size);
         }
 
@@ -588,7 +600,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private ulong DecodeUInt64(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            if (expectedType != typeof(ulong) && expectedType != typeof(ulong?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            }
             return _database.ReadULong(offset, size);
         }
 
@@ -598,7 +613,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
+            if (expectedType != typeof(BigInteger) && expectedType != typeof(BigInteger?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
+            }
             return _database.ReadBigInteger(offset, size);
         }
 
@@ -626,7 +644,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private int DecodeInteger(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(int));
+            if (expectedType != typeof(int) && expectedType != typeof(int?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(int));
+            }
 
             return _database.ReadVarInt(offset, size);
         }

@@ -3,6 +3,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 #endregion
 
@@ -76,8 +77,13 @@ namespace MaxMind.Db
             return (ObjectActivator)lambda.Compile();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void CheckType(Type expected, Type from)
         {
+            if (expected == from)
+            {
+                return;
+            }
             if (!expected.IsAssignableFrom(from))
             {
                 throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
