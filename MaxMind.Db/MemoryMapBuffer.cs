@@ -16,6 +16,9 @@ namespace MaxMind.Db
     {
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
+#if !NETSTANDARD2_0
+        private IntPtr _ptr;
+#endif
         private bool _disposed;
 
         // Creates a named memory-mapped file backed directly by the file on
@@ -77,6 +80,9 @@ namespace MaxMind.Db
             }
 
             _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
+#if !NETSTANDARD2_0
+            AcquireRawPointer();
+#endif
         }
 
         // Reads the file into an anonymous memory-mapped region that is
@@ -88,6 +94,9 @@ namespace MaxMind.Db
             Length = stream.Length;
 
             (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
+#if !NETSTANDARD2_0
+            AcquireRawPointer();
+#endif
         }
 
         // Reads the stream into an anonymous memory-mapped region that is
@@ -104,6 +113,9 @@ namespace MaxMind.Db
                 Length = stream.Length - stream.Position;
 
                 (_memoryMappedFile, _view) = CreateMmapFromStream(stream, Length);
+#if !NETSTANDARD2_0
+                AcquireRawPointer();
+#endif
                 return;
             }
 
@@ -117,6 +129,9 @@ namespace MaxMind.Db
 
                     tempStream.Position = 0;
                     (_memoryMappedFile, _view) = CreateMmapFromStream(tempStream, Length);
+#if !NETSTANDARD2_0
+                    AcquireRawPointer();
+#endif
                 }
             }
             finally
@@ -141,6 +156,9 @@ namespace MaxMind.Db
             Length = length;
             _memoryMappedFile = memoryMappedFile;
             _view = view;
+#if !NETSTANDARD2_0
+            AcquireRawPointer();
+#endif
         }
 
         internal static async Task<MemoryMapBuffer> CreateAsync(string file)
@@ -245,42 +263,88 @@ namespace MaxMind.Db
             }
         }
 
-        public override byte[] Read(long offset, int count)
+#if !NETSTANDARD2_0
+        private unsafe void AcquireRawPointer()
         {
-            var bytes = new byte[count];
-
-            // Although not explicitly marked as thread safe, from
-            // reviewing the source code, these operations appear to
-            // be thread safe as long as only read operations are
-            // being done.
-            _view.ReadArray(offset, bytes, 0, bytes.Length);
-
-            return bytes;
+            try
+            {
+                byte* ptr = null;
+                _view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+                _ptr = (IntPtr)(ptr + _view.PointerOffset);
+            }
+            catch
+            {
+                _view.Dispose();
+                _memoryMappedFile.Dispose();
+                throw;
+            }
         }
 
-        public override byte ReadOne(long offset) => _view.ReadByte(offset);
+        // Returns a bounds-checked Span over the requested region of the
+        // memory-mapped buffer. This restores CLR bounds checking that raw
+        // pointer access removed, at negligible cost (~1 cmp per index).
+        // Uses a targeted slice rather than spanning the full buffer so
+        // that databases larger than 2 GiB still work (Span length is int).
+        private unsafe ReadOnlySpan<byte> GetSpan(long offset, int count)
+        {
+            if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset),
+                    "Attempt to read beyond the end of the MemoryMappedFile.");
+            }
+            return new ReadOnlySpan<byte>((byte*)_ptr + offset, count);
+        }
+#endif
+
+        public override byte[] Read(long offset, int count)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
+            var bytes = new byte[count];
+            _view.ReadArray(offset, bytes, 0, count);
+            return bytes;
+#else
+            return GetSpan(offset, count).ToArray();
+#endif
+        }
+
+        public override byte ReadOne(long offset)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
+            return _view.ReadByte(offset);
+#else
+            return GetSpan(offset, 1)[0];
+#endif
+        }
 
         public override string ReadString(long offset, int count)
         {
-            if (offset + count > _view.Capacity)
+            if (_disposed)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
+            if (offset < 0 || offset + count > Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset),
                     "Attempt to read beyond the end of the MemoryMappedFile.");
             }
-            unsafe
-            {
-                var ptr = (byte*)0;
-                try
-                {
-                    _view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-                    return Encoding.UTF8.GetString(ptr + offset, count);
-                }
-                finally
-                {
-                    _view.SafeMemoryMappedViewHandle.ReleasePointer();
-                }
-            }
+            var bytes = new byte[count];
+            _view.ReadArray(offset, bytes, 0, count);
+            return Encoding.UTF8.GetString(bytes);
+#else
+            return Encoding.UTF8.GetString(GetSpan(offset, count));
+#endif
         }
 
         /// <summary>
@@ -288,10 +352,23 @@ namespace MaxMind.Db
         /// </summary>
         public override int ReadInt(long offset)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
             return _view.ReadByte(offset) << 24 |
                    _view.ReadByte(offset + 1) << 16 |
                    _view.ReadByte(offset + 2) << 8 |
                    _view.ReadByte(offset + 3);
+#else
+            var span = GetSpan(offset, 4);
+            return span[0] << 24 |
+                   span[1] << 16 |
+                   span[2] << 8 |
+                   span[3];
+#endif
         }
 
         /// <summary>
@@ -299,6 +376,12 @@ namespace MaxMind.Db
         /// </summary>
         public override int ReadVarInt(long offset, int count)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
             return count switch
             {
                 0 => 0,
@@ -311,6 +394,27 @@ namespace MaxMind.Db
                 4 => ReadInt(offset),
                 _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
             };
+#else
+            if (count == 0)
+            {
+                return 0;
+            }
+            if (count == 4)
+            {
+                return ReadInt(offset);
+            }
+            var span = GetSpan(offset, count);
+            return count switch
+            {
+                1 => span[0],
+                2 => span[0] << 8 |
+                     span[1],
+                3 => span[0] << 16 |
+                     span[1] << 8 |
+                     span[2],
+                _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
+            };
+#endif
         }
 
         /// <summary>
@@ -324,8 +428,17 @@ namespace MaxMind.Db
 
             if (disposing)
             {
-                _view.Dispose();
-                _memoryMappedFile.Dispose();
+                try
+                {
+#if !NETSTANDARD2_0
+                    _view.SafeMemoryMappedViewHandle.ReleasePointer();
+#endif
+                }
+                finally
+                {
+                    _view.Dispose();
+                    _memoryMappedFile.Dispose();
+                }
             }
 
             _disposed = true;
