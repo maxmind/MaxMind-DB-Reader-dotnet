@@ -9,6 +9,9 @@
   `[Parameter("field")]` should be replaced with `[MapKey("field")]`.
 * **BREAKING:** `InjectAttribute.ParameterName` renamed to
   `InjectAttribute.Name`.
+* Improved lookup performance on .NET 8+ by using Span-based bounds-checked
+  pointer access in the memory-mapped buffer and by reducing reflection
+  overhead in the value-type decode path.
 * Fixed `OverflowException` when reading databases larger than 2 GiB where
   data section pointers resolved to offsets exceeding the 32-bit integer
   maximum. Reported by Yuri Simernitski. GitHub #263.
