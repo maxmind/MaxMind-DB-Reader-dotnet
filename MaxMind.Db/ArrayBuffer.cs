@@ -63,5 +63,33 @@ namespace MaxMind.Db
                 _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
             };
         }
+
+        internal override int HashBytes(long offset, int count)
+        {
+            var code = 17;
+            for (var i = 0; i < count; i++)
+            {
+                code = (31 * code) + _fileBytes[offset + i];
+            }
+            return code;
+        }
+
+        internal override bool EqualsBytes(long offset, Buffer other, long otherOffset, int count)
+        {
+            if (other is ArrayBuffer arrayBuffer)
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    if (_fileBytes[offset + i] != arrayBuffer._fileBytes[otherOffset + i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return base.EqualsBytes(offset, other, otherOffset, count);
+        }
     }
 }

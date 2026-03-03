@@ -14,13 +14,7 @@ namespace MaxMind.Db
             this.buffer = buffer;
             this.offset = offset;
             this.size = size;
-
-            var code = 17;
-            for (var i = 0; i < size; i++)
-            {
-                code = (31 * code) + buffer.ReadOne(offset + i);
-            }
-            hashCode = code;
+            hashCode = buffer.HashBytes(offset, size);
         }
 
         public bool Equals(Key other)
@@ -30,15 +24,7 @@ namespace MaxMind.Db
                 return false;
             }
 
-            for (var i = 0; i < size; i++)
-            {
-                if (buffer.ReadOne(offset + i) != other.buffer.ReadOne(other.offset + i))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return buffer.EqualsBytes(offset, other.buffer, other.offset, size);
         }
 
         public override bool Equals(object? obj)

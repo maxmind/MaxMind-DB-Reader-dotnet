@@ -2,6 +2,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 #endregion
 
@@ -20,6 +21,31 @@ namespace MaxMind.Db
         public abstract byte ReadOne(long offset);
 
         public long Length { get; protected set; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal virtual int HashBytes(long offset, int count)
+        {
+            var code = 17;
+            for (var i = 0; i < count; i++)
+            {
+                code = (31 * code) + ReadOne(offset + i);
+            }
+            return code;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal virtual bool EqualsBytes(long offset, Buffer other, long otherOffset, int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                if (ReadOne(offset + i) != other.ReadOne(otherOffset + i))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /// <summary>
         ///     Read a big integer from the buffer.

@@ -322,7 +322,15 @@ namespace MaxMind.Db
 #if NETSTANDARD2_0
             return _view.ReadByte(offset);
 #else
-            return GetSpan(offset, 1)[0];
+            if ((ulong)offset >= (ulong)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset),
+                    "Attempt to read beyond the end of the MemoryMappedFile.");
+            }
+            unsafe
+            {
+                return *(((byte*)_ptr) + offset);
+            }
 #endif
         }
 
@@ -415,6 +423,50 @@ namespace MaxMind.Db
                 _ => throw new InvalidDatabaseException($"Unexpected int32 of size {count}"),
             };
 #endif
+        }
+
+        internal override int HashBytes(long offset, int count)
+        {
+#if NETSTANDARD2_0
+            var code = 17;
+            for (var i = 0; i < count; i++)
+            {
+                code = (31 * code) + _view.ReadByte(offset + i);
+            }
+            return code;
+#else
+            var code = 17;
+            var span = GetSpan(offset, count);
+            for (var i = 0; i < span.Length; i++)
+            {
+                code = (31 * code) + span[i];
+            }
+            return code;
+#endif
+        }
+
+        internal override bool EqualsBytes(long offset, Buffer other, long otherOffset, int count)
+        {
+#if NETSTANDARD2_0
+            if (other is MemoryMapBuffer otherBuffer)
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    if (_view.ReadByte(offset + i) != otherBuffer._view.ReadByte(otherOffset + i))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+#else
+            if (other is MemoryMapBuffer otherBuffer)
+            {
+                return GetSpan(offset, count).SequenceEqual(otherBuffer.GetSpan(otherOffset, count));
+            }
+#endif
+            return base.EqualsBytes(offset, other, otherOffset, count);
         }
 
         /// <summary>
