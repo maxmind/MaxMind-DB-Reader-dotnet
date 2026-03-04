@@ -244,8 +244,13 @@ namespace MaxMind.Db
         public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
+            if (pointer == 0)
+            {
+                return null;
+            }
+
             var network = new Network(ipAddress, prefixLength);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
+            return ResolveDataPointer<T>(pointer, injectables, network);
         }
 
         /// <summary>
