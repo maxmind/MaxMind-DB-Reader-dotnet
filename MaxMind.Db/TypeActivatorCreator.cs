@@ -164,9 +164,8 @@ namespace MaxMind.Db
                 paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), member);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
-            var clsConstructor = new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
+            return new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
                 networkParams.ToArray(), alwaysCreated.ToArray());
-            return clsConstructor;
         }
 
         private static TypeActivator PropertyBasedActivator(Type expectedType)
