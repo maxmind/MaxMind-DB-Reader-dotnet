@@ -64,21 +64,16 @@ namespace MaxMind.Db
             DeserializationParameters = deserializationParameters;
             InjectableParameters = injectables;
             NetworkParameters = networkParameters;
-
-            // The deserializationParameters dictionary must contain ALL members
-            // (MapKey + Inject + Network) so that DefaultParameters.Length correctly
-            // sizes the parameter array used by both constructor and MemberInit activators.
             if (defaultParameters != null)
             {
                 DefaultParameters = defaultParameters;
             }
             else
             {
-                Type[] parameterTypes = deserializationParameters.Values
+                DefaultParameters = deserializationParameters.Values
                     .OrderBy(x => x.Position)
-                    .Select(x => x.MemberType)
+                    .Select(x => DefaultValue(x.MemberType))
                     .ToArray();
-                DefaultParameters = parameterTypes.Select(DefaultValue).ToArray();
             }
         }
 
@@ -124,10 +119,10 @@ namespace MaxMind.Db
         private static TypeActivator ConstructorBasedActivator(ConstructorInfo constructor)
         {
             var parameters = constructor.GetParameters();
-            var paramNameTypes = new Dictionary<Key, DeserializationMember>();
-            var injectables = new List<KeyValuePair<string, DeserializationMember>>();
-            var networkParams = new List<DeserializationMember>();
-            var alwaysCreated = new List<DeserializationMember>();
+            var paramNameTypes = new Dictionary<Key, DeserializationMember>(parameters.Length);
+            var injectables = new List<KeyValuePair<string, DeserializationMember>>(parameters.Length);
+            var networkParams = new List<DeserializationMember>(parameters.Length);
+            var alwaysCreated = new List<DeserializationMember>(parameters.Length);
             foreach (var param in parameters)
             {
                 var member = new DeserializationMember(param);
