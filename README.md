@@ -66,10 +66,10 @@ namespace MyCode
     {
         [Constructor]
         public Asn(
-            // The Parameter attribute tells the reader to map the database
-            // key to the specified constructor parameter.
-            [Parameter("autonomous_system_number")] long? autonomousSystemNumber,
-            [Parameter("autonomous_system_organization")] string autonomousSystemOrganization,
+            // The MapKey attribute tells the reader to map the database
+            // key to the specified constructor parameter or property.
+            [MapKey("autonomous_system_number")] long? autonomousSystemNumber,
+            [MapKey("autonomous_system_organization")] string autonomousSystemOrganization,
 
             // The Inject attribute allows you to inject arbitrary values
             // when deserializing.
