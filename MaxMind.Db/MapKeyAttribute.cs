@@ -42,7 +42,6 @@ namespace MaxMind.Db
     ///     (null for nullable types).
     /// </param>
     [Obsolete("Use MapKeyAttribute instead.")]
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public sealed class ParameterAttribute(string parameterName, bool alwaysCreate = false)
         : MapKeyAttribute(parameterName, alwaysCreate);
 }
