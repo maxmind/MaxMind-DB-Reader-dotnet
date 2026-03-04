@@ -401,21 +401,13 @@ namespace MaxMind.Db
         private long FindMetadataStart()
         {
             var dbLength = _database.Length;
-            var markerLength = (long)_metadataStartMarker.Length;
+            var markerLength = _metadataStartMarker.Length;
 
             for (var i = dbLength - markerLength; i > 0; i--)
             {
-                var j = 0;
-                for (; j < markerLength; j++)
+                if (_database.EqualsBytes(i, _metadataStartMarker, 0, markerLength))
                 {
-                    if (_metadataStartMarker[j] != _database.ReadOne(i + j))
-                    {
-                        break;
-                    }
-                }
-                if (j == markerLength)
-                {
-                    return i + markerLength;
+                    return i + (long)markerLength;
                 }
             }
 
@@ -451,9 +443,8 @@ namespace MaxMind.Db
                         // Cast through uint so the sign bit is treated as a
                         // value bit. The implicit uint -> long widening then
                         // preserves the unsigned value. We use ReadInt rather
-                        // than ReadLong because ReadLong loops over ReadOne
-                        // (one virtual dispatch per byte), while ReadInt reads
-                        // all 4 bytes in a single virtual call.
+                        // than ReadLong because ReadInt reads all 4 bytes in
+                        // one operation.
                         return (uint)_database.ReadInt(offset);
                     }
             }
