@@ -503,7 +503,8 @@ namespace MaxMind.Db
                 switch (type)
                 {
                     case ObjectType.Pointer:
-                        DecodePointer(offset, size, out offset);
+                        // While skipping values, only pointer byte-length matters.
+                        offset += ((size >> 3) & 0x3) + 1;
                         break;
 
                     case ObjectType.Map:
