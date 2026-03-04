@@ -161,7 +161,7 @@ namespace MaxMind.Db
                     }
                 }
                 var bytes = Encoding.UTF8.GetBytes(name);
-                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), member);
+                paramNameTypes.Add(new Key(bytes), member);
             }
             var activator = ReflectionUtil.CreateActivator(constructor);
             return new TypeActivator(activator, paramNameTypes, injectables.ToArray(),
@@ -239,7 +239,7 @@ namespace MaxMind.Db
                     name = prop.Name;
                 }
                 var bytes = Encoding.UTF8.GetBytes(name);
-                paramNameTypes.Add(new Key(new ArrayBuffer(bytes), 0, bytes.Length), member);
+                paramNameTypes.Add(new Key(bytes), member);
                 orderedProperties.Add(prop);
                 position++;
             }

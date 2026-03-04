@@ -3,6 +3,8 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -12,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace MaxMind.Db
 {
-    internal sealed class MemoryMapBuffer : Buffer
+    internal sealed class MemoryMapBuffer : IDisposable
     {
         private readonly MemoryMappedFile _memoryMappedFile;
         private readonly MemoryMappedViewAccessor _view;
@@ -20,6 +22,7 @@ namespace MaxMind.Db
         private IntPtr _ptr;
 #endif
         private bool _disposed;
+        internal long Length { get; }
 
         // Creates a named memory-mapped file backed directly by the file on
         // disk, suitable for cross-process sharing.
@@ -296,7 +299,7 @@ namespace MaxMind.Db
         }
 #endif
 
-        public override byte[] Read(long offset, int count)
+        internal byte[] Read(long offset, int count)
         {
             if (_disposed)
             {
@@ -304,6 +307,10 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            if (count == 0)
+            {
+                return Array.Empty<byte>();
+            }
             var bytes = new byte[count];
             _view.ReadArray(offset, bytes, 0, count);
             return bytes;
@@ -312,7 +319,7 @@ namespace MaxMind.Db
 #endif
         }
 
-        public override byte ReadOne(long offset)
+        internal byte ReadOne(long offset)
         {
             if (_disposed)
             {
@@ -334,7 +341,7 @@ namespace MaxMind.Db
 #endif
         }
 
-        public override string ReadString(long offset, int count)
+        internal string ReadString(long offset, int count)
         {
             if (_disposed)
             {
@@ -342,6 +349,10 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            if (count == 0)
+            {
+                return string.Empty;
+            }
             if (offset < 0 || offset + count > Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset),
@@ -358,7 +369,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read an int from the buffer.
         /// </summary>
-        public override int ReadInt(long offset)
+        internal int ReadInt(long offset)
         {
             if (_disposed)
             {
@@ -382,7 +393,7 @@ namespace MaxMind.Db
         /// <summary>
         ///     Read a variable-sized int from the buffer.
         /// </summary>
-        public override int ReadVarInt(long offset, int count)
+        internal int ReadVarInt(long offset, int count)
         {
             if (_disposed)
             {
@@ -425,7 +436,8 @@ namespace MaxMind.Db
 #endif
         }
 
-        internal override int HashBytes(long offset, int count)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int HashBytes(long offset, int count)
         {
 #if NETSTANDARD2_0
             var code = 17;
@@ -445,35 +457,146 @@ namespace MaxMind.Db
 #endif
         }
 
-        internal override bool EqualsBytes(long offset, Buffer other, long otherOffset, int count)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool EqualsBytes(long offset, MemoryMapBuffer other, long otherOffset, int count)
         {
 #if NETSTANDARD2_0
-            if (other is MemoryMapBuffer otherBuffer)
+            for (var i = 0; i < count; i++)
             {
-                for (var i = 0; i < count; i++)
+                if (_view.ReadByte(offset + i) != other._view.ReadByte(otherOffset + i))
                 {
-                    if (_view.ReadByte(offset + i) != otherBuffer._view.ReadByte(otherOffset + i))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
+            }
 
-                return true;
-            }
+            return true;
 #else
-            if (other is MemoryMapBuffer otherBuffer)
-            {
-                return GetSpan(offset, count).SequenceEqual(otherBuffer.GetSpan(otherOffset, count));
-            }
+            return GetSpan(offset, count).SequenceEqual(other.GetSpan(otherOffset, count));
 #endif
-            return base.EqualsBytes(offset, other, otherOffset, count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool EqualsBytes(long offset, byte[] other, int otherOffset, int count)
+        {
+#if NETSTANDARD2_0
+            for (var i = 0; i < count; i++)
+            {
+                if (_view.ReadByte(offset + i) != other[otherOffset + i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+#else
+            return GetSpan(offset, count).SequenceEqual(other.AsSpan(otherOffset, count));
+#endif
+        }
+
+        /// <summary>
+        ///     Read a big integer from the buffer.
+        /// </summary>
+        internal BigInteger ReadBigInteger(long offset, int size)
+        {
+            var buffer = Read(offset, size);
+            Array.Reverse(buffer);
+
+            if (buffer.Length > 0 && (buffer[buffer.Length - 1] & 0x80) > 0)
+            {
+                Array.Resize(ref buffer, buffer.Length + 1);
+            }
+            return new BigInteger(buffer);
+        }
+
+        /// <summary>
+        ///     Read a double from the buffer.
+        /// </summary>
+        internal double ReadDouble(long offset)
+        {
+            return BitConverter.Int64BitsToDouble(ReadLong(offset, 8));
+        }
+
+        /// <summary>
+        ///     Read a float from the buffer.
+        /// </summary>
+        internal float ReadFloat(long offset)
+        {
+#if NETSTANDARD2_0
+            var buffer = Read(offset, 4);
+            Array.Reverse(buffer);
+            return BitConverter.ToSingle(buffer, 0);
+#else
+            return BitConverter.Int32BitsToSingle(ReadInt(offset));
+#endif
+        }
+
+        /// <summary>
+        ///     Read a long from the buffer.
+        /// </summary>
+        internal long ReadLong(long offset, int size)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
+            long val = 0;
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _view.ReadByte(offset + i);
+            }
+            return val;
+#else
+            var span = GetSpan(offset, size);
+            long val = 0;
+            for (var i = 0; i < span.Length; i++)
+            {
+                val = (val << 8) | span[i];
+            }
+            return val;
+#endif
+        }
+
+        /// <summary>
+        ///     Read a uint64 from the buffer.
+        /// </summary>
+        internal ulong ReadULong(long offset, int size)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MemoryMapBuffer));
+            }
+
+#if NETSTANDARD2_0
+            ulong val = 0;
+            for (var i = 0; i < size; i++)
+            {
+                val = (val << 8) | _view.ReadByte(offset + i);
+            }
+            return val;
+#else
+            var span = GetSpan(offset, size);
+            ulong val = 0;
+            for (var i = 0; i < span.Length; i++)
+            {
+                val = (val << 8) | span[i];
+            }
+            return val;
+#endif
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
         ///     Release resources back to the system.
         /// </summary>
         /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;

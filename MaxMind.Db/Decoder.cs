@@ -40,7 +40,7 @@ namespace MaxMind.Db
     /// </summary>
     internal sealed class Decoder
     {
-        private readonly Buffer _database;
+        private readonly MemoryMapBuffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
         private readonly int[] _pointerValueOffset = [0, 0, 1 << 11, (1 << 19) + (1 << 11), 0];
@@ -54,7 +54,7 @@ namespace MaxMind.Db
         /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
         /// <param name="followPointers">Whether to follow pointers. For testing.</param>
-        internal Decoder(Buffer database, long pointerBase, bool followPointers = true)
+        internal Decoder(MemoryMapBuffer database, long pointerBase, bool followPointers = true)
         {
             _pointerBase = pointerBase;
             _database = database;

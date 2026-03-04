@@ -83,7 +83,7 @@ namespace MaxMind.Db
         }
 
         private const int DataSectionSeparatorSize = 16;
-        private readonly Buffer _database;
+        private readonly MemoryMapBuffer _database;
         private readonly string? _fileName;
         private readonly long _dataPointerOffset;
         private readonly int _dbIPVersion;
@@ -132,7 +132,7 @@ namespace MaxMind.Db
         {
         }
 
-        private Reader(Buffer buffer, string? file)
+        private Reader(MemoryMapBuffer buffer, string? file)
         {
             _fileName = file;
             _database = buffer;
@@ -176,7 +176,7 @@ namespace MaxMind.Db
             return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
-        private static Buffer BufferForMode(string file, FileAccessMode mode)
+        private static MemoryMapBuffer BufferForMode(string file, FileAccessMode mode)
         {
             return mode switch
             {
