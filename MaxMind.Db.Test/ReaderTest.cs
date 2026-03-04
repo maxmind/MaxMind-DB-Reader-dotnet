@@ -418,6 +418,104 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public void TestDecodingTypesToPropertyBasedObject()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var injectables = new InjectableValues();
+            injectables.AddValue("injected", "injected string");
+            var record = reader.Find<PropTypeHolder>(IPAddress.Parse("1.1.1.1"), injectables);
+            if (record == null)
+            {
+                throw new Xunit.Sdk.XunitException("unexpected null record value");
+            }
+            Assert.True(record.Boolean);
+            Assert.Equal([0, 0, 0, 42], record.Bytes);
+            Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
+
+            Assert.Equal(new List<long> { 1, 2, 3 }, record.Array);
+
+            var mapX = record.Map.MapX;
+            Assert.Equal("hello", mapX.Utf8StringX);
+            Assert.Equal(new List<long> { 7, 8, 9 }, mapX.ArrayX);
+            Assert.Equal("1.1.1.0/24", mapX.Network?.ToString());
+
+            Assert.Equal(42.123456, record.Double, 9);
+            Assert.Equal(1.1F, record.Float, 5);
+            Assert.Equal(-268435456, record.Int32);
+            Assert.Equal(100, record.Uint16);
+            Assert.Equal(268435456, record.Uint32);
+            Assert.Equal(1152921504606846976UL, record.Uint64);
+            Assert.Equal(BigInteger.Parse("1329227995784915872903807060280344576"), record.Uint128);
+
+            Assert.Equal("injected string", record.Nonexistant.Injected);
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.Network?.ToString());
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.Network2?.ToString());
+
+            Assert.Equal("injected string", record.Nonexistant.InnerNonexistant.Injected);
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.InnerNonexistant.Network?.ToString());
+
+            Assert.Equal("should stay default", record.UnannotatedDefault);
+        }
+
+        [Fact]
+        public void TestDecodingTypesWithDeprecatedParameterAttribute()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var record = reader.Find<DeprecatedParameterTypeHolder>(IPAddress.Parse("1.1.1.1"));
+            if (record == null)
+            {
+                throw new Xunit.Sdk.XunitException("unexpected null record value");
+            }
+            Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
+            Assert.Equal(42.123456, record.Double, 9);
+        }
+
+        [Fact]
+        public void TestNoConstructorNoParameterlessCtorThrows()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var ex = Assert.Throws<DeserializationException>(
+                () => reader.Find<NoCtorNoAttributeType>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("no parameterless constructor found", ex.Message);
+        }
+
+        [Fact]
+        public void TestReadOnlyPropertyThrows()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var ex = Assert.Throws<DeserializationException>(
+                () => reader.Find<ReadOnlyPropertyType>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("must have a setter or init accessor", ex.Message);
+        }
+
+        [Fact]
+        public void TestNoAnnotatedPropertiesThrows()
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var ex = Assert.Throws<DeserializationException>(
+                () => reader.Find<NoAnnotatedPropertiesType>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("No properties found", ex.Message);
+        }
+
+        [Fact]
+        public void TestEnumerateDecoderDatabasePropertyBased()
+        {
+            var count = 0;
+            var injectables = new InjectableValues();
+            injectables.AddValue("injectable", "injectable_value");
+            injectables.AddValue("injected", "injected_value");
+            using (var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb")))
+            {
+                foreach (var node in reader.FindAll<PropNoNetworkTypeHolder>(injectables))
+                {
+                    TestNode(reader, node, injectables);
+                    count++;
+                }
+            }
+            Assert.Equal(26, count);
+        }
+
+        [Fact]
         public void TestZeros()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
