@@ -119,6 +119,9 @@ namespace MaxMind.Db
         private static TypeActivator ConstructorBasedActivator(ConstructorInfo constructor)
         {
             var parameters = constructor.GetParameters();
+            // The paramNameTypes dictionary must contain ALL members
+            // (MapKey + Inject + Network) so that DefaultParameters.Length correctly
+            // sizes the parameter array used by both constructor and MemberInit activators.
             var paramNameTypes = new Dictionary<Key, DeserializationMember>(parameters.Length);
             var injectables = new List<KeyValuePair<string, DeserializationMember>>(parameters.Length);
             var networkParams = new List<DeserializationMember>(parameters.Length);
