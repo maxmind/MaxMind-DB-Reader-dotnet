@@ -353,7 +353,7 @@ namespace MaxMind.Db
             {
                 return string.Empty;
             }
-            if (offset < 0 || offset + count > Length)
+            if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset),
                     "Attempt to read beyond the end of the MemoryMappedFile.");
