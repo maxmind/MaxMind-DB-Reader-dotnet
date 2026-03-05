@@ -46,7 +46,7 @@ namespace MaxMind.Db
                     return buffer.EqualsBytes(_offset, other._buffer!, other._offset, _size);
                 }
 
-                return buffer.EqualsBytes(_offset, other._bytes!, 0, _size);
+                return other._bytes != null && buffer.EqualsBytes(_offset, other._bytes, 0, _size);
             }
 
             var bytes = _bytes;
@@ -63,7 +63,7 @@ namespace MaxMind.Db
 #if NETSTANDARD2_0
             return other._bytes != null && BytesEqual(bytes, other._bytes, _size);
 #else
-            return other._bytes != null && bytes.AsSpan(0, _size).SequenceEqual(other._bytes);
+            return other._bytes != null && bytes.AsSpan(0, _size).SequenceEqual(other._bytes.AsSpan(0, _size));
 #endif
         }
 
