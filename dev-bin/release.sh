@@ -83,6 +83,9 @@ fi
 # Update version in csproj
 sed -i "s|<VersionPrefix>[^<]*</VersionPrefix>|<VersionPrefix>$version</VersionPrefix>|" MaxMind.Db/MaxMind.Db.csproj
 
+major="${version%%.*}"
+sed -i "s|<AssemblyVersion>[^<]*</AssemblyVersion>|<AssemblyVersion>${major}.0.0</AssemblyVersion>|" MaxMind.Db/MaxMind.Db.csproj
+
 # Build and test
 dotnet build -c Release
 dotnet test -c Release
