@@ -381,6 +381,8 @@ namespace MaxMind.Db
             // N.B. Rent can return larger arrays. This is fine because both constructor invocations and
             // MemberInit activators only access elements up to their parameter/property count.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
+            try
+            {
 #else
             object?[] parameters = new object?[constructor.DefaultParameters.Length];
 #endif
@@ -409,11 +411,14 @@ namespace MaxMind.Db
             outOffset = offset;
             object obj = constructor.Activator(parameters);
 
-#if !NETSTANDARD2_0
-            ArrayPool<object?>.Shared.Return(parameters);
-#endif
-
             return obj;
+#if !NETSTANDARD2_0
+            }
+            finally
+            {
+                ArrayPool<object?>.Shared.Return(parameters);
+            }
+#endif
         }
 
         private void SetAlwaysCreatedParams(
@@ -431,6 +436,8 @@ namespace MaxMind.Db
 
 #if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
+                try
+                {
 #else
                 object?[] cstorParams = new object?[activator.DefaultParameters.Length];
 #endif
@@ -440,9 +447,12 @@ namespace MaxMind.Db
                 SetNetwork(activator, cstorParams, network);
                 SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
                 parameters[param.Position] = activator.Activator(cstorParams);
-
 #if !NETSTANDARD2_0
-                ArrayPool<object?>.Shared.Return(cstorParams);
+                }
+                finally
+                {
+                    ArrayPool<object?>.Shared.Return(cstorParams);
+                }
 #endif
             }
         }
