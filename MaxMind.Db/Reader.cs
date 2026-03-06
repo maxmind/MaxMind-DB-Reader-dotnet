@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -91,9 +90,7 @@ namespace MaxMind.Db
         private readonly long _nodeCount;
         private readonly int _recordSize;
 
-        // The property getter was a hotspot during profiling.
-
-        private readonly byte[] _metadataStartMarker =
+        private static readonly byte[] _metadataStartMarker =
         [
             0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
             109
@@ -311,7 +308,9 @@ namespace MaxMind.Db
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode<T>(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
+                                var ipV4Bytes = new byte[4];
+                            Array.Copy(node.IPBytes, 12, ipV4Bytes, 0, 4);
+                            yield return new ReaderIteratorNode<T>(new IPAddress(ipV4Bytes), node.Bit - 96, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
