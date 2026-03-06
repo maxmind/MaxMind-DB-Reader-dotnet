@@ -35,8 +35,8 @@ To look up an IP address, pass a `System.Net.IPAddress` object to the
 `Find<T>` method on `Reader`. This method will return the result as type `T`.
 `T` may either be a generic collection or a class using the
 `[MaxMind.Db.Constructor]` attribute to declare which constructor to use
-during deserialization and the `[MaxMind.Db.Parameter("name")]` to map the
-database key `name` to a particular constructor parameter.
+during deserialization and the `[MaxMind.Db.MapKey("name")]` to map the
+database key `name` to a particular constructor parameter or property.
 
 We recommend reusing the `Reader` object rather than creating a new one for
 each lookup. The creation of this object is relatively expensive as it must
@@ -54,7 +54,7 @@ using (var reader = new Reader("GeoIP2-City.mmdb"))
 }
 ```
 
-## Example Decoding to a Model Class ##
+## Example Decoding to a Model Class (Constructor-Based) ##
 
 ```csharp
 using MaxMind.Db;
@@ -86,6 +86,49 @@ namespace MyCode
         ...
     }
 
+
+    public class Program
+    {
+        private static void Main(string[] args)
+        {
+            using (var reader = new Reader("GeoLite2-ASN.mmdb"))
+            {
+                var ip = IPAddress.Parse("24.24.24.24");
+                var injectables = new InjectableValues();
+                injectables.AddValue("ip_address", ip);
+                var data = reader.Find<Asn>(ip, injectables);
+                ...
+            }
+        }
+    }
+}
+```
+
+## Example Decoding to a Model Class (Property-Based) ##
+
+As an alternative to constructor-based activation, you can use `init`
+properties. This does not require a `[Constructor]`-annotated constructor.
+
+```csharp
+using MaxMind.Db;
+using System.Net;
+
+namespace MyCode
+{
+    public class Asn
+    {
+        [MapKey("autonomous_system_number")]
+        public long? AutonomousSystemNumber { get; init; }
+
+        [MapKey("autonomous_system_organization")]
+        public string? AutonomousSystemOrganization { get; init; }
+
+        [Inject("ip_address")]
+        public IPAddress? IpAddress { get; init; }
+
+        [Network]
+        public Network? Network { get; init; }
+    }
 
     public class Program
     {
