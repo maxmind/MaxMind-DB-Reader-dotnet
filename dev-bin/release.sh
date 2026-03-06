@@ -80,8 +80,10 @@ if [ -n "$(git status --porcelain)" ]; then
     exit 1
 fi
 
-# Update version in csproj
-sed -i "s|<VersionPrefix>[^<]*</VersionPrefix>|<VersionPrefix>$version</VersionPrefix>|" MaxMind.Db/MaxMind.Db.csproj
+# Update version in all csproj files
+for csproj in MaxMind.Db/MaxMind.Db.csproj MaxMind.Db.Test/MaxMind.Db.Test.csproj MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj; do
+    sed -i "s|<VersionPrefix>[^<]*</VersionPrefix>|<VersionPrefix>$version</VersionPrefix>|" "$csproj"
+done
 
 major="${version%%.*}"
 sed -i "s|<AssemblyVersion>[^<]*</AssemblyVersion>|<AssemblyVersion>${major}.0.0</AssemblyVersion>|" MaxMind.Db/MaxMind.Db.csproj
