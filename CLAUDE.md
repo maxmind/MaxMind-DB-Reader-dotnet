@@ -68,9 +68,7 @@ Tests expect to find test databases in `MaxMind.Db.Test/TestData/MaxMind-DB/test
 The library has three main architectural layers:
 
 1. **Buffer Layer** - File access abstraction
-   - `Buffer` (abstract base): Defines read interface for binary data
    - `MemoryMapBuffer`: Memory-mapped file implementation for all file access modes (named mmap for cross-process sharing, anonymous mmap for `FileAccessMode.Memory` and stream construction)
-   - `ArrayBuffer`: In-memory byte array implementation (used internally for small buffers in `TypeActivatorCreator` and tests)
 
 2. **Reader Layer** - Database navigation and IP lookup
    - `Reader`: Main entry point for IP address lookups
@@ -322,8 +320,8 @@ foreach (var record in reader.FindAll<MyModel>())
 ### Pattern: Async Database Loading
 
 ```csharp
-// For Memory mode, can load asynchronously
-using var reader = await Reader.CreateAsync("GeoIP2-City.mmdb", FileAccessMode.Memory);
+// Load asynchronously (reads file into anonymous memory-mapped region)
+using var reader = await Reader.CreateAsync("GeoIP2-City.mmdb");
 ```
 
 ## Code Quality
