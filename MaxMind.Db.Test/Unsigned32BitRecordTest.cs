@@ -1,5 +1,6 @@
 #region
 
+using System.IO;
 using Xunit;
 
 #endregion
@@ -29,7 +30,7 @@ namespace MaxMind.Db.Test
         [InlineData(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, 2147483647L)]
         public void TestReadIntCastToUintProducesUnsignedValue(byte[] data, long expected)
         {
-            using var buffer = new ArrayBuffer(data);
+            using var buffer = new MemoryMapBuffer(new MemoryStream(data, writable: false));
 
             // ReadInt returns a signed int. Casting through uint reinterprets
             // the sign bit as a value bit, and the implicit uint -> long

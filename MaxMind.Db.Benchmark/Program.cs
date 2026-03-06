@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 using MaxMind.Db;
 using System;
@@ -8,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 
-BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
+BenchmarkRunner.Run<CityBenchmark>();
 
 [MemoryDiagnoser]
 public class CityBenchmark

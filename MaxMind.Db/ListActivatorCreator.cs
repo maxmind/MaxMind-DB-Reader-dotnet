@@ -41,8 +41,7 @@ namespace MaxMind.Db
             }
             if (constructor == null)
                 throw new DeserializationException($"Unable to find default constructor for {expectedType}");
-            var activator = ReflectionUtil.CreateActivator(constructor);
-            return activator;
+            return ReflectionUtil.CreateActivator(constructor);
         }
     }
 }
