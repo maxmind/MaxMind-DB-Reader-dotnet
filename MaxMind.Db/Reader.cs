@@ -82,6 +82,11 @@ namespace MaxMind.Db
         }
 
         private const int DataSectionSeparatorSize = 16;
+
+        // IPv4 addresses are stored 96 bits deep in an IPv6 search tree
+        // (128 - 32 = 96). The reader pre-walks these nodes at construction
+        // time so IPv4 lookups can skip directly to the relevant subtree.
+        private const int IPv4PrefixInIPv6Tree = 96;
         private readonly MemoryMapBuffer _database;
         private readonly string? _fileName;
         private readonly long _dataPointerOffset;
@@ -146,7 +151,7 @@ namespace MaxMind.Db
             if (_dbIPVersion == 6)
             {
                 long node = 0;
-                for (var i = 0; i < 96 && node < _nodeCount; i++)
+                for (var i = 0; i < IPv4PrefixInIPv6Tree && node < _nodeCount; i++)
                 {
                     node = ReadNode(node, 0);
                 }
@@ -309,8 +314,8 @@ namespace MaxMind.Db
                             else
                             {
                                 var ipV4Bytes = new byte[4];
-                            Array.Copy(node.IPBytes, 12, ipV4Bytes, 0, 4);
-                            yield return new ReaderIteratorNode<T>(new IPAddress(ipV4Bytes), node.Bit - 96, data);
+                                Array.Copy(node.IPBytes, 12, ipV4Bytes, 0, 4);
+                                yield return new ReaderIteratorNode<T>(new IPAddress(ipV4Bytes), node.Bit - IPv4PrefixInIPv6Tree, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
@@ -388,7 +393,7 @@ namespace MaxMind.Db
         private long StartNode(int bitLength)
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
-            // is the case, we can skip over the first 96 nodes.
+            // is the case, we can skip over the first IPv4PrefixInIPv6Tree nodes.
             if (_dbIPVersion == 6 && bitLength == 32)
             {
                 return _ipV4Start;
