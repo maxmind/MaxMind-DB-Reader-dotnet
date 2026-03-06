@@ -5,8 +5,9 @@
 * **BREAKING:** Added property-based activation for MMDB deserialization.
   Types with `[MapKey]`-annotated `init` properties can now be deserialized
   without a `[Constructor]`-annotated constructor.
-* **BREAKING:** `[Parameter]` attribute renamed to `[MapKey]`.
-  `[Parameter("field")]` should be replaced with `[MapKey("field")]`.
+* The `[Parameter]` attribute has been renamed to `[MapKey]`. The old
+  `[Parameter]` attribute still works but is marked obsolete and will be
+  removed in a future major release.
 * **BREAKING:** `InjectAttribute.ParameterName` renamed to
   `InjectAttribute.Name`.
 * Improved lookup performance on .NET 8+ by using Span-based bounds-checked
