@@ -6,6 +6,7 @@ using System.Buffers;
 #endif
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 
 #endregion
@@ -47,6 +48,7 @@ namespace MaxMind.Db
 
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
+        private readonly SNECache? _cache;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Decoder" /> class.
@@ -54,7 +56,8 @@ namespace MaxMind.Db
         /// <param name="database">The database.</param>
         /// <param name="pointerBase">The base address in the stream.</param>
         /// <param name="followPointers">Whether to follow pointers. For testing.</param>
-        internal Decoder(Buffer database, long pointerBase, bool followPointers = true)
+        /// <param name="defaultCacheSize">Whether to use a cache or not.</param>
+        internal Decoder(Buffer database, long pointerBase, bool followPointers = true, int? defaultCacheSize = null)
         {
             _pointerBase = pointerBase;
             _database = database;
@@ -62,6 +65,7 @@ namespace MaxMind.Db
             _listActivatorCreator = new ListActivatorCreator();
             _dictionaryActivatorCreator = new DictionaryActivatorCreator();
             _typeActivatorCreator = new TypeActivatorCreator();
+            _cache = defaultCacheSize is null ? null : new (defaultCacheSize.Value);
         }
 
         /// <summary>
@@ -81,10 +85,19 @@ namespace MaxMind.Db
             return decoded;
         }
 
+        /// <summary>
+        /// Get cache size
+        /// </summary>
+        /// <returns></returns>
+        internal int CacheSize()
+        {
+            return _cache is null ? 0 : _cache.Size();
+        }
+
         private object Decode(Type expectedType, long offset, out long outOffset, InjectableValues? injectables = null, Network? network = null)
         {
             var type = CtrlData(offset, out var size, out offset);
-            return DecodeByType(expectedType, type, offset, size, out outOffset, injectables, network);
+            return DecodeByTypeFromCacheOrCreate(expectedType, type, offset, size, out outOffset, injectables, network);
         }
 
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
@@ -135,6 +148,38 @@ namespace MaxMind.Db
 
         /// <summary>
         ///     Decodes the value by type.
+        /// </summary>
+        /// <param name="expectedType"></param>
+        /// <param name="type">The type.</param>
+        /// <param name="offset">The offset.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="outOffset">The out offset</param>
+        /// <param name="injectables"></param>
+        /// <param name="network"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Unable to handle type!</exception>
+        private object DecodeByTypeFromCacheOrCreate(
+            Type expectedType,
+            ObjectType type,
+            long offset,
+            int size,
+            out long outOffset,
+            InjectableValues? injectables,
+            Network? network
+            )
+        {
+            ValueTuple<object, long> returnValue = DecodeFromCacheOrCreate(offset, size, expectedType, type, injectables, network, static (Buffer database, long offset, int size, Type type, ObjectType objectType, Decoder decoder, InjectableValues? injectableValues, Network? network) =>
+            {
+                long returnOffset = 0;
+                return (decoder.DecodeByType(type, objectType, offset, size, out returnOffset, injectableValues, network), returnOffset);
+            });
+
+            outOffset = returnValue.Item2;
+            return returnValue.Item1;
+        }
+
+        /// <summary>
+        ///     Decodes the type of the by.
         /// </summary>
         /// <param name="expectedType"></param>
         /// <param name="type">The type.</param>
@@ -273,14 +318,20 @@ namespace MaxMind.Db
         {
             ReflectionUtil.CheckType(expectedType, typeof(string));
 
-            return _database.ReadString(offset, size);
+            return (string)DecodeFromCacheOrCreate(offset, size, expectedType, static (Buffer database, long offset, int size) =>
+            {
+                return (database.ReadString(offset, size), offset + size);
+            }).Item1;
         }
 
         private byte[] DecodeBytes(Type expectedType, long offset, int size)
         {
             ReflectionUtil.CheckType(expectedType, typeof(byte[]));
 
-            return _database.Read(offset, size);
+            return (byte[])DecodeFromCacheOrCreate(offset, size, expectedType, static (Buffer database, long offset, int size) =>
+            {
+                return (database.Read(offset, size), offset + size);
+            }).Item1;
         }
 
         /// <summary>
@@ -599,7 +650,13 @@ namespace MaxMind.Db
         private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
         {
             ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
-            return _database.ReadBigInteger(offset, size);
+
+            // Note: this will box; however, the box is cheaper than the byte
+            // array allocation under the hood.
+            return (BigInteger)DecodeFromCacheOrCreate(offset, size, expectedType, static (Buffer database, long offset, int size) =>
+            {
+                return (database.ReadBigInteger(offset, size), offset + size);
+            }).Item1;
         }
 
         /// <summary>
@@ -629,6 +686,61 @@ namespace MaxMind.Db
             ReflectionUtil.CheckType(expectedType, typeof(int));
 
             return _database.ReadVarInt(offset, size);
+        }
+
+        private (object, long) DecodeFromCacheOrCreate(long offset, int size, Type type, Func<Buffer, long, int, (object, long)> factory)
+        {
+            if (_cache is not null)
+            {
+                ValueTuple<object, long> item;
+                bool found = _cache.TryGet(offset, size, type, out item);
+                if (found)
+                {
+                    // Not null if found.
+                    Debug.Assert(item.Item1 is not null);
+                    return item;
+                }
+                else
+                {
+                    item = factory(_database, offset, size);
+                    bool added = _cache.TryAdd(offset, size, type, item);
+                }
+
+                return item;
+            }
+
+            return factory(_database, offset, size);
+        }
+
+        private (object, long) DecodeFromCacheOrCreate(
+            long offset, 
+            int size, 
+            Type type, 
+            ObjectType objectType,
+            InjectableValues? injectableValues,
+            Network? network,
+            Func<Buffer, long, int, Type, ObjectType, Decoder, InjectableValues?, Network?, (object, long)> factory)
+        {
+            if (_cache is not null)
+            {
+                ValueTuple<object, long> item;
+                bool found = _cache.TryGet(offset, size, type, out item);
+                if (found)
+                {
+                    // Not null if found.
+                    Debug.Assert(item.Item1 is not null);
+                    return item;
+                }
+                else
+                {
+                    item = factory(_database, offset, size, type, objectType, this, injectableValues, network);
+                    bool added = _cache.TryAdd(offset, size, type, item);
+                }
+
+                return item;
+            }
+
+            return factory(_database, offset, size, type, objectType, this, injectableValues, network);
         }
     }
 }
