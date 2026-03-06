@@ -276,7 +276,7 @@ namespace MaxMind.Db
                         Array.Copy(node.IPBytes, ipRight, ipRight.Length);
                         if (ipRight.Length <= node.Bit >> 3)
                         {
-                            throw new InvalidDataException("Invalid search tree, bad bit " + node.Bit);
+                            throw new InvalidDatabaseException("Invalid search tree, bad bit " + node.Bit);
                         }
                         ipRight[node.Bit >> 3] |= (byte)(1 << (7 - (node.Bit % 8)));
                         var rightPointer = ReadNode(node.Pointer, 1);
@@ -381,7 +381,8 @@ namespace MaxMind.Db
                 // record is a data pointer
                 return record;
             }
-            throw new InvalidDatabaseException("Something bad happened");
+            throw new InvalidDatabaseException(
+                "The MaxMind DB search tree is corrupt: a record value pointed back into the search tree.");
         }
 
         private long StartNode(int bitLength)
