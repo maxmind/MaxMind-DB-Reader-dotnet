@@ -41,7 +41,7 @@ namespace MaxMind.Db
     ///     is not present in the database. If this is false, the default value will be used
     ///     (null for nullable types).
     /// </param>
-    [Obsolete("Use MapKeyAttribute instead.")]
+    [Obsolete("Use [MapKey] (MapKeyAttribute) instead. ParameterAttribute will be removed in a future major release.")]
     public sealed class ParameterAttribute(string parameterName, bool alwaysCreate = false)
         : MapKeyAttribute(parameterName, alwaysCreate);
 }
