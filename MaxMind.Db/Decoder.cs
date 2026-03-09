@@ -416,7 +416,7 @@ namespace MaxMind.Db
             }
             finally
             {
-                ArrayPool<object?>.Shared.Return(parameters);
+                ArrayPool<object?>.Shared.Return(parameters, clearArray: true);
             }
 #endif
         }
@@ -451,7 +451,7 @@ namespace MaxMind.Db
                 }
                 finally
                 {
-                    ArrayPool<object?>.Shared.Return(cstorParams);
+                    ArrayPool<object?>.Shared.Return(cstorParams, clearArray: true);
                 }
 #endif
             }
