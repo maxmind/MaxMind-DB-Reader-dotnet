@@ -33,10 +33,10 @@ using significantly less memory.
 
 To look up an IP address, pass a `System.Net.IPAddress` object to the
 `Find<T>` method on `Reader`. This method will return the result as type `T`.
-`T` may either be a generic collection or a class using the
+`T` may either be a generic collection, a class using the
 `[MaxMind.Db.Constructor]` attribute to declare which constructor to use
-during deserialization and the `[MaxMind.Db.MapKey("name")]` to map the
-database key `name` to a particular constructor parameter or property.
+during deserialization, or a class with `[MaxMind.Db.MapKey("name")]`-annotated
+`init` properties for property-based activation.
 
 We recommend reusing the `Reader` object rather than creating a new one for
 each lookup. The creation of this object is relatively expensive as it must
