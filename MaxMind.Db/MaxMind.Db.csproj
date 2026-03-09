@@ -25,6 +25,7 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <AssemblyVersion>5.0.0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
     <LangVersion>14.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
