@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -83,6 +82,11 @@ namespace MaxMind.Db
         }
 
         private const int DataSectionSeparatorSize = 16;
+
+        // IPv4 addresses are stored 96 bits deep in an IPv6 search tree
+        // (128 - 32 = 96). The reader pre-walks these nodes at construction
+        // time so IPv4 lookups can skip directly to the relevant subtree.
+        private const int IPv4PrefixInIPv6Tree = 96;
         private readonly MemoryMapBuffer _database;
         private readonly string? _fileName;
         private readonly long _dataPointerOffset;
@@ -91,9 +95,7 @@ namespace MaxMind.Db
         private readonly long _nodeCount;
         private readonly int _recordSize;
 
-        // The property getter was a hotspot during profiling.
-
-        private readonly byte[] _metadataStartMarker =
+        private static readonly byte[] _metadataStartMarker =
         [
             0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
             109
@@ -149,7 +151,7 @@ namespace MaxMind.Db
             if (_dbIPVersion == 6)
             {
                 long node = 0;
-                for (var i = 0; i < 96 && node < _nodeCount; i++)
+                for (var i = 0; i < IPv4PrefixInIPv6Tree && node < _nodeCount; i++)
                 {
                     node = ReadNode(node, 0);
                 }
@@ -279,7 +281,7 @@ namespace MaxMind.Db
                         Array.Copy(node.IPBytes, ipRight, ipRight.Length);
                         if (ipRight.Length <= node.Bit >> 3)
                         {
-                            throw new InvalidDataException("Invalid search tree, bad bit " + node.Bit);
+                            throw new InvalidDatabaseException("Invalid search tree, bad bit " + node.Bit);
                         }
                         ipRight[node.Bit >> 3] |= (byte)(1 << (7 - (node.Bit % 8)));
                         var rightPointer = ReadNode(node.Pointer, 1);
@@ -311,7 +313,9 @@ namespace MaxMind.Db
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode<T>(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
+                                var ipV4Bytes = new byte[4];
+                                Array.Copy(node.IPBytes, 12, ipV4Bytes, 0, 4);
+                                yield return new ReaderIteratorNode<T>(new IPAddress(ipV4Bytes), node.Bit - IPv4PrefixInIPv6Tree, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
@@ -382,13 +386,14 @@ namespace MaxMind.Db
                 // record is a data pointer
                 return record;
             }
-            throw new InvalidDatabaseException("Something bad happened");
+            throw new InvalidDatabaseException(
+                "The MaxMind DB search tree is corrupt: a record value pointed back into the search tree.");
         }
 
         private long StartNode(int bitLength)
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
-            // is the case, we can skip over the first 96 nodes.
+            // is the case, we can skip over the first IPv4PrefixInIPv6Tree nodes.
             if (_dbIPVersion == 6 && bitLength == 32)
             {
                 return _ipV4Start;

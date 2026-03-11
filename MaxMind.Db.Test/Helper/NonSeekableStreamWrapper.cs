@@ -41,6 +41,7 @@ namespace MaxMind.Db.Test.Helper
         protected override void Dispose(bool disposing)
         {
             _wrappedStream.Dispose();
+            base.Dispose(disposing);
         }
 
         public override bool CanRead => _wrappedStream.CanRead;

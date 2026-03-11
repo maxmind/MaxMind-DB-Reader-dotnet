@@ -606,12 +606,12 @@ namespace MaxMind.Db
                 try
                 {
 #if !NETSTANDARD2_0
-                    _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                    _view?.SafeMemoryMappedViewHandle.ReleasePointer();
 #endif
                 }
                 finally
                 {
-                    _view.Dispose();
+                    _view?.Dispose();
                     _memoryMappedFile.Dispose();
                 }
             }
