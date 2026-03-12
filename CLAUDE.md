@@ -1,12 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Project Overview
 
-**MaxMind-DB-Reader-dotnet** is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file format that stores data indexed by IP address subnets (IPv4 or IPv6). This is the lower-level library used by the GeoIP2-dotnet client library.
+**MaxMind-DB-Reader-dotnet** is the .NET API for reading MaxMind DB files.
+MaxMind DB is a binary file format that stores data indexed by IP address
+subnets (IPv4 or IPv6). This is the lower-level library used by the
+GeoIP2-dotnet client library.
 
 **Key Technologies:**
+
 - .NET 10.0, .NET 9.0, .NET 8.0, .NET Standard 2.1, and .NET Standard 2.0
 - xUnit for testing
 - BenchmarkDotNet for performance benchmarking
@@ -59,7 +64,8 @@ git submodule update --init --recursive
 git submodule update --remote
 ```
 
-Tests expect to find test databases in `MaxMind.Db.Test/TestData/MaxMind-DB/test-data/`.
+Tests expect to find test databases in
+`MaxMind.Db.Test/TestData/MaxMind-DB/test-data/`.
 
 ## Code Architecture
 
@@ -68,51 +74,66 @@ Tests expect to find test databases in `MaxMind.Db.Test/TestData/MaxMind-DB/test
 The library has three main architectural layers:
 
 1. **Buffer Layer** - File access abstraction
-   - `MemoryMapBuffer`: Memory-mapped file implementation for all file access modes (named mmap for cross-process sharing, anonymous mmap for `FileAccessMode.Memory` and stream construction)
+   - `MemoryMapBuffer`: Memory-mapped file implementation for all file access
+     modes (named mmap for cross-process sharing, anonymous mmap for
+     `FileAccessMode.Memory` and stream construction)
 
 2. **Reader Layer** - Database navigation and IP lookup
    - `Reader`: Main entry point for IP address lookups
    - Performs binary search tree traversal to locate data for an IP address
-   - Supports three `FileAccessMode` options: `MemoryMapped`, `MemoryMappedGlobal`, `Memory`
+   - Supports three `FileAccessMode` options: `MemoryMapped`,
+     `MemoryMappedGlobal`, `Memory`
 
 3. **Decoder Layer** - Binary format deserialization
    - `Decoder`: Converts binary MaxMind DB format to .NET objects
-   - `TypeActivatorCreator`: Compiles LINQ expression trees for fast object instantiation
-   - `DictionaryActivatorCreator`, `ListActivatorCreator`: Specialized activators for collections
+   - `TypeActivatorCreator`: Compiles LINQ expression trees for fast object
+     instantiation
+   - `DictionaryActivatorCreator`, `ListActivatorCreator`: Specialized
+     activators for collections
 
 ### MaxMind DB Binary Format
 
 **File Structure:**
+
 1. **Search Tree Section**: Binary search tree at beginning of file
-2. **Data Section**: Deduplicated data records (multiple tree nodes can point to same data)
-3. **Metadata Section**: Database metadata at end of file with magic marker (0xAB 0xCD 0xEF + "MaxMind.com")
+2. **Data Section**: Deduplicated data records (multiple tree nodes can point to
+   same data)
+3. **Metadata Section**: Database metadata at end of file with magic marker
+   (0xAB 0xCD 0xEF + "MaxMind.com")
 
 **IP Lookup Process:**
+
 1. Parse IP address (IPv4 = 32 bits, IPv6 = 128 bits)
-2. Traverse binary search tree bit-by-bit from most significant to least significant
+2. Traverse binary search tree bit-by-bit from most significant to least
+   significant
 3. Each node contains two pointers (0 branch and 1 branch)
 4. When data pointer found, resolve to data section and decode
 
-**IPv4 Optimization:**
-For IPv4 lookups in IPv6 databases, the Reader pre-calculates the IPv4 start node, skipping the first 96 nodes (::0/96 prefix).
+**IPv4 Optimization:** For IPv4 lookups in IPv6 databases, the Reader
+pre-calculates the IPv4 start node, skipping the first 96 nodes (::0/96 prefix).
 
 ### Deserialization System
 
-The library uses an attribute-based deserialization system that maps MaxMind DB data to .NET types:
+The library uses an attribute-based deserialization system that maps MaxMind DB
+data to .NET types:
 
 #### Four Key Attributes
 
-1. **`[Constructor]`**: Marks the constructor to use for deserialization (one per class)
+1. **`[Constructor]`**: Marks the constructor to use for deserialization (one
+   per class)
 
-2. **`[MapKey("db_field_name")]`**: Maps database field to a constructor parameter or property
-   - Supports `AlwaysCreate = true` to instantiate nested objects even when database field is missing
+2. **`[MapKey("db_field_name")]`**: Maps database field to a constructor
+   parameter or property
+   - Supports `AlwaysCreate = true` to instantiate nested objects even when
+     database field is missing
    - If no attribute, uses parameter/property name as database key
 
 3. **`[Inject("injectable_name")]`**: Injects runtime values not in database
    - Pass values via `InjectableValues` dictionary to `Find<T>()`
    - Example: Inject the queried IP address into the result object
 
-4. **`[Network]`**: Injects the network CIDR (prefix length + network address) for the matched IP
+4. **`[Network]`**: Injects the network CIDR (prefix length + network address)
+   for the matched IP
 
 #### Example Model Classes
 
@@ -144,7 +165,8 @@ public class AsnResponse
 }
 ```
 
-**Property-based activation** (no `[Constructor]`, uses parameterless ctor + `init` properties):
+**Property-based activation** (no `[Constructor]`, uses parameterless ctor +
+`init` properties):
 
 ```csharp
 using MaxMind.Db;
@@ -168,38 +190,47 @@ public class AsnResponse
 ### Performance Optimizations
 
 **Compiled Activators:**
+
 - Constructor delegates compiled once per type using LINQ Expressions
 - Cached in `ConcurrentDictionary` for thread-safe reuse
 - Much faster than `Activator.CreateInstance()` reflection
 
 **Zero-Copy Reads:**
-- `Key` struct avoids allocating strings for map keys (stores buffer offset + size + precomputed hash)
-- `MemoryMapBuffer` uses unsafe pointer access for reading strings directly from memory-mapped regions
+
+- `Key` struct avoids allocating strings for map keys (stores buffer offset +
+  size + precomputed hash)
+- `MemoryMapBuffer` uses unsafe pointer access for reading strings directly from
+  memory-mapped regions
 - `Span<byte>` usage on .NET Core for stack-allocated IP address processing
 
 **Memory Management:**
+
 - `ArrayPool<object?>` for parameter arrays (reduces GC pressure)
 - LRU cache (`CachedDictionary`) for `FindAll()` enumeration
 - Memory-mapped files avoid loading entire database into RAM
 
 **Hot Path Inlining:**
+
 - Size calculation methods marked for inlining (`CtrlData`, `DecodeSize`)
 - Fast paths for common types (`Dictionary<string, string>`, `List<string>`)
 
 ### Threading and Concurrency
 
 **Thread Safety:**
+
 - `Reader` instances are **fully thread-safe** for concurrent reads
 - **Recommended pattern**: Create one `Reader`, share across threads
 - No mutable shared state in hot paths
 - Buffer implementations use read-only operations
 
 **Concurrent Data Structures:**
+
 - `ConcurrentDictionary` for activator caching
 - Mutex-based synchronization during memory-mapped file creation only
 - No explicit locks in Reader/Decoder hot paths
 
 **Test Coverage:**
+
 - `ThreadingTest.cs` validates concurrent lookups return consistent results
 - `TestManyOpens()` verifies safe concurrent Reader construction
 
@@ -210,7 +241,8 @@ public class AsnResponse
 If adding new deserialization features:
 
 1. Create attribute class inheriting from `System.Attribute`
-2. Update `TypeActivatorCreator` to handle new attribute in both the constructor-based and property-based activation paths
+2. Update `TypeActivatorCreator` to handle new attribute in both the
+   constructor-based and property-based activation paths
 3. Add tests in `DecoderTest.cs` or `ReaderTest.cs`
 4. Update XML documentation for the new attribute
 
@@ -238,15 +270,18 @@ The codebase supports multiple target frameworks with different capabilities:
 #endif
 ```
 
-When using newer .NET APIs, ensure backward compatibility with .NET Standard 2.0/2.1.
+When using newer .NET APIs, ensure backward compatibility with .NET Standard
+2.0/2.1.
 
 ### Performance-Critical Code
 
-When modifying hot paths (`Decoder`, `Reader.FindAddressInTree`, `Buffer` implementations):
+When modifying hot paths (`Decoder`, `Reader.FindAddressInTree`, `Buffer`
+implementations):
 
 1. **Run benchmarks** before and after changes
 2. **Profile allocations** - minimize GC pressure
-3. **Consider unsafe code** for zero-copy operations (requires careful bounds checking)
+3. **Consider unsafe code** for zero-copy operations (requires careful bounds
+   checking)
 4. **Benchmark across target frameworks** - optimizations may differ
 
 ### Unsafe Code Guidelines
@@ -267,6 +302,7 @@ This library uses [Semantic Versioning](https://semver.org/):
 - **Major releases** (X.0.0): Breaking changes allowed
 
 For minor releases, maintain backward compatibility:
+
 - Don't change existing public method signatures
 - Don't remove public types or members
 - New constructor parameters should have default values
@@ -277,10 +313,10 @@ For minor releases, maintain backward compatibility:
 Always update `releasenotes.md` for user-facing changes:
 
 ```markdown
-## 4.3.0 (YYYY-MM-DD) ##
+## 4.3.0 (YYYY-MM-DD)
 
-* Description of new feature or bug fix. Pull request by Author. GitHub #123.
-* Breaking changes should be marked with **BREAKING** (major versions only).
+- Description of new feature or bug fix. Pull request by Author. GitHub #123.
+- Breaking changes should be marked with **BREAKING** (major versions only).
 ```
 
 ## Common Patterns
@@ -339,10 +375,12 @@ The project enforces strict code quality:
 ### Code Style
 
 Follow the `.editorconfig` settings:
+
 - **Indentation**: 4 spaces
 - **Line endings**: CRLF (Windows-style)
 - **var usage**: Prefer `var` everywhere
-- **Expression bodies**: Use for accessors and properties, not constructors or methods
+- **Expression bodies**: Use for accessors and properties, not constructors or
+  methods
 - **Braces**: Always use braces for control flow
 - **Namespace declarations**: Block-scoped (`namespace Foo { }`)
 - **Field naming**: Prefix private fields with underscore (`_fieldName`)
@@ -377,26 +415,34 @@ public ReturnType MethodName(ParamType paramName)
 
 ### Relationship to GeoIP2-dotnet
 
-This library is the lower-level component used by MaxMind's GeoIP2-dotnet library:
+This library is the lower-level component used by MaxMind's GeoIP2-dotnet
+library:
 
 - **MaxMind-DB-Reader-dotnet** (this repo): Generic MaxMind DB file reader
-- **GeoIP2-dotnet**: Higher-level library with GeoIP2-specific models and web service client
+- **GeoIP2-dotnet**: Higher-level library with GeoIP2-specific models and web
+  service client
 
-For GeoIP2 use cases, consumers typically use GeoIP2-dotnet, which depends on this library.
+For GeoIP2 use cases, consumers typically use GeoIP2-dotnet, which depends on
+this library.
 
 ### When to Use This Library Directly
 
 Use MaxMind-DB-Reader-dotnet directly when:
+
 - Reading custom MaxMind DB databases (not GeoIP2)
 - Need maximum control over deserialization
 - Want to avoid GeoIP2-specific dependencies
 
 ### Test Data Submodule
 
-The `MaxMind.Db.Test/TestData/MaxMind-DB` directory is a git submodule containing test databases:
+The `MaxMind.Db.Test/TestData/MaxMind-DB` directory is a git submodule
+containing test databases:
+
 - Always update this submodule before running tests
-- When adding tests for new features, may need to update submodule to get test databases with new fields
-- See https://github.com/maxmind/MaxMind-DB for test database format specifications
+- When adding tests for new features, may need to update submodule to get test
+  databases with new fields
+- See https://github.com/maxmind/MaxMind-DB for test database format
+  specifications
 
 ## Additional Resources
 
@@ -406,4 +452,4 @@ The `MaxMind.Db.Test/TestData/MaxMind-DB` directory is a git submodule containin
 
 ---
 
-*Last Updated: 2025-11-19*
+_Last Updated: 2025-11-19_
