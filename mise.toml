@@ -1,0 +1,16 @@
+[settings]
+lockfile = true
+disable_backends = [
+    "asdf",
+    "vfox",
+]
+
+[tools]
+dotnet = ["latest", "9", "8"]
+
+[hooks]
+enter = "mise install --quiet --locked"
+
+[[watch_files]]
+patterns = ["mise.toml", "mise.lock"]
+run = "mise install --quiet --locked"
