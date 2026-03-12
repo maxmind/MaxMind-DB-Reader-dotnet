@@ -1,6 +1,6 @@
 # Release Notes
 
-## 5.0.0
+## 5.0.0 (2026-03-12)
 
 - **BREAKING:** Added property-based activation for MMDB deserialization. Types
   with `[MapKey]`-annotated `init` properties can now be deserialized without a
