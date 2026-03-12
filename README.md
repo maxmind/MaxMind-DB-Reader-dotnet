@@ -1,48 +1,48 @@
-# MaxMind DB Reader #
+# MaxMind DB Reader
 
 [![NuGet](https://img.shields.io/nuget/v/MaxMind.Db)](https://www.nuget.org/packages/MaxMind.Db)
 
-## Description ##
+## Description
 
 This is the .NET API for reading MaxMind DB files. MaxMind DB is a binary file
 format that stores data indexed by IP address subnets (IPv4 or IPv6).
 
-## Installation ##
+## Installation
 
-### NuGet ###
+### NuGet
 
-We recommend installing this library with NuGet. To do this, type the
-following into the Visual Studio Package Manager Console:
+We recommend installing this library with NuGet. To do this, type the following
+into the Visual Studio Package Manager Console:
 
 ```
 install-package MaxMind.Db
 ```
 
-## Usage ##
+## Usage
 
-*Note:* For accessing MaxMind GeoIP2 databases, we generally recommend using
-the GeoIP2 .NET API rather than using this package directly.
+_Note:_ For accessing MaxMind GeoIP2 databases, we generally recommend using the
+GeoIP2 .NET API rather than using this package directly.
 
-To use the API, you must first create a `Reader` object. The constructor for
-the reader object takes a `string` with the path to the MaxMind DB file.
-Optionally you may pass a second parameter with a `FileAccessMode` enum with
-the value `MemoryMapped` or `Memory`. The default mode is `MemoryMapped`,
-which maps the file to virtual memory. This often provides performance
-comparable to loading the file into real memory with the `Memory` mode while
-using significantly less memory.
+To use the API, you must first create a `Reader` object. The constructor for the
+reader object takes a `string` with the path to the MaxMind DB file. Optionally
+you may pass a second parameter with a `FileAccessMode` enum with the value
+`MemoryMapped` or `Memory`. The default mode is `MemoryMapped`, which maps the
+file to virtual memory. This often provides performance comparable to loading
+the file into real memory with the `Memory` mode while using significantly less
+memory.
 
-To look up an IP address, pass a `System.Net.IPAddress` object to the
-`Find<T>` method on `Reader`. This method will return the result as type `T`.
-`T` may either be a generic collection, a class using the
-`[MaxMind.Db.Constructor]` attribute to declare which constructor to use
-during deserialization, or a class with `[MaxMind.Db.MapKey("name")]`-annotated
-`init` properties for property-based activation.
+To look up an IP address, pass a `System.Net.IPAddress` object to the `Find<T>`
+method on `Reader`. This method will return the result as type `T`. `T` may
+either be a generic collection, a class using the `[MaxMind.Db.Constructor]`
+attribute to declare which constructor to use during deserialization, or a class
+with `[MaxMind.Db.MapKey("name")]`-annotated `init` properties for
+property-based activation.
 
-We recommend reusing the `Reader` object rather than creating a new one for
-each lookup. The creation of this object is relatively expensive as it must
-read in metadata for the file.
+We recommend reusing the `Reader` object rather than creating a new one for each
+lookup. The creation of this object is relatively expensive as it must read in
+metadata for the file.
 
-## Example Decoding to a Dictionary ##
+## Example Decoding to a Dictionary
 
 ```csharp
 
@@ -54,7 +54,7 @@ using (var reader = new Reader("GeoIP2-City.mmdb"))
 }
 ```
 
-## Example Decoding to a Model Class (Constructor-Based) ##
+## Example Decoding to a Model Class (Constructor-Based)
 
 ```csharp
 using MaxMind.Db;
@@ -104,7 +104,7 @@ namespace MyCode
 }
 ```
 
-## Example Decoding to a Model Class (Property-Based) ##
+## Example Decoding to a Model Class (Property-Based)
 
 As an alternative to constructor-based activation, you can use `init`
 properties. This does not require a `[Constructor]`-annotated constructor.
@@ -147,20 +147,20 @@ namespace MyCode
 }
 ```
 
-## Multi-Threaded Use ##
+## Multi-Threaded Use
 
 This API fully supports use in multi-threaded applications. In such
 applications, we suggest creating one `Reader` object and sharing that among
 threads.
 
-## Format ##
+## Format
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to
 records. See
 [the specification](https://github.com/maxmind/MaxMind-DB/blob/main/MaxMind-DB-spec.md)
 for more information on the format.
 
-## Bug Tracker ##
+## Bug Tracker
 
 Please report all issues with this code using the
 [GitHub issue tracker](https://github.com/maxmind/MaxMind-DB-Reader-dotnet/issues).
@@ -169,16 +169,16 @@ If you are having an issue with a MaxMind database or service that is not
 specific to this reader, please
 [contact MaxMind support](http://www.maxmind.com/en/support).
 
-## Contributing ##
+## Contributing
 
 Patches and pull requests are encouraged. Please include unit tests whenever
 possible.
 
-## Versioning ##
+## Versioning
 
 The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
 
-## Copyright and License ##
+## Copyright and License
 
 This software is Copyright (c) 2013-2026 by MaxMind, Inc.
 
