@@ -20,5 +20,10 @@ jobs:
         uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3.6.1
         with:
           cache: true
+        env:
+          # Multiple dotnet SDKs share a single dotnet-root. Parallel
+          # installs race on the shared binary, causing verification
+          # failures (exit code 150).
+          MISE_JOBS: "1"
       - name: Run precious lint
         run: precious lint --all
