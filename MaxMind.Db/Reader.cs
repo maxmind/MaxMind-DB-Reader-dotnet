@@ -30,7 +30,9 @@ namespace MaxMind.Db
         MemoryMappedGlobal,
 
         /// <summary>
-        ///     Load the file into memory.
+        ///     Read the file into an anonymous memory-mapped region that is
+        ///     private to this process. Requires that the platform supports
+        ///     memory-mapped files.
         /// </summary>
         Memory,
     }
