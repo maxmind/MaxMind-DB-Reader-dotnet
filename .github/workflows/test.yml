@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '3 20 * * SUN'
+    - cron: "3 20 * * SUN"
 
 permissions: {}
 
@@ -21,7 +21,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
         with:
           dotnet-version: |
             8.0.x
@@ -32,9 +32,13 @@ jobs:
         run: dotnet build
 
       - name: Run benchmark
-        run: dotnet run -f net8.0 --project MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
+        run:
+          dotnet run -f net8.0 --project
+          MaxMind.Db.Benchmark/MaxMind.Db.Benchmark.csproj
         env:
-          MAXMIND_BENCHMARK_DB: ${{ github.workspace }}/MaxMind.Db.Test/TestData/MaxMind-DB/test-data/GeoIP2-City-Test.mmdb
+          MAXMIND_BENCHMARK_DB:
+            ${{ github.workspace
+            }}/MaxMind.Db.Test/TestData/MaxMind-DB/test-data/GeoIP2-City-Test.mmdb
 
       - name: Run tests
         run: dotnet test

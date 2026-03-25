@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -31,7 +30,9 @@ namespace MaxMind.Db
         MemoryMappedGlobal,
 
         /// <summary>
-        ///     Load the file into memory.
+        ///     Read the file into an anonymous memory-mapped region that is
+        ///     private to this process. Requires that the platform supports
+        ///     memory-mapped files.
         /// </summary>
         Memory,
     }
@@ -83,7 +84,12 @@ namespace MaxMind.Db
         }
 
         private const int DataSectionSeparatorSize = 16;
-        private readonly Buffer _database;
+
+        // IPv4 addresses are stored 96 bits deep in an IPv6 search tree
+        // (128 - 32 = 96). The reader pre-walks these nodes at construction
+        // time so IPv4 lookups can skip directly to the relevant subtree.
+        private const int IPv4PrefixInIPv6Tree = 96;
+        private readonly MemoryMapBuffer _database;
         private readonly string? _fileName;
         private readonly long _dataPointerOffset;
         private readonly int _dbIPVersion;
@@ -91,9 +97,7 @@ namespace MaxMind.Db
         private readonly long _nodeCount;
         private readonly int _recordSize;
 
-        // The property getter was a hotspot during profiling.
-
-        private readonly byte[] _metadataStartMarker =
+        private static readonly byte[] _metadataStartMarker =
         [
             0xAB, 0xCD, 0xEF, 77, 97, 120, 77, 105, 110, 100, 46, 99, 111,
             109
@@ -162,7 +166,7 @@ namespace MaxMind.Db
             if (_dbIPVersion == 6)
             {
                 long node = 0;
-                for (var i = 0; i < 96 && node < _nodeCount; i++)
+                for (var i = 0; i < IPv4PrefixInIPv6Tree && node < _nodeCount; i++)
                 {
                     node = ReadNode(node, 0);
                 }
@@ -189,7 +193,7 @@ namespace MaxMind.Db
             return new Reader(await MemoryMapBuffer.CreateAsync(stream).ConfigureAwait(false), null);
         }
 
-        private static Buffer BufferForMode(string file, FileAccessMode mode)
+        private static MemoryMapBuffer BufferForMode(string file, FileAccessMode mode)
         {
             return mode switch
             {
@@ -266,8 +270,13 @@ namespace MaxMind.Db
         public T? Find<T>(IPAddress ipAddress, out int prefixLength, InjectableValues? injectables = null) where T : class
         {
             var pointer = FindAddressInTree(ipAddress, out prefixLength);
+            if (pointer == 0)
+            {
+                return null;
+            }
+
             var network = new Network(ipAddress, prefixLength);
-            return pointer == 0 ? null : ResolveDataPointer<T>(pointer, injectables, network);
+            return ResolveDataPointer<T>(pointer, injectables, network);
         }
 
         /// <summary>
@@ -296,7 +305,7 @@ namespace MaxMind.Db
                         Array.Copy(node.IPBytes, ipRight, ipRight.Length);
                         if (ipRight.Length <= node.Bit >> 3)
                         {
-                            throw new InvalidDataException("Invalid search tree, bad bit " + node.Bit);
+                            throw new InvalidDatabaseException("Invalid search tree, bad bit " + node.Bit);
                         }
                         ipRight[node.Bit >> 3] |= (byte)(1 << (7 - (node.Bit % 8)));
                         var rightPointer = ReadNode(node.Pointer, 1);
@@ -328,7 +337,9 @@ namespace MaxMind.Db
                             }
                             else
                             {
-                                yield return new ReaderIteratorNode<T>(new IPAddress(node.IPBytes.Skip(12).Take(4).ToArray()), node.Bit - 96, data);
+                                var ipV4Bytes = new byte[4];
+                                Array.Copy(node.IPBytes, 12, ipV4Bytes, 0, 4);
+                                yield return new ReaderIteratorNode<T>(new IPAddress(ipV4Bytes), node.Bit - IPv4PrefixInIPv6Tree, data);
                             }
                         }
                         // else node is an empty node (terminator node), we are done with this branch
@@ -399,13 +410,14 @@ namespace MaxMind.Db
                 // record is a data pointer
                 return record;
             }
-            throw new InvalidDatabaseException("Something bad happened");
+            throw new InvalidDatabaseException(
+                "The MaxMind DB search tree is corrupt: a record value pointed back into the search tree.");
         }
 
         private long StartNode(int bitLength)
         {
             // Check if we are looking up an IPv4 address in an IPv6 tree. If this
-            // is the case, we can skip over the first 96 nodes.
+            // is the case, we can skip over the first IPv4PrefixInIPv6Tree nodes.
             if (_dbIPVersion == 6 && bitLength == 32)
             {
                 return _ipV4Start;
@@ -418,21 +430,13 @@ namespace MaxMind.Db
         private long FindMetadataStart()
         {
             var dbLength = _database.Length;
-            var markerLength = (long)_metadataStartMarker.Length;
+            var markerLength = _metadataStartMarker.Length;
 
             for (var i = dbLength - markerLength; i > 0; i--)
             {
-                var j = 0;
-                for (; j < markerLength; j++)
+                if (_database.EqualsBytes(i, _metadataStartMarker, 0, markerLength))
                 {
-                    if (_metadataStartMarker[j] != _database.ReadOne(i + j))
-                    {
-                        break;
-                    }
-                }
-                if (j == markerLength)
-                {
-                    return i + markerLength;
+                    return i + (long)markerLength;
                 }
             }
 
@@ -468,9 +472,8 @@ namespace MaxMind.Db
                         // Cast through uint so the sign bit is treated as a
                         // value bit. The implicit uint -> long widening then
                         // preserves the unsigned value. We use ReadInt rather
-                        // than ReadLong because ReadLong loops over ReadOne
-                        // (one virtual dispatch per byte), while ReadInt reads
-                        // all 4 bytes in a single virtual call.
+                        // than ReadLong because ReadInt reads all 4 bytes in
+                        // one operation.
                         return (uint)_database.ReadInt(offset);
                     }
             }

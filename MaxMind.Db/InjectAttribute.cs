@@ -7,15 +7,16 @@ using System;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Instruct <c>Reader</c> to map database key to constructor parameter.
+    ///     Instruct <c>Reader</c> to inject a runtime value into a constructor
+    ///     parameter or property during deserialization.
     /// </summary>
-    /// <param name="parameterName">The name to use for the property.</param>
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class InjectAttribute(string parameterName) : Attribute
+    /// <param name="name">The injectable value name.</param>
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
+    public sealed class InjectAttribute(string name) : Attribute
     {
         /// <summary>
-        ///     The name to use for the property.
+        ///     The injectable value name.
         /// </summary>
-        public string ParameterName { get; } = parameterName;
+        public string Name { get; } = name;
     }
 }

@@ -41,7 +41,7 @@ namespace MaxMind.Db
     /// </summary>
     internal sealed class Decoder
     {
-        private readonly Buffer _database;
+        private readonly MemoryMapBuffer _database;
         private readonly long _pointerBase;
         private readonly bool _followPointers;
         private readonly int[] _pointerValueOffset = [0, 0, 1 << 11, (1 << 19) + (1 << 11), 0];
@@ -265,7 +265,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private static bool DecodeBoolean(Type expectedType, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(bool));
+            if (expectedType != typeof(bool) && expectedType != typeof(bool?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(bool));
+            }
 
             return size switch
             {
@@ -282,7 +285,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private double DecodeDouble(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(double));
+            if (expectedType != typeof(double) && expectedType != typeof(double?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(double));
+            }
 
             if (size != 8)
             {
@@ -299,7 +305,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private float DecodeFloat(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(float));
+            if (expectedType != typeof(float) && expectedType != typeof(float?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(float));
+            }
 
             if (size != 4)
             {
@@ -420,9 +429,11 @@ namespace MaxMind.Db
             var constructor = _typeActivatorCreator.GetActivator(expectedType);
 
 #if !NETSTANDARD2_0
-            // N.B. Rent can return larger arrays. This is fine because constructors allow arrays larger than the
-            // number of parameters.
+            // N.B. Rent can return larger arrays. This is fine because both constructor invocations and
+            // MemberInit activators only access elements up to their parameter/property count.
             object?[] parameters = ArrayPool<object?>.Shared.Rent(constructor.DefaultParameters.Length);
+            try
+            {
 #else
             object?[] parameters = new object?[constructor.DefaultParameters.Length];
 #endif
@@ -434,7 +445,7 @@ namespace MaxMind.Db
                 if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
                     var param = v;
-                    var paramType = param.ParameterType;
+                    var paramType = param.MemberType;
                     var value = Decode(paramType, offset, out offset, injectables, network);
                     parameters[param.Position] = value;
                 }
@@ -451,11 +462,14 @@ namespace MaxMind.Db
             outOffset = offset;
             object obj = constructor.Activator(parameters);
 
-#if !NETSTANDARD2_0
-            ArrayPool<object?>.Shared.Return(parameters);
-#endif
-
             return obj;
+#if !NETSTANDARD2_0
+            }
+            finally
+            {
+                ArrayPool<object?>.Shared.Return(parameters, clearArray: true);
+            }
+#endif
         }
 
         private void SetAlwaysCreatedParams(
@@ -469,10 +483,12 @@ namespace MaxMind.Db
             {
                 if (parameters[param.Position] != null) continue;
 
-                var activator = _typeActivatorCreator.GetActivator(param.ParameterType);
+                var activator = _typeActivatorCreator.GetActivator(param.MemberType);
 
 #if !NETSTANDARD2_0
                 object?[] cstorParams = ArrayPool<object?>.Shared.Rent(activator.DefaultParameters.Length);
+                try
+                {
 #else
                 object?[] cstorParams = new object?[activator.DefaultParameters.Length];
 #endif
@@ -482,9 +498,12 @@ namespace MaxMind.Db
                 SetNetwork(activator, cstorParams, network);
                 SetAlwaysCreatedParams(activator, cstorParams, injectables, network);
                 parameters[param.Position] = activator.Activator(cstorParams);
-
 #if !NETSTANDARD2_0
-                ArrayPool<object?>.Shared.Return(cstorParams);
+                }
+                finally
+                {
+                    ArrayPool<object?>.Shared.Return(cstorParams, clearArray: true);
+                }
 #endif
             }
         }
@@ -545,7 +564,8 @@ namespace MaxMind.Db
                 switch (type)
                 {
                     case ObjectType.Pointer:
-                        DecodePointer(offset, size, out offset);
+                        // While skipping values, only pointer byte-length matters.
+                        offset += ((size >> 3) & 0x3) + 1;
                         break;
 
                     case ObjectType.Map:
@@ -574,7 +594,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private long DecodeLong(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(long));
+            if (expectedType != typeof(long) && expectedType != typeof(long?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(long));
+            }
             return _database.ReadLong(offset, size);
         }
 
@@ -639,7 +662,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private ulong DecodeUInt64(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            if (expectedType != typeof(ulong) && expectedType != typeof(ulong?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(ulong));
+            }
             return _database.ReadULong(offset, size);
         }
 
@@ -649,14 +675,11 @@ namespace MaxMind.Db
         /// <returns></returns>
         private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
-
-            // Note: this will box; however, the box is cheaper than the byte
-            // array allocation under the hood.
-            return (BigInteger)DecodeFromCacheOrCreate(offset, size, expectedType, static (Buffer database, long offset, int size) =>
+            if (expectedType != typeof(BigInteger) && expectedType != typeof(BigInteger?))
             {
-                return (database.ReadBigInteger(offset, size), offset + size);
-            }).Item1;
+                ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
+            }
+            return _database.ReadBigInteger(offset, size);
         }
 
         /// <summary>
@@ -683,7 +706,10 @@ namespace MaxMind.Db
         /// <returns></returns>
         private int DecodeInteger(Type expectedType, long offset, int size)
         {
-            ReflectionUtil.CheckType(expectedType, typeof(int));
+            if (expectedType != typeof(int) && expectedType != typeof(int?))
+            {
+                ReflectionUtil.CheckType(expectedType, typeof(int));
+            }
 
             return _database.ReadVarInt(offset, size);
         }

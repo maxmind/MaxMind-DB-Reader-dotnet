@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 using MaxMind.Db;
 using System;
@@ -10,7 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
+BenchmarkRunner.Run<CityBenchmark>();
 
 [MemoryDiagnoser]
 public class CityBenchmark
@@ -168,7 +167,7 @@ public class CityResponse : AbstractCityResponse
         Continent? continent = null,
         Country? country = null,
         Location? location = null,
-        [Parameter("registered_country")] Country? registeredCountry = null)
+        [MapKey("registered_country")] Country? registeredCountry = null)
         : base(city, continent, country, location, registeredCountry)
     {
     }
@@ -178,7 +177,7 @@ public class City : NamedEntity
 {
     [Constructor]
     public City(int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -218,7 +217,7 @@ public class Continent : NamedEntity
     [Constructor]
     public Continent(
         string? code = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -234,9 +233,9 @@ public class Country : NamedEntity
     [Constructor]
     public Country(
         int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
-        [Parameter("is_in_european_union")] bool isInEuropeanUnion = false,
-        [Parameter("iso_code")] string? isoCode = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
+        [MapKey("is_in_european_union")] bool isInEuropeanUnion = false,
+        [MapKey("iso_code")] string? isoCode = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -255,10 +254,10 @@ public class Location
 {
     [Constructor]
     public Location(
-        [Parameter("accuracy_radius")] int? accuracyRadius = null,
+        [MapKey("accuracy_radius")] int? accuracyRadius = null,
         double? latitude = null,
         double? longitude = null,
-        [Parameter("time_zone")] string? timeZone = null)
+        [MapKey("time_zone")] string? timeZone = null)
     {
         AccuracyRadius = accuracyRadius;
         Latitude = latitude;
@@ -280,8 +279,8 @@ public class Subdivision : NamedEntity
     [Constructor]
     public Subdivision(
         int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
-        [Parameter("iso_code")] string? isoCode = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
+        [MapKey("iso_code")] string? isoCode = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)

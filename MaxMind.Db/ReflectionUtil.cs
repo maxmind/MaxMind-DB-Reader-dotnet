@@ -3,6 +3,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 #endregion
 
@@ -41,8 +42,48 @@ namespace MaxMind.Db
             return (ObjectActivator)lambda.Compile();
         }
 
+        /// <summary>
+        ///     Creates a compiled activator that uses <c>MemberInit</c> expressions
+        ///     to set properties on an object created via a parameterless constructor.
+        ///     This works with <c>init</c>-only setters because <c>init</c> is a
+        ///     compiler-only restriction, not enforced by the CLR.
+        /// </summary>
+        internal static ObjectActivator CreateMemberInitActivator(
+            ConstructorInfo parameterlessCtor,
+            PropertyInfo[] properties)
+        {
+            if (parameterlessCtor == null)
+            {
+                throw new ArgumentNullException(nameof(parameterlessCtor));
+            }
+            if (properties == null)
+            {
+                throw new ArgumentNullException(nameof(properties));
+            }
+
+            var paramExp = Expression.Parameter(typeof(object[]), "args");
+
+            var bindings = new MemberBinding[properties.Length];
+            for (var i = 0; i < properties.Length; i++)
+            {
+                var index = Expression.Constant(i);
+                var accessorExp = Expression.ArrayIndex(paramExp, index);
+                var castExp = Expression.Convert(accessorExp, properties[i].PropertyType);
+                bindings[i] = Expression.Bind(properties[i], castExp);
+            }
+
+            var newExp = Expression.MemberInit(Expression.New(parameterlessCtor), bindings);
+            var lambda = Expression.Lambda(typeof(ObjectActivator), newExp, paramExp);
+            return (ObjectActivator)lambda.Compile();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void CheckType(Type expected, Type from)
         {
+            if (expected == from)
+            {
+                return;
+            }
             if (!expected.IsAssignableFrom(from))
             {
                 throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");

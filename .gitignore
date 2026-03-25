@@ -123,5 +123,14 @@ UPgradeLog.htm
 *.userprefs
 test-results
 
+# Build logs
+*.binlog
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
 # Claude Code
 .claude
+
+# Worktrees
+.worktrees

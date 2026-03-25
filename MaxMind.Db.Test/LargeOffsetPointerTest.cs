@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.IO;
 using Xunit;
 
 #endregion
@@ -29,7 +30,7 @@ namespace MaxMind.Db.Test
             // 0x00 = next byte, combined with VVV bits gives pointer value 0.
             var pointerData = new byte[] { 0x20, 0x00 };
 
-            // Layout: [pointer @ offset 0] [target string @ offset 2]
+            // Layout: [pointer @ offset baseOffset] [target string @ offset baseOffset + 2]
             var raw = new byte[pointerData.Length + targetData.Length];
             Array.Copy(pointerData, 0, raw, 0, pointerData.Length);
             Array.Copy(targetData, 0, raw, pointerData.Length, targetData.Length);
@@ -37,20 +38,26 @@ namespace MaxMind.Db.Test
             // DecodePointer computes: packed + pointerBase + pointerValueOffset[1]
             //   packed = 0, pointerValueOffset[1] = 0, so resolved = pointerBase.
             // We want the resolved offset to point to the target string at
-            // inner buffer offset 2, which the OffsetBuffer maps to
-            // baseOffset + 2.
+            // offset baseOffset + 2.
             var baseOffset = (long)int.MaxValue + 1;
             var pointerBase = baseOffset + pointerData.Length;
 
-            var innerBuffer = new ArrayBuffer(raw);
-            using var offsetBuffer = new OffsetBuffer(innerBuffer, baseOffset);
-            var decoder = new Decoder(offsetBuffer, pointerBase);
+            var tempFile = CreateSparseTestFile(raw, baseOffset);
+            try
+            {
+                using var buffer = new MemoryMapBuffer(tempFile, false);
+                var decoder = new Decoder(buffer, pointerBase);
 
-            // Before the fix, this threw OverflowException because the
-            // resolved pointer (> int.MaxValue) was passed through
-            // Convert.ToInt32().
-            var result = decoder.Decode<string>(baseOffset, out _);
-            Assert.Equal("test", result);
+                // Before the fix, this threw OverflowException because the
+                // resolved pointer (> int.MaxValue) was passed through
+                // Convert.ToInt32().
+                var result = decoder.Decode<string>(baseOffset, out _);
+                Assert.Equal("test", result);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
 
         /// <summary>
@@ -75,7 +82,7 @@ namespace MaxMind.Db.Test
             // Followed by 4 bytes: 0x80, 0x00, 0x00, 0x00
             var pointerData = new byte[] { 0x38, 0x80, 0x00, 0x00, 0x00 };
 
-            // Layout: [pointer @ offset 0] [target string @ offset 5]
+            // Layout: [pointer @ offset baseOffset] [target string @ offset baseOffset + 5]
             var raw = new byte[pointerData.Length + targetData.Length];
             Array.Copy(pointerData, 0, raw, 0, pointerData.Length);
             Array.Copy(targetData, 0, raw, pointerData.Length, targetData.Length);
@@ -84,74 +91,43 @@ namespace MaxMind.Db.Test
             //   packed = 0x80000000, pointerValueOffset[4] = 0
             //   so resolved = 0x80000000 + pointerBase.
             // We want the resolved offset to point to the target string at
-            // inner buffer offset 5, which the OffsetBuffer maps to
-            // baseOffset + 5. So:
+            // offset baseOffset + 5. So:
             //   0x80000000 + pointerBase = baseOffset + 5
             //   pointerBase = baseOffset + 5 - 0x80000000
             // With baseOffset = 0x80000000, pointerBase = 5.
             var baseOffset = (long)int.MaxValue + 1;
             var pointerBase = baseOffset + pointerData.Length - 0x80000000L;
 
-            var innerBuffer = new ArrayBuffer(raw);
-            using var offsetBuffer = new OffsetBuffer(innerBuffer, baseOffset);
-            var decoder = new Decoder(offsetBuffer, pointerBase);
+            var tempFile = CreateSparseTestFile(raw, baseOffset);
+            try
+            {
+                using var buffer = new MemoryMapBuffer(tempFile, false);
+                var decoder = new Decoder(buffer, pointerBase);
 
-            // Before the fix, ReadVarInt returned a negative int for
-            // 0x80000000, causing the resolved pointer to be wrong.
-            var result = decoder.Decode<string>(baseOffset, out _);
-            Assert.Equal("test", result);
+                // Before the fix, ReadVarInt returned a negative int for
+                // 0x80000000, causing the resolved pointer to be wrong.
+                var result = decoder.Decode<string>(baseOffset, out _);
+                Assert.Equal("test", result);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
 
-        /// <summary>
-        ///     A Buffer wrapper that simulates large file offsets by adding a
-        ///     base offset to all reads. This allows testing decoder behavior
-        ///     with offsets exceeding <see cref="int.MaxValue" /> without
-        ///     requiring a multi-GiB file.
-        /// </summary>
-        private sealed class OffsetBuffer : Buffer
+        // Writes test data at a large file offset. The file is sparse on
+        // platforms/filesystems that support sparse allocation.
+        private static string CreateSparseTestFile(byte[] data, long offset)
         {
-            private readonly Buffer _inner;
-            private readonly long _baseOffset;
-
-            public OffsetBuffer(Buffer inner, long baseOffset)
+            var tempFile = Path.GetTempFileName();
+            using (var stream = new FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
-                _inner = inner;
-                _baseOffset = baseOffset;
-                Length = inner.Length + baseOffset;
+                stream.SetLength(offset + data.Length);
+                stream.Position = offset;
+                stream.Write(data, 0, data.Length);
             }
 
-            public override byte[] Read(long offset, int count)
-            {
-                return _inner.Read(offset - _baseOffset, count);
-            }
-
-            public override byte ReadOne(long offset)
-            {
-                return _inner.ReadOne(offset - _baseOffset);
-            }
-
-            public override string ReadString(long offset, int count)
-            {
-                return _inner.ReadString(offset - _baseOffset, count);
-            }
-
-            public override int ReadInt(long offset)
-            {
-                return _inner.ReadInt(offset - _baseOffset);
-            }
-
-            public override int ReadVarInt(long offset, int count)
-            {
-                return _inner.ReadVarInt(offset - _baseOffset, count);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _inner.Dispose();
-                }
-            }
+            return tempFile;
         }
     }
 }

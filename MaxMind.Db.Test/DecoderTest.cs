@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
 using System.Text;
 using Xunit;
@@ -33,7 +34,7 @@ namespace MaxMind.Db.Test
                 var expect = entry.Key;
                 var input = entry.Value;
 
-                using var database = new ArrayBuffer(input);
+                using var database = new MemoryMapBuffer(new MemoryStream(input, writable: false));
                 var decoder = new Decoder(database, 0, false);
                 var val = decoder.Decode<T>(0, out _);
                 Assert.Equal(expect, val);

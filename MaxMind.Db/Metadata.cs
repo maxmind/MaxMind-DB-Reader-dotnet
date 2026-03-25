@@ -15,27 +15,27 @@ namespace MaxMind.Db
         /// <summary>
         ///     Construct a metadata object.
         /// </summary>
-        /// <param name="binaryFormatMajorVersion"></param>
-        /// <param name="binaryFormatMinorVersion"></param>
-        /// <param name="buildEpoch"></param>
-        /// <param name="databaseType"></param>
-        /// <param name="description"></param>
-        /// <param name="ipVersion"></param>
-        /// <param name="languages"></param>
-        /// <param name="nodeCount"></param>
-        /// <param name="recordSize"></param>
+        /// <param name="binaryFormatMajorVersion">The major version of the MaxMind DB binary format.</param>
+        /// <param name="binaryFormatMinorVersion">The minor version of the MaxMind DB binary format.</param>
+        /// <param name="buildEpoch">The database build timestamp as seconds since the Unix epoch.</param>
+        /// <param name="databaseType">The database type string, e.g. "GeoIP2-City".</param>
+        /// <param name="description">A map from locale codes to the database description in that language.</param>
+        /// <param name="ipVersion">The IP version the database supports (4 or 6).</param>
+        /// <param name="languages">The locale codes for languages the database supports.</param>
+        /// <param name="nodeCount">The number of nodes in the search tree.</param>
+        /// <param name="recordSize">The size in bits of each record in the search tree.</param>
         [Constructor]
         [CLSCompliant(false)]
         public Metadata(
-            [Parameter("binary_format_major_version")] int binaryFormatMajorVersion,
-            [Parameter("binary_format_minor_version")] int binaryFormatMinorVersion,
-            [Parameter("build_epoch")] ulong buildEpoch,
-            [Parameter("database_type")] string databaseType,
+            [MapKey("binary_format_major_version")] int binaryFormatMajorVersion,
+            [MapKey("binary_format_minor_version")] int binaryFormatMinorVersion,
+            [MapKey("build_epoch")] ulong buildEpoch,
+            [MapKey("database_type")] string databaseType,
             IDictionary<string, string> description,
-            [Parameter("ip_version")] int ipVersion,
+            [MapKey("ip_version")] int ipVersion,
             IReadOnlyList<string> languages,
-            [Parameter("node_count")] long nodeCount,
-            [Parameter("record_size")] int recordSize
+            [MapKey("node_count")] long nodeCount,
+            [MapKey("record_size")] int recordSize
             )
         {
             BinaryFormatMajorVersion = binaryFormatMajorVersion;
