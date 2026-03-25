@@ -1,20 +1,23 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 using MaxMind.Db;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Text;
 
-BenchmarkRunner.Run<CityBenchmark>(new DebugInProcessConfig());
+BenchmarkRunner.Run<CityBenchmark>();
 
 [MemoryDiagnoser]
 public class CityBenchmark
 {
     // A random IP that has city info.
-    private Reader _reader = null!;
+    private Reader _memMapReader = null!;
+    private Reader _arrayBufferReader = null!;
+
     private IPAddress[] _ipAddresses = [];
 
     [GlobalSetup]
@@ -23,7 +26,8 @@ public class CityBenchmark
         const string dbPathVarName = "MAXMIND_BENCHMARK_DB";
         string dbPath = Environment.GetEnvironmentVariable(dbPathVarName) ??
                         throw new InvalidOperationException($"{dbPathVarName} was not set");
-        _reader = new Reader(dbPath);
+        _memMapReader = new Reader(dbPath, FileAccessMode.MemoryMapped);
+        _arrayBufferReader = new Reader(dbPath, FileAccessMode.Memory);
 
         const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
         string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
@@ -47,16 +51,16 @@ public class CityBenchmark
     [GlobalCleanup]
     public void GlobalCleanup()
     {
-        _reader.Dispose();
+        _memMapReader.Dispose();
     }
 
     [Benchmark]
-    public int City()
+    public int CityMemoryMappedLookup()
     {
         int x = 0;
         foreach (var ipAddress in _ipAddresses)
         {
-            if (_reader.Find<CityResponse>(ipAddress) != null)
+            if (_memMapReader.Find<CityResponse>(ipAddress) != null)
             {
                 x += 1;
             }
@@ -64,6 +68,22 @@ public class CityBenchmark
 
         return x;
     }
+
+    [Benchmark]
+    public int CityMemoryLookup()
+    {
+        int x = 0;
+        foreach (var ipAddress in _ipAddresses)
+        {
+            if (_arrayBufferReader.Find<CityResponse>(ipAddress) != null)
+            {
+                x += 1;
+            }
+        }
+
+        return x;
+    }
+
 }
 
 public abstract class AbstractCountryResponse
@@ -112,7 +132,7 @@ public class CityResponse : AbstractCityResponse
         Continent? continent = null,
         Country? country = null,
         Location? location = null,
-        [Parameter("registered_country")] Country? registeredCountry = null)
+        [MapKey("registered_country")] Country? registeredCountry = null)
         : base(city, continent, country, location, registeredCountry)
     {
     }
@@ -122,7 +142,7 @@ public class City : NamedEntity
 {
     [Constructor]
     public City(int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -162,7 +182,7 @@ public class Continent : NamedEntity
     [Constructor]
     public Continent(
         string? code = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -178,9 +198,9 @@ public class Country : NamedEntity
     [Constructor]
     public Country(
         int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
-        [Parameter("is_in_european_union")] bool isInEuropeanUnion = false,
-        [Parameter("iso_code")] string? isoCode = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
+        [MapKey("is_in_european_union")] bool isInEuropeanUnion = false,
+        [MapKey("iso_code")] string? isoCode = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
@@ -199,10 +219,10 @@ public class Location
 {
     [Constructor]
     public Location(
-        [Parameter("accuracy_radius")] int? accuracyRadius = null,
+        [MapKey("accuracy_radius")] int? accuracyRadius = null,
         double? latitude = null,
         double? longitude = null,
-        [Parameter("time_zone")] string? timeZone = null)
+        [MapKey("time_zone")] string? timeZone = null)
     {
         AccuracyRadius = accuracyRadius;
         Latitude = latitude;
@@ -224,8 +244,8 @@ public class Subdivision : NamedEntity
     [Constructor]
     public Subdivision(
         int? confidence = null,
-        [Parameter("geoname_id")] long? geoNameId = null,
-        [Parameter("iso_code")] string? isoCode = null,
+        [MapKey("geoname_id")] long? geoNameId = null,
+        [MapKey("iso_code")] string? isoCode = null,
         IReadOnlyDictionary<string, string>? names = null,
         IReadOnlyList<string>? locales = null)
         : base(geoNameId, names, locales)
