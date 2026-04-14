@@ -14,7 +14,7 @@ public class CityBenchmark
 {
     // A random IP that has city info.
     private Reader _memMapReader = null!;
-    private Reader _arrayBufferReader = null!;
+    private Reader _memoryReader = null!;
 
     private IPAddress[] _ipAddresses = [];
 
@@ -25,7 +25,7 @@ public class CityBenchmark
         string dbPath = Environment.GetEnvironmentVariable(dbPathVarName) ??
                         throw new InvalidOperationException($"{dbPathVarName} was not set");
         _memMapReader = new Reader(dbPath, FileAccessMode.MemoryMapped);
-        _arrayBufferReader = new Reader(dbPath, FileAccessMode.Memory);
+        _memoryReader = new Reader(dbPath, FileAccessMode.Memory);
 
         const string ipAddressesVarName = "MAXMIND_BENCHMARK_IP_ADDRESSES";
         string ipAddressesStr = Environment.GetEnvironmentVariable(ipAddressesVarName) ?? "";
@@ -50,7 +50,7 @@ public class CityBenchmark
     public void GlobalCleanup()
     {
         _memMapReader.Dispose();
-        _arrayBufferReader.Dispose();
+        _memoryReader.Dispose();
     }
 
     [Benchmark]
@@ -74,7 +74,7 @@ public class CityBenchmark
         int x = 0;
         foreach (var ipAddress in _ipAddresses)
         {
-            if (_arrayBufferReader.Find<CityResponse>(ipAddress) != null)
+            if (_memoryReader.Find<CityResponse>(ipAddress) != null)
             {
                 x += 1;
             }
