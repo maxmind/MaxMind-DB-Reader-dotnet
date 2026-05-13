@@ -1,5 +1,20 @@
 # Release Notes
 
+## 5.1.0 (YYYY-MM-DD)
+
+- `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
+  region instead of a named `Local\<sha>` section. Cross-process page sharing
+  continues to work via the OS file cache. This fixes
+  `UnauthorizedAccessException` when multiple processes running under different
+  identities open the same database. Reported by Ross Gehlig. GitHub #290.
+- `FileAccessMode.MemoryMappedGlobal` is deprecated and will be removed in a
+  future major release. Existing usages now route to the same unnamed
+  file-backed path used by `FileAccessMode.MemoryMapped`, so the 'create global
+  objects' right is no longer required.
+- An empty database file now throws `InvalidDatabaseException` consistently
+  across all `FileAccessMode` values, matching the behavior of the
+  `Reader(Stream)` constructor.
+
 ## 5.0.0 (2026-03-12)
 
 - **BREAKING:** Added property-based activation for MMDB deserialization. Types

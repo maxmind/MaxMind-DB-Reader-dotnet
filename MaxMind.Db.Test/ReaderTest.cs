@@ -215,6 +215,27 @@ namespace MaxMind.Db.Test
             Assert.Contains("The database is empty.", ex.Message);
         }
 
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+#pragma warning disable CS0618 // Verify deprecated value still functions
+        [InlineData(FileAccessMode.MemoryMappedGlobal)]
+#pragma warning restore CS0618
+        [InlineData(FileAccessMode.Memory)]
+        public void TestEmptyFile(FileAccessMode mode)
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(
+                    () => new Reader(tempFile, mode));
+                Assert.Contains("The database is empty.", ex.Message);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
         [Fact]
         public void MetadataPointer()
         {

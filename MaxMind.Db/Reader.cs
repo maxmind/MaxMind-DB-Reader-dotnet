@@ -17,16 +17,18 @@ namespace MaxMind.Db
     public enum FileAccessMode
     {
         /// <summary>
-        ///     Open the file in memory mapped mode. Does not load into real memory.
+        ///     Open the file as an unnamed file-backed memory-mapped region.
+        ///     Cross-process page sharing is provided by the OS file cache and
+        ///     does not require special privileges or named-section access
+        ///     rights. Does not load into real memory.
         /// </summary>
         MemoryMapped,
 
         /// <summary>
-        ///     Open the file in global memory mapped mode. Requires the 'create global objects' right. Does not load into real memory.
+        ///     Deprecated. Use <see cref="MemoryMapped"/> instead. This value
+        ///     now behaves identically to <see cref="MemoryMapped"/>.
         /// </summary>
-        /// <remarks>
-        ///     For information on the 'create global objects' right, see: https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/create-global-objects
-        /// </remarks>
+        [Obsolete("MemoryMappedGlobal no longer creates a Global\\ named section or requires the 'create global objects' right; cross-process sharing now relies on the OS file cache. This value will be removed in a future major release. Use FileAccessMode.MemoryMapped.")]
         MemoryMappedGlobal,
 
         /// <summary>
@@ -184,8 +186,10 @@ namespace MaxMind.Db
         {
             return mode switch
             {
-                FileAccessMode.MemoryMapped => new MemoryMapBuffer(file, false),
-                FileAccessMode.MemoryMappedGlobal => new MemoryMapBuffer(file, true),
+                FileAccessMode.MemoryMapped => MemoryMapBuffer.CreateFileBacked(file),
+#pragma warning disable CS0618 // MemoryMappedGlobal is obsolete; routing to MemoryMapped path
+                FileAccessMode.MemoryMappedGlobal => MemoryMapBuffer.CreateFileBacked(file),
+#pragma warning restore CS0618
                 FileAccessMode.Memory => new MemoryMapBuffer(file),
                 _ => throw new ArgumentException("Unknown file access mode"),
             };
