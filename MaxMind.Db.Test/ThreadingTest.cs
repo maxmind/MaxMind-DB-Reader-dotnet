@@ -20,7 +20,9 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(FileAccessMode.MemoryMapped)]
+#pragma warning disable CS0618 // Verify deprecated value still functions
         [InlineData(FileAccessMode.MemoryMappedGlobal)]
+#pragma warning restore CS0618
         [InlineData(FileAccessMode.Memory)]
         public void TestParallelFor(FileAccessMode mode)
         {
@@ -53,7 +55,9 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(FileAccessMode.MemoryMapped)]
+#pragma warning disable CS0618 // Verify deprecated value still functions
         [InlineData(FileAccessMode.MemoryMappedGlobal)]
+#pragma warning restore CS0618
         [InlineData(FileAccessMode.Memory)]
         [Trait("Category", "BreaksMono")]
         public void TestManyOpens(FileAccessMode mode)

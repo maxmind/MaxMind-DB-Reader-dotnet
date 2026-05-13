@@ -45,7 +45,7 @@ namespace MaxMind.Db.Test
             var tempFile = CreateSparseTestFile(raw, baseOffset);
             try
             {
-                using var buffer = new MemoryMapBuffer(tempFile, false);
+                using var buffer = MemoryMapBuffer.CreateFileBacked(tempFile);
                 var decoder = new Decoder(buffer, pointerBase);
 
                 // Before the fix, this threw OverflowException because the
@@ -101,7 +101,7 @@ namespace MaxMind.Db.Test
             var tempFile = CreateSparseTestFile(raw, baseOffset);
             try
             {
-                using var buffer = new MemoryMapBuffer(tempFile, false);
+                using var buffer = MemoryMapBuffer.CreateFileBacked(tempFile);
                 var decoder = new Decoder(buffer, pointerBase);
 
                 // Before the fix, ReadVarInt returned a negative int for

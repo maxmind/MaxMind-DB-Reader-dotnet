@@ -5,9 +5,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 #endregion
@@ -24,68 +22,41 @@ namespace MaxMind.Db
         private bool _disposed;
         internal long Length { get; }
 
-        // Creates a named memory-mapped file backed directly by the file on
-        // disk, suitable for cross-process sharing.
-        internal MemoryMapBuffer(string file, bool useGlobalNamespace) : this(file, useGlobalNamespace, new FileInfo(file))
-        {
-        }
-
-        private MemoryMapBuffer(string file, bool useGlobalNamespace, FileInfo fileInfo)
+        // Creates an unnamed file-backed memory-mapped region. Cross-process
+        // page sharing happens via the OS file cache rather than via a named
+        // section object, so this mode is not subject to the access-denied
+        // failures that can occur when opening an ACL-checked named section
+        // under a different user identity on Windows.
+        internal static MemoryMapBuffer CreateFileBacked(string file)
         {
             using var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                               FileShare.Delete | FileShare.Read);
-            Length = stream.Length;
-            // Ideally we would use the file ID in the mapName, but it is not
-            // easily available from C#.
-            var objectNamespace = useGlobalNamespace ? "Global" : "Local";
-
-            // We create a sha256 here as there are limitations on mutex names.
-            using var sha256 = SHA256.Create();
-            var suffixTxt = $"{fileInfo.FullName.Replace("\\", "-")}-{Length}";
-            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(suffixTxt));
-            var suffix = BitConverter.ToString(hashBytes).Replace("-", "");
-
-            var mapName = $"{objectNamespace}\\{suffix}";
-            var mutexName = $"{mapName}-Mutex";
-
-            using (var mutex = new Mutex(false, mutexName))
+            var length = stream.Length;
+            if (length == 0)
             {
-                var hasHandle = false;
-
-                try
-                {
-                    hasHandle = mutex.WaitOne(TimeSpan.FromSeconds(10), false);
-                    if (!hasHandle)
-                    {
-                        throw new TimeoutException("Timeout waiting for mutex.");
-                    }
-
-                    _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
-                }
-                catch (Exception ex) when (ex is IOException or NotImplementedException or PlatformNotSupportedException)
-                {
-                    // In .NET Core, named maps are not supported for Unices yet: https://github.com/dotnet/corefx/issues/1329
-                    // When executed on unsupported platform, we get the PNSE. In which case, we construct the memory map by
-                    // setting mapName to null.
-                    if (ex is PlatformNotSupportedException)
-                        mapName = null;
-
-                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
-                            MemoryMappedFileAccess.Read, HandleInheritability.None, false);
-                }
-                finally
-                {
-                    if (hasHandle)
-                    {
-                        mutex.ReleaseMutex();
-                    }
-                }
+                throw new InvalidDatabaseException("The database is empty.");
             }
-
-            _view = _memoryMappedFile.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-#if !NETSTANDARD2_0
-            AcquireRawPointer();
-#endif
+            // leaveOpen: true — the `using var stream` above already disposes
+            // the stream on all paths. The OS keeps the underlying file open
+            // via the mapping's internal reference, so the mmf does not need
+            // to own the stream.
+            var mmf = MemoryMappedFile.CreateFromFile(
+                stream,
+                mapName: null,
+                capacity: length,
+                MemoryMappedFileAccess.Read,
+                HandleInheritability.None,
+                leaveOpen: true);
+            try
+            {
+                var view = mmf.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
+                return new MemoryMapBuffer(mmf, view, length);
+            }
+            catch
+            {
+                mmf.Dispose();
+                throw;
+            }
         }
 
         // Reads the file into an anonymous memory-mapped region that is
