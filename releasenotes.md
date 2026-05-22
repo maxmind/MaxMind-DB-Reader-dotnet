@@ -1,6 +1,6 @@
 # Release Notes
 
-## 5.1.0 (YYYY-MM-DD)
+## 5.1.0 (2026-05-22)
 
 - `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
   region instead of a named `Local\<sha>` section. Cross-process page sharing
