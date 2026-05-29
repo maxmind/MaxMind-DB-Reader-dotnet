@@ -20,8 +20,8 @@ install-package MaxMind.Db
 
 ## Usage
 
-_Note:_ For accessing MaxMind GeoIP2 databases, we generally recommend using the
-GeoIP2 .NET API rather than using this package directly.
+_Note:_ For accessing MaxMind GeoIP databases, we generally recommend using the
+GeoIP .NET API rather than using this package directly.
 
 To use the API, you must first create a `Reader` object. The constructor for the
 reader object takes a `string` with the path to the MaxMind DB file. Optionally
