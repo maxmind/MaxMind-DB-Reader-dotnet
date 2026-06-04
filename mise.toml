@@ -8,8 +8,13 @@ disable_backends = [
 [tools]
 dotnet = ["latest", "9", "8"]
 "github:houseabsolute/precious" = "latest"
+lychee = "latest"
 node = "latest"
 "npm:prettier" = "latest"
+
+[tasks.check-links]
+description = "Check links with lychee"
+run = "lychee --no-progress './**/*.md' './**/*.cs' './MaxMind.Db/MaxMind.Db.csproj'"
 
 [hooks]
 enter = "mise install --quiet --locked"
