@@ -134,3 +134,6 @@ BenchmarkDotNet.Artifacts/
 
 # Worktrees
 .worktrees
+
+# lychee link checker cache
+.lycheecache

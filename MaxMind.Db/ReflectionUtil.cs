@@ -16,7 +16,7 @@ namespace MaxMind.Db
         // Activator.CreateInstance is extremely slow and ConstructorInfo.Invoke is
         // somewhat slow. This faster alternative (when cached) is largely based off
         // of:
-        // http://rogeralsing.com/2008/02/28/linq-expressions-creating-objects/
+        // https://rogerjohansson.blog/2008/02/28/linq-expressions-creating-objects/
         internal static ObjectActivator CreateActivator(ConstructorInfo constructor)
         {
             if (constructor == null)

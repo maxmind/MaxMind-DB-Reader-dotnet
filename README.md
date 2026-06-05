@@ -167,7 +167,7 @@ Please report all issues with this code using the
 
 If you are having an issue with a MaxMind database or service that is not
 specific to this reader, please
-[contact MaxMind support](http://www.maxmind.com/en/support).
+[contact MaxMind support](https://support.maxmind.com/knowledge-base).
 
 ## Contributing
 
@@ -176,7 +176,7 @@ possible.
 
 ## Versioning
 
-The MaxMind DB Reader API uses [Semantic Versioning](http://semver.org/).
+The MaxMind DB Reader API uses [Semantic Versioning](https://semver.org/).
 
 ## Copyright and License
 
