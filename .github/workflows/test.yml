@@ -66,11 +66,8 @@ jobs:
         run: >-
           dotnet publish
           MaxMind.Db.NativeAot.Test/MaxMind.Db.NativeAot.Test.csproj
-          --configuration Release
-          --framework net10.0
-          --runtime linux-x64
-          --self-contained true
-          --output ${{ runner.temp }}/native-aot
+          --configuration Release --framework net10.0 --runtime linux-x64
+          --self-contained true --output ${{ runner.temp }}/native-aot
 
       - name: Run Native AOT smoke test
         run: ${{ runner.temp }}/native-aot/MaxMind.Db.NativeAot.Test
