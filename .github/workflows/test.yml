@@ -44,3 +44,33 @@ jobs:
         run: dotnet test
         env:
           MAXMIND_TEST_BASE_DIR: ${{ github.workspace }}/MaxMind.Db.Test
+
+  native-aot:
+    runs-on: ubuntu-latest
+    name: Native AOT smoke test
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Native AOT prerequisites
+        run: sudo apt-get update && sudo apt-get install --yes clang zlib1g-dev
+
+      - name: Publish Native AOT smoke test
+        run: >-
+          dotnet publish
+          MaxMind.Db.NativeAot.Test/MaxMind.Db.NativeAot.Test.csproj
+          --configuration Release
+          --framework net10.0
+          --runtime linux-x64
+          --self-contained true
+          --output ${{ runner.temp }}/native-aot
+
+      - name: Run Native AOT smoke test
+        run: ${{ runner.temp }}/native-aot/MaxMind.Db.NativeAot.Test
