@@ -110,3 +110,12 @@ git commit -m "Prepare for $version" -a
 git push
 
 gh release create --target "$(git branch --show-current)" -t "$version" -n "$notes" "$tag"
+
+# Now that the release is tagged, validate future changes against it. The
+# package may not be downloadable from NuGet until several minutes after
+# the release workflow publishes it.
+sed -i "s|<PackageValidationBaselineVersion>[^<]*</PackageValidationBaselineVersion>|<PackageValidationBaselineVersion>$version</PackageValidationBaselineVersion>|" MaxMind.Db/MaxMind.Db.csproj
+
+git commit -m "Set package validation baseline to $version" -a
+
+git push
