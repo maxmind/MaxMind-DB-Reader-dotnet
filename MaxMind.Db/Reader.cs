@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+#if NET
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -138,6 +141,11 @@ namespace MaxMind.Db
         {
         }
 
+#if NET
+        // Metadata is instantiated through the reflection-based decoder. Keep its
+        // attributed constructor when the reader is trimmed or compiled with Native AOT.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Metadata))]
+#endif
         private Reader(MemoryMapBuffer buffer, string? file)
         {
             _fileName = file;
