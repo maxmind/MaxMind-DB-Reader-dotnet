@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <MaxMindDbAotDiagnostics
+      Condition="'$(MaxMindDbAotDiagnostics)' == '' and ('$(PublishAot)' == 'true' or '$(PublishTrimmed)' == 'true' or '$(IsAotCompatible)' == 'true')"
+    >true</MaxMindDbAotDiagnostics>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="MaxMindDbAotDiagnostics" />
+  </ItemGroup>
+</Project>

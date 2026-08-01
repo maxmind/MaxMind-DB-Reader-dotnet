@@ -33,6 +33,7 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- In CI, don't fail the build on NuGet audit advisories (NU1901-NU1905).
          Advisories still appear in build output, and Dependabot handles the
@@ -42,9 +43,21 @@
 
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
-    <ItemGroup>
+  <ItemGroup>
+    <None Include="..\MaxMind.Db.SourceGenerator\bin\$(Configuration)\netstandard2.0\MaxMind.Db.SourceGenerator.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+    <None Remove="buildTransitive\MaxMind.Db.targets" />
+    <None Include="buildTransitive\MaxMind.Db.targets"
+          Pack="true"
+          PackagePath="buildTransitive" />
     <None Include="..\MaxMind-logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
