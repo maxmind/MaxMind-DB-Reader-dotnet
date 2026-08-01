@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Written out so VerifyMaxMindDbGeneratedRegistrations can confirm the
+         generator ran. The App consumes a packed MaxMind.Db, so this is what
+         catches the analyzer going missing from the package. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <Target Name="VerifyMaxMindDbGeneratedRegistrations" AfterTargets="CoreCompile">
+    <ItemGroup>
+      <MaxMindDbGeneratedRegistration
+        Include="$(IntermediateOutputPath)generated/**/MaxMind.Db.SourceGenerator.g.cs" />
+    </ItemGroup>
+    <Error Condition="'@(MaxMindDbGeneratedRegistration)' == ''"
+           Text="The MaxMind.Db source generator produced no registrations for $(MSBuildProjectName). Every model in this assembly would fall back to reflection, which is unsupported after trimming or with NativeAOT." />
+  </Target>
+
+</Project>

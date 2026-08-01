@@ -1,0 +1,32 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MaxMindDbPackageVersion)' != ''">
+    <PackageReference Include="MaxMind.Db" Version="$(MaxMindDbPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MaxMindDbPackageVersion)' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\MaxMind.Db\MaxMind.Db.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="VerifyMaxMindDbAotDiagnostics"
+          BeforeTargets="CoreCompile"
+          Condition="'$(MaxMindDbPackageVersion)' != '' and '$(MaxMindDbAotDiagnostics)' != 'true'">
+    <Error Text="The packaged MaxMind.Db analyzer did not enable NativeAOT diagnostics for $(MSBuildProjectName)." />
+  </Target>
+
+</Project>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Models\MaxMind.Db.NativeAot.Models.csproj" />
+    <ProjectReference Include="..\..\MaxMind.Db.NetStandard.TestModels\MaxMind.Db.NetStandard.TestModels.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\MaxMind.Db.Test\TestData\MaxMind-DB\test-data\GeoIP2-City-Test.mmdb"
+          Link="GeoIP2-City-Test.mmdb"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\MaxMind.Db.Test\TestData\MaxMind-DB\test-data\MaxMind-DB-test-decoder.mmdb"
+          Link="MaxMind-DB-test-decoder.mmdb"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

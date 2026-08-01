@@ -39,6 +39,11 @@ namespace MaxMind.Db
 
             var newExp = Expression.New(constructor, argsExp);
             var lambda = Expression.Lambda(typeof(ObjectActivator), newExp, paramExp);
+            // N.B. The AOT analyzer does not report IL3050 for
+            // LambdaExpression.Compile(), so a warning-free AOT-compatible build is not
+            // evidence that this path survives NativeAOT. Only models without a
+            // source-generated registration reach it, and the NativeAOT integration
+            // test under MaxMind.Db.NativeAot is what pins its actual behavior.
             return (ObjectActivator)lambda.Compile();
         }
 
@@ -74,6 +79,8 @@ namespace MaxMind.Db
 
             var newExp = Expression.MemberInit(Expression.New(parameterlessCtor), bindings);
             var lambda = Expression.Lambda(typeof(ObjectActivator), newExp, paramExp);
+            // See the note on Compile() in CreateActivator: this path is unanalyzed and
+            // is covered only by the NativeAOT integration test.
             return (ObjectActivator)lambda.Compile();
         }
 
