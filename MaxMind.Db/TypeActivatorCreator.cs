@@ -12,24 +12,21 @@ using System.Text;
 namespace MaxMind.Db
 {
     /// <summary>
-    ///     Wraps either a <see cref="ParameterInfo"/> (constructor-based activation)
-    ///     or a <see cref="PropertyInfo"/> (property-based activation) so the decoder
-    ///     can treat both uniformly.
+    ///     Identifies the destination slot and type for a deserialized constructor
+    ///     argument or property.
     /// </summary>
     internal sealed class DeserializationMember
     {
         internal int Position { get; }
         internal Type MemberType { get; }
-        internal string? Name { get; }
 
         internal DeserializationMember(ParameterInfo param)
         {
             Position = param.Position;
             MemberType = param.ParameterType;
-            Name = param.Name;
         }
 
-        internal DeserializationMember(int position, Type memberType, string? name)
+        internal DeserializationMember(int position, Type memberType)
         {
             if (position < 0)
             {
@@ -37,7 +34,6 @@ namespace MaxMind.Db
             }
             Position = position;
             MemberType = memberType ?? throw new ArgumentNullException(nameof(memberType));
-            Name = name;
         }
     }
 
@@ -77,6 +73,12 @@ namespace MaxMind.Db
             }
         }
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2067",
+            Justification = "Generated type registrations supply default values and bypass this method. This method serves only the documented reflection fallback for unregistered models, which is unsupported in trimmed applications.")]
+#endif
         private static object? DefaultValue(Type type)
         {
             if (type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(type) == null)
@@ -89,14 +91,30 @@ namespace MaxMind.Db
 
     internal sealed class TypeActivatorCreator
     {
+        private const string TrimmedModelGuidance =
+            " If this application was trimmed or published with NativeAOT and these members " +
+            "exist in source, rebuild the assembly that declares the model with the MaxMind.Db " +
+            "source generator and resolve any MMDBSG diagnostics.";
+
         private readonly ConcurrentDictionary<Type, TypeActivator> _typeConstructors =
             new();
 
         internal TypeActivator GetActivator(Type expectedType)
             => _typeConstructors.GetOrAdd(expectedType, ClassActivator);
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2070",
+            Justification = "Generated type registrations return before this reflection path. This path serves only the documented fallback for unregistered models, which is unsupported in trimmed applications.")]
+#endif
         private static TypeActivator ClassActivator(Type expectedType)
         {
+            if (SourceGeneratorSupport.TryGetTypeRegistration(expectedType, out var registration))
+            {
+                return registration.CreateActivator();
+            }
+
             var constructors =
                 expectedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(c => c.IsDefined(typeof(ConstructorAttribute), true))
@@ -166,6 +184,12 @@ namespace MaxMind.Db
                 networkParams.ToArray(), alwaysCreated.ToArray());
         }
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2070",
+            Justification = "Generated type registrations return before this reflection path. This path serves only the documented fallback for unregistered models, which is unsupported in trimmed applications.")]
+#endif
         private static TypeActivator PropertyBasedActivator(Type expectedType)
         {
             var parameterlessCtor = expectedType.GetConstructor(
@@ -176,7 +200,8 @@ namespace MaxMind.Db
             {
                 throw new DeserializationException(
                     $"No constructor found for {expectedType} with the MaxMind.Db.Constructor attribute "
-                    + "and no parameterless constructor found for property-based activation");
+                    + "and no parameterless constructor found for property-based activation."
+                    + TrimmedModelGuidance);
             }
 
             var properties = expectedType
@@ -191,7 +216,8 @@ namespace MaxMind.Db
             {
                 throw new DeserializationException(
                     $"No properties found on {expectedType} with the MapKey, Inject, or Network "
-                    + "attributes for property-based activation");
+                    + "attributes for property-based activation."
+                    + TrimmedModelGuidance);
             }
 
             var paramNameTypes = new Dictionary<Key, DeserializationMember>();
@@ -210,7 +236,7 @@ namespace MaxMind.Db
                         + "for property-based activation");
                 }
 
-                var member = new DeserializationMember(position, prop.PropertyType, prop.Name);
+                var member = new DeserializationMember(position, prop.PropertyType);
 
                 var injectableAttribute = prop.GetCustomAttributes<InjectAttribute>().FirstOrDefault();
                 if (injectableAttribute != null)

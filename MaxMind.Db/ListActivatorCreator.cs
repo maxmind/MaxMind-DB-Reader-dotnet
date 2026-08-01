@@ -17,6 +17,16 @@ namespace MaxMind.Db
         internal ObjectActivator GetActivator(Type expectedType)
             => _listActivators.GetOrAdd(expectedType, ListActivator);
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "AOT",
+            "IL3050",
+            Justification = "Generated collection registrations return before this runtime generic construction path. This path serves only the documented fallback for unregistered collection types, which is unsupported in NativeAOT applications.")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2070",
+            Justification = "Generated collection registrations return before this reflection path. This path serves only the documented fallback for unregistered collection types, which is unsupported in trimmed applications.")]
+#endif
         private static ObjectActivator ListActivator(Type expectedType)
         {
             var genericArgs = expectedType.GetGenericArguments();
