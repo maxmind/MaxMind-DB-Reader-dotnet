@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;netstandard2.0</TargetFrameworks>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MaxMindDbPackageVersion)' != ''">
+    <PackageReference Include="MaxMind.Db" Version="$(MaxMindDbPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MaxMindDbPackageVersion)' == ''">
+    <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
