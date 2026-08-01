@@ -1,5 +1,21 @@
 # Release Notes
 
+## 5.2.0 (YYYY-MM-DD)
+
+- Added NativeAOT and trimming support for C# model deserialization. The NuGet
+  package now includes a source generator for constructor-based and
+  property-based models, including models with annotated properties inherited
+  from abstract base records.
+- Added reflection-free source-generated activation for supported generic
+  collection and dictionary interfaces and concrete types, including closed
+  collection types used directly with `Find<T>` and `FindAll<T>`.
+- Reused immutable source-generated activation metadata across readers, reducing
+  the time and allocation cost of the first model lookup on a new reader.
+- Enabled trim, AOT, and single-file compatibility analysis. NativeAOT model
+  diagnostics are enabled automatically in projects configured for compatible
+  builds, and CI now publishes and runs a strictly trimmed NativeAOT application
+  on Linux, Windows, and macOS.
+
 ## 5.1.0 (2026-05-22)
 
 - `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
