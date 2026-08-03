@@ -198,6 +198,8 @@ There are several current limitations:
   fallback remains available in normal JIT builds but is not guaranteed after
   trimming or with NativeAOT.
 - Open generic model classes are not supported.
+- Models must be classes or records. Annotated structs and record structs are
+  reported as `MMDBSG012` and use the reflection fallback.
 - MMDB array values cannot be deserialized into CLR array model members. Use a
   supported generic collection instead. `byte[]` remains supported for MMDB byte
   values.

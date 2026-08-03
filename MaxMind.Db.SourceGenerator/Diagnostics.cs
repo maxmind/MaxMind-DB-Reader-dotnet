@@ -93,5 +93,13 @@ namespace MaxMind.Db.SourceGenerator
             Category,
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor UnsupportedModelKind = new(
+            "MMDBSG012",
+            "MaxMind DB models must be classes or records",
+            "Type '{0}' is annotated for MaxMind DB deserialization but is not a class or record, so it cannot use source-generated deserialization",
+            Category,
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

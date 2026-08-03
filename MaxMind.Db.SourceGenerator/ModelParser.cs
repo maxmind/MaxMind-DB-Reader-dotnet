@@ -24,7 +24,10 @@ namespace MaxMind.Db.SourceGenerator
             SourceProductionContext context
             )
         {
-            if (type.IsAbstract || type.IsStatic || type.TypeKind != TypeKind.Class)
+            // Abstract types are skipped silently: an annotated abstract base is the
+            // supported way to share members, and its concrete derived types are
+            // generated instead.
+            if (type.IsAbstract || type.IsStatic)
             {
                 return null;
             }
@@ -35,6 +38,20 @@ namespace MaxMind.Db.SourceGenerator
             var properties = GetAnnotatedProperties(type);
             if (constructors.Length == 0 && properties.Length == 0)
             {
+                return null;
+            }
+
+            // Reported only once the type is known to be annotated. Candidate discovery
+            // admits every type with a base list, so an earlier check here would warn
+            // about unrelated declarations.
+            if (type.TypeKind != TypeKind.Class)
+            {
+                Report(
+                    reportAotDiagnostics,
+                    context,
+                    Diagnostics.UnsupportedModelKind,
+                    type,
+                    type.ToDisplayString());
                 return null;
             }
 

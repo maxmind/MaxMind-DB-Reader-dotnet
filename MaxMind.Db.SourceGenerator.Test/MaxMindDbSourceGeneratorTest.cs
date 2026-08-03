@@ -343,6 +343,82 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void ReportsStructModelsForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal struct StructModel
+                {
+                    [Constructor]
+                    internal StructModel([MapKey("utf8_string")] string value)
+                    {
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG012");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void ReportsRecordStructPropertyModelsForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal record struct RecordStructModel
+                {
+                    [MapKey("utf8_string")]
+                    internal string? Value { get; init; }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG012");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void SkipsStructModelsWithoutAotDiagnostics()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal struct StructModel
+                {
+                    [Constructor]
+                    internal StructModel([MapKey("utf8_string")] string value)
+                    {
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource);
+
+            Assert.DoesNotContain(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG012");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void ReportsInaccessibleInheritedPropertyForAot()
         {
             const string baseSource = """

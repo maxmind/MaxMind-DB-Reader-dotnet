@@ -15,3 +15,4 @@ MMDBSG008 | MaxMind.Db.SourceGenerator | Warning | Collection type cannot be gen
 MMDBSG009 | MaxMind.Db.SourceGenerator | Warning | Source generation requires C# 9 or later
 MMDBSG010 | MaxMind.Db.SourceGenerator | Warning | Required members need a SetsRequiredMembers constructor
 MMDBSG011 | MaxMind.Db.SourceGenerator | Warning | Derived MapKey attributes cannot be evaluated
+MMDBSG012 | MaxMind.Db.SourceGenerator | Warning | Models must be classes or records
