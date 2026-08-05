@@ -333,9 +333,16 @@ namespace MaxMind.Db
             }
 
             var metadata = GetOrCreateMetadata();
+            // Nulling the slot is what makes SetAlwaysCreatedParams construct the
+            // member. A non-nullable value type has no model to construct, and the
+            // reflection path leaves its default in place, so nulling it here would
+            // send the decoder off to activate something like System.Int32 as a model.
             foreach (var member in metadata.AlwaysCreatedParameters)
             {
-                defaultParameters[member.Position] = null;
+                if (!TypeActivator.IsNonNullableValueType(member.MemberType))
+                {
+                    defaultParameters[member.Position] = null;
+                }
             }
 
             return new TypeActivator(

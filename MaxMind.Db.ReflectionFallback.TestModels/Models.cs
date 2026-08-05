@@ -33,4 +33,35 @@ namespace MaxMind.Db.ReflectionFallback.TestModels
         [MapKey("array")]
         public FallbackList<long>? Values { get; set; }
     }
+
+    public sealed class ReflectionInnerModel
+    {
+        [MapKey("utf8_stringX")]
+        public string? Value { get; set; }
+    }
+
+    public sealed class ReflectionAlwaysCreateConstructorModel
+    {
+        [Constructor]
+        public ReflectionAlwaysCreateConstructorModel(
+            [MapKey("no_such_key", true)] long absentValueType,
+            [MapKey("no_such_map", true)] ReflectionInnerModel absentModel
+            )
+        {
+            AbsentValueType = absentValueType;
+            AbsentModel = absentModel;
+        }
+
+        public ReflectionInnerModel AbsentModel { get; }
+        public long AbsentValueType { get; }
+    }
+
+    public sealed class ReflectionAlwaysCreatePropertyModel
+    {
+        [MapKey("no_such_map", true)]
+        public ReflectionInnerModel? AbsentModel { get; set; }
+
+        [MapKey("no_such_key", true)]
+        public long AbsentValueType { get; set; }
+    }
 }

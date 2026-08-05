@@ -54,6 +54,43 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public void ReflectionAlwaysCreateLeavesValueTypeMembersAtTheirDefault()
+        {
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var address = IPAddress.Parse("1.1.1.1");
+
+            var constructorModel =
+                reader.Find<ReflectionAlwaysCreateConstructorModel>(address);
+            Assert.NotNull(constructorModel);
+            Assert.Equal(0, constructorModel.AbsentValueType);
+            Assert.NotNull(constructorModel.AbsentModel);
+
+            var propertyModel = reader.Find<ReflectionAlwaysCreatePropertyModel>(address);
+            Assert.NotNull(propertyModel);
+            Assert.Equal(0, propertyModel.AbsentValueType);
+            Assert.NotNull(propertyModel.AbsentModel);
+        }
+
+        [Fact]
+        public void GeneratedAlwaysCreateLeavesValueTypeMembersAtTheirDefault()
+        {
+            SourceGeneratorSupport.RegisterType(
+                typeof(AlwaysCreateValueTypeGeneratedModel),
+                values => new AlwaysCreateValueTypeGeneratedModel((long)values[0]!),
+                () => [default(long)],
+                [new GeneratedMember("no_such_key", typeof(long), null, false, true)]);
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+
+            var model = reader.Find<AlwaysCreateValueTypeGeneratedModel>(
+                IPAddress.Parse("1.1.1.1"));
+
+            Assert.NotNull(model);
+            Assert.Equal(0, model.Value);
+        }
+
+        [Fact]
         public void DerivedMapKeyAttributesUseReflectionFallbackSemantics()
         {
             Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
@@ -389,6 +426,16 @@ namespace MaxMind.Db.Test
 
         private sealed class MismatchedDefaultsGeneratedModel
         {
+        }
+
+        private sealed class AlwaysCreateValueTypeGeneratedModel
+        {
+            internal AlwaysCreateValueTypeGeneratedModel(long value)
+            {
+                Value = value;
+            }
+
+            internal long Value { get; }
         }
 
         private sealed class DuplicateMapKeyGeneratedModel

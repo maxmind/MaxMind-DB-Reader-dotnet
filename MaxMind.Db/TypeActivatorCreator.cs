@@ -81,12 +81,20 @@ namespace MaxMind.Db
 #endif
         private static object? DefaultValue(Type type)
         {
-            if (type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(type) == null)
+            if (IsNonNullableValueType(type))
             {
                 return System.Activator.CreateInstance(type);
             }
             return null;
         }
+
+        /// <summary>
+        ///     Whether a member of this type has no null state, and so cannot be
+        ///     signalled as absent by a null default. Both activation paths use this to
+        ///     decide whether an <c>AlwaysCreate</c> member can be constructed at all.
+        /// </summary>
+        internal static bool IsNonNullableValueType(Type type)
+            => type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(type) == null;
     }
 
     internal sealed class TypeActivatorCreator
@@ -288,9 +296,15 @@ namespace MaxMind.Db
                 defaultParameters[i] = orderedProperties[i].GetValue(tempInstance);
             }
             // Override AlwaysCreate defaults to null so SetAlwaysCreatedParams triggers.
+            // A non-nullable value type has nothing to construct and no null state to
+            // signal with, so it keeps its default — matching the constructor path,
+            // which never overrides these.
             foreach (var ac in alwaysCreated)
             {
-                defaultParameters[ac.Position] = null;
+                if (!TypeActivator.IsNonNullableValueType(ac.MemberType))
+                {
+                    defaultParameters[ac.Position] = null;
+                }
             }
 
             var activator = ReflectionUtil.CreateMemberInitActivator(
