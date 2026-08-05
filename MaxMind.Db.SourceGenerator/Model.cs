@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
@@ -93,7 +94,13 @@ namespace MaxMind.Db.SourceGenerator
         internal string TypeName { get; }
     }
 
-    internal sealed class CollectionRoot
+    /// <summary>
+    ///     A <c>Find&lt;T&gt;</c> or <c>FindAll&lt;T&gt;</c> type argument discovered at a
+    ///     call site. This travels through the incremental pipeline, so it compares by
+    ///     value: with reference equality every edit would be a cache miss for every
+    ///     lookup in the compilation.
+    /// </summary>
+    internal sealed class CollectionRoot : IEquatable<CollectionRoot>
     {
         internal CollectionRoot(
             ITypeSymbol typeSymbol,
@@ -109,5 +116,20 @@ namespace MaxMind.Db.SourceGenerator
         internal string Description { get; }
         internal Location Location { get; }
         internal ITypeSymbol TypeSymbol { get; }
+
+        public bool Equals(CollectionRoot? other) =>
+            other != null &&
+            SymbolEqualityComparer.Default.Equals(TypeSymbol, other.TypeSymbol) &&
+            Location.Equals(other.Location) &&
+            Description == other.Description;
+
+        public override bool Equals(object? obj) => Equals(obj as CollectionRoot);
+
+        public override int GetHashCode()
+        {
+            var hash = SymbolEqualityComparer.Default.GetHashCode(TypeSymbol);
+            hash = (hash * 397) ^ Location.GetHashCode();
+            return (hash * 397) ^ Description.GetHashCode();
+        }
     }
 }

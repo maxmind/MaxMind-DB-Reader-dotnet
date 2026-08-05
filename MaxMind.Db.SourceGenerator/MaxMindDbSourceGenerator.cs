@@ -43,6 +43,16 @@ namespace MaxMind.Db.SourceGenerator
                         out var value) &&
                     string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
 
+            // N.B. This pipeline is not incremental in the way an IIncrementalGenerator
+            // normally is: CompilationProvider yields a new Compilation on essentially
+            // every keystroke, so the output node re-runs and re-parses every candidate.
+            // Fixing that properly means keeping symbols out of the pipeline entirely —
+            // parsing inside the syntax transform, returning equatable specs, and
+            // carrying diagnostics as data rather than as Diagnostic objects, since
+            // those hold a Location and so root the Compilation too. ModelParser and
+            // CollectionParser are built around live symbol walks for accessibility and
+            // generic resolution, so that is a redesign rather than a local change, and
+            // it is tracked separately rather than held against this release.
             var generationInput = types.Collect()
                 .Combine(collectionRoots.Collect())
                 .Combine(context.CompilationProvider)
@@ -64,7 +74,11 @@ namespace MaxMind.Db.SourceGenerator
             }
 
             // A concrete model may inherit annotated properties without containing
-            // attributes itself. Otherwise, an MMDB model must have an attributed
+            // attributes itself, as a record deriving from an annotated abstract base
+            // does, so any type with a base list has to reach semantic analysis. That
+            // is broad — it admits most types in a project — but narrowing it to a
+            // syntactic attribute-name scan would silently drop inherited models, which
+            // is a supported shape. Otherwise, an MMDB model must have an attributed
             // declaration, member, or constructor parameter.
             if (type.BaseList != null)
             {
