@@ -28,6 +28,7 @@
     <AssemblyVersion>5.0.0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>
     <LangVersion>14.0</LangVersion>
+    <MaxMindDbAnalyzerPackSource>..\MaxMind.Db.SourceGenerator\bin\$(Configuration)\netstandard2.0\MaxMind.Db.SourceGenerator.dll</MaxMindDbAnalyzerPackSource>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <AnalysisLevel>latest</AnalysisLevel>
@@ -41,6 +42,26 @@
     <WarningsNotAsErrors Condition="'$(CI)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904;NU1905</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <!-- The packed path below is hard-coded, which a change to the generator's target
+       framework or output layout would silently invalidate: the stale assembly left
+       at the old location would be packed without complaint. Ask the generator
+       project where its output actually is and fail the pack if the two disagree. -->
+  <Target Name="VerifyMaxMindDbAnalyzerIsCurrent" BeforeTargets="Pack">
+    <MSBuild Projects="..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="MaxMindDbAnalyzerAssembly" />
+    </MSBuild>
+    <PropertyGroup>
+      <MaxMindDbPackedAnalyzerPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)$(MaxMindDbAnalyzerPackSource)'))</MaxMindDbPackedAnalyzerPath>
+      <MaxMindDbBuiltAnalyzerPath>@(MaxMindDbAnalyzerAssembly->'%(FullPath)')</MaxMindDbBuiltAnalyzerPath>
+    </PropertyGroup>
+    <Error Condition="'$(MaxMindDbBuiltAnalyzerPath)' == ''"
+           Text="Could not resolve the MaxMind.Db source generator output. Packing would ship without an analyzer and consumers would silently fall back to reflection." />
+    <Error Condition="'$(MaxMindDbPackedAnalyzerPath)' != '$(MaxMindDbBuiltAnalyzerPath)'"
+           Text="The analyzer being packed ($(MaxMindDbPackedAnalyzerPath)) is not the generator's current output ($(MaxMindDbBuiltAnalyzerPath)). Update MaxMindDbAnalyzerPackSource in this file." />
+  </Target>
+
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
     <ProjectReference Include="..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
@@ -50,7 +71,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\MaxMind.Db.SourceGenerator\bin\$(Configuration)\netstandard2.0\MaxMind.Db.SourceGenerator.dll"
+    <None Include="$(MaxMindDbAnalyzerPackSource)"
           Pack="true"
           PackagePath="analyzers/dotnet/cs"
           Visible="false" />
