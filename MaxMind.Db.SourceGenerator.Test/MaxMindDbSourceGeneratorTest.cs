@@ -343,6 +343,59 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void ReportsMapKeyCombinedWithInjectForAot()
+        {
+            const string modelSource = """
+                using System.Net;
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed class ConflictModel
+                {
+                    [Constructor]
+                    internal ConflictModel(
+                        [MapKey("ip")] [Inject("ip_address")] IPAddress? address = null)
+                    {
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG013");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void ReportsMapKeyCombinedWithNetworkForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed record NetworkConflictModel
+                {
+                    [MapKey("net")]
+                    [Network]
+                    internal Network? Value { get; init; }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG013");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void InjectableMemberNamesDoNotCollideWithMapKeys()
         {
             const string modelSource = """

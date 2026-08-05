@@ -16,3 +16,4 @@ MMDBSG009 | MaxMind.Db.SourceGenerator | Warning | Source generation requires C#
 MMDBSG010 | MaxMind.Db.SourceGenerator | Warning | Required members need a SetsRequiredMembers constructor
 MMDBSG011 | MaxMind.Db.SourceGenerator | Warning | Derived MapKey attributes cannot be evaluated
 MMDBSG012 | MaxMind.Db.SourceGenerator | Warning | Models must be classes or records
+MMDBSG013 | MaxMind.Db.SourceGenerator | Warning | MapKey cannot be combined with Inject or Network

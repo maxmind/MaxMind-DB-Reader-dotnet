@@ -241,6 +241,24 @@ namespace MaxMind.Db.SourceGenerator
                 return null;
             }
             var injectAttribute = GetAttribute(symbol, InjectAttributeName);
+            var networkAttribute = GetAttribute(symbol, NetworkAttributeName);
+            // An injectable or network member reads no database key, so an explicit
+            // MapKey alongside one of them is ambiguous. The reflection fallback reads
+            // the key and then overwrites it, which is a behaviour we do not want to
+            // reproduce silently. Dropping the model keeps that exact behaviour, since
+            // an unregistered model is what the fallback handles.
+            if (mapKeyAttribute != null &&
+                (injectAttribute != null || networkAttribute != null))
+            {
+                Report(
+                    reportAotDiagnostics,
+                    context,
+                    Diagnostics.ConflictingMemberAttributes,
+                    symbol,
+                    modelType.ToDisplayString(),
+                    sourceName);
+                return null;
+            }
             var mapKey = GetStringArgument(mapKeyAttribute, 0) ?? sourceName;
             var alwaysCreate = GetBooleanArgument(mapKeyAttribute, 1);
             var injectableName = GetStringArgument(injectAttribute, 0);
@@ -251,7 +269,7 @@ namespace MaxMind.Db.SourceGenerator
                 type,
                 mapKey,
                 injectableName,
-                GetAttribute(symbol, NetworkAttributeName) != null,
+                networkAttribute != null,
                 alwaysCreate);
         }
 

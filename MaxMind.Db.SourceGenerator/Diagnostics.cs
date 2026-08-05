@@ -94,6 +94,14 @@ namespace MaxMind.Db.SourceGenerator
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor ConflictingMemberAttributes = new(
+            "MMDBSG013",
+            "MapKey cannot be combined with Inject or Network",
+            "Member '{1}' on model '{0}' combines MapKey with Inject or Network, so source-generated deserialization cannot tell which supplies its value",
+            Category,
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor UnsupportedModelKind = new(
             "MMDBSG012",
             "MaxMind DB models must be classes or records",
