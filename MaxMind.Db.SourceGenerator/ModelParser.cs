@@ -349,6 +349,14 @@ namespace MaxMind.Db.SourceGenerator
             var keys = new HashSet<string>(StringComparer.Ordinal);
             foreach (var member in members)
             {
+                // Only members that reach the decode dictionary can collide. An
+                // injectable or network member contributes no key — its MapKey is just
+                // the source name it defaulted to — so counting it here reports a
+                // collision the runtime would never see.
+                if (member.InjectableName != null || member.IsNetwork)
+                {
+                    continue;
+                }
                 if (!keys.Add(member.MapKey))
                 {
                     Report(

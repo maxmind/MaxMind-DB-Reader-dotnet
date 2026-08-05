@@ -343,6 +343,35 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void InjectableMemberNamesDoNotCollideWithMapKeys()
+        {
+            const string modelSource = """
+                using System.Net;
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed class InjectModel
+                {
+                    [Constructor]
+                    internal InjectModel(
+                        [MapKey("city")] string? name = null,
+                        [Inject("ip_address")] IPAddress? city = null)
+                    {
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.DoesNotContain(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG005");
+            Assert.Contains("new global::Models.InjectModel(", result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void ReportsStructModelsForAot()
         {
             const string modelSource = """
