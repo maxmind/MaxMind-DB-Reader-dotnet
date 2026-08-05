@@ -94,6 +94,14 @@ namespace MaxMind.Db.SourceGenerator
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor HiddenModelProperty = new(
+            "MMDBSG014",
+            "Model property is hidden by a more derived member",
+            "Property '{1}' on model '{0}' is annotated but hidden by a more derived member of the same name, so source-generated deserialization cannot assign it",
+            Category,
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor ConflictingMemberAttributes = new(
             "MMDBSG013",
             "MapKey cannot be combined with Inject or Network",

@@ -35,7 +35,24 @@ namespace MaxMind.Db.SourceGenerator
             var constructors = type.InstanceConstructors
                 .Where(constructor => HasAttribute(constructor, ConstructorAttributeName))
                 .ToImmutableArray();
-            var properties = GetAnnotatedProperties(type);
+            var properties = GetAnnotatedProperties(type, out var hiddenAnnotatedProperty);
+
+            // Checked before the "nothing annotated" return below, because hiding the
+            // only annotated property is one of the ways to reach that state. Only the
+            // property path assigns members by name, so this does not apply to a
+            // constructor model.
+            if (constructors.Length == 0 && hiddenAnnotatedProperty != null)
+            {
+                Report(
+                    reportAotDiagnostics,
+                    context,
+                    Diagnostics.HiddenModelProperty,
+                    hiddenAnnotatedProperty,
+                    type.ToDisplayString(),
+                    hiddenAnnotatedProperty.Name);
+                return null;
+            }
+
             if (constructors.Length == 0 && properties.Length == 0)
             {
                 return null;
@@ -88,11 +105,14 @@ namespace MaxMind.Db.SourceGenerator
                 return null;
             }
 
-            return constructors.Length == 1
-                ? ParseConstructor(
-                    type, constructors[0], compilation, reportAotDiagnostics, context)
-                : ParseProperties(
-                    type, properties, compilation, reportAotDiagnostics, context);
+            if (constructors.Length == 1)
+            {
+                return ParseConstructor(
+                    type, constructors[0], compilation, reportAotDiagnostics, context);
+            }
+
+            return ParseProperties(
+                type, properties, compilation, reportAotDiagnostics, context);
         }
 
         private static TypeSpec? ParseConstructor(
@@ -280,16 +300,37 @@ namespace MaxMind.Db.SourceGenerator
                    attributeName == ParameterAttributeName;
         }
 
-        private static ImmutableArray<IPropertySymbol> GetAnnotatedProperties(INamedTypeSymbol type)
+        private static ImmutableArray<IPropertySymbol> GetAnnotatedProperties(
+            INamedTypeSymbol type,
+            out IPropertySymbol? hiddenAnnotatedProperty
+            )
         {
+            hiddenAnnotatedProperty = null;
             var propertiesByName = new Dictionary<string, IPropertySymbol>(StringComparer.Ordinal);
+            var declaredNames = new HashSet<string>(StringComparer.Ordinal);
             for (var current = type; current != null; current = current.BaseType)
             {
                 foreach (var property in current.GetMembers().OfType<IPropertySymbol>())
                 {
-                    if (!propertiesByName.ContainsKey(property.Name) && IsAnnotated(property))
+                    if (declaredNames.Add(property.Name))
                     {
-                        propertiesByName.Add(property.Name, property);
+                        if (IsAnnotated(property))
+                        {
+                            propertiesByName.Add(property.Name, property);
+                        }
+                        continue;
+                    }
+
+                    // A more derived declaration already owns this name. Generated code
+                    // emits an unqualified member reference, which binds to the most
+                    // derived member, so an annotated base property here can never be
+                    // the one assigned. Overrides do not reach this branch: GetAttribute
+                    // walks the override chain, so an override is annotated and claims
+                    // the name itself.
+                    if (IsAnnotated(property) &&
+                        !propertiesByName.ContainsKey(property.Name))
+                    {
+                        hiddenAnnotatedProperty = property;
                     }
                 }
             }

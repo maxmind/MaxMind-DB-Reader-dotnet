@@ -343,6 +343,64 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void ReportsHiddenAnnotatedPropertyForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal class BaseModel
+                {
+                    [MapKey("utf8_string")]
+                    internal string? Value { get; init; }
+                }
+
+                internal sealed class ShadowModel : BaseModel
+                {
+                    internal new int Value { get; init; }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG014");
+            Assert.DoesNotContain("Models.ShadowModel", result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void GeneratesOverriddenAnnotatedPropertyWithoutHidingDiagnostic()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal class OverrideBaseModel
+                {
+                    [MapKey("utf8_string")]
+                    internal virtual string? Value { get; set; }
+                }
+
+                internal sealed class OverrideModel : OverrideBaseModel
+                {
+                    internal override string? Value { get; set; }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.DoesNotContain(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG014");
+            Assert.Contains("new global::Models.OverrideModel", result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void ReportsMapKeyCombinedWithInjectForAot()
         {
             const string modelSource = """
