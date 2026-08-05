@@ -498,6 +498,7 @@ namespace MaxMind.Db.Test
             var ex = Assert.Throws<DeserializationException>(
                 () => reader.Find<NoCtorNoAttributeType>(IPAddress.Parse("1.1.1.1")));
             Assert.Contains("no parameterless constructor found", ex.Message);
+            Assert.Contains("rebuild the assembly that declares the model", ex.Message);
         }
 
         [Fact]
@@ -516,6 +517,7 @@ namespace MaxMind.Db.Test
             var ex = Assert.Throws<DeserializationException>(
                 () => reader.Find<NoAnnotatedPropertiesType>(IPAddress.Parse("1.1.1.1")));
             Assert.Contains("No properties found", ex.Message);
+            Assert.Contains("rebuild the assembly that declares the model", ex.Message);
         }
 
         [Fact]

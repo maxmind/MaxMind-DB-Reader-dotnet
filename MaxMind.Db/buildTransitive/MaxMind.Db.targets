@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <!-- On unless the consumer opts out. Keying this off PublishAot, PublishTrimmed
+         or IsAotCompatible looked more targeted, but none of those propagate across
+         a ProjectReference, so in the usual layout of an AOT application plus a
+         plain model class library the diagnostics were silenced in the one
+         compilation that could report them. The application then published clean
+         and failed at the first lookup. A warning in a JIT build that will never be
+         trimmed is a much smaller cost than that. -->
+    <MaxMindDbAotDiagnostics
+      Condition="'$(MaxMindDbAotDiagnostics)' == ''"
+    >true</MaxMindDbAotDiagnostics>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="MaxMindDbAotDiagnostics" />
+  </ItemGroup>
+</Project>

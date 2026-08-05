@@ -153,6 +153,108 @@ This API fully supports use in multi-threaded applications. In such
 applications, we suggest creating one `Reader` object and sharing that among
 threads.
 
+## NativeAOT and Trimming
+
+The `MaxMind.Db` NuGet package includes a C# source generator that enables
+trim-safe, reflection-free deserialization for NativeAOT applications. The
+generator is included automatically; no additional package or registration is
+required. It needs the .NET SDK 7.0.100 or later; an older SDK reports `CS9057`
+and skips the generator, leaving models on the reflection fallback. The
+generator reports a diagnostic for any annotated model it cannot generate, in
+whichever project declares that model.
+
+The generator supports both model styles shown above:
+
+- A non-generic model with exactly one accessible `[Constructor]`-annotated
+  constructor.
+- A non-generic property-based model with an accessible parameterless
+  constructor and accessible annotated getters and setters. Attributes on
+  inherited properties are supported, including concrete records whose
+  annotations are declared on an abstract base record.
+
+Generated collection activation supports common generic interfaces such as
+`ICollection<T>`, `IReadOnlyList<T>`, `IDictionary<TKey, TValue>`, and
+`IReadOnlyDictionary<TKey, TValue>`. Concrete collection and dictionary types
+are supported when they implement the corresponding mutable interface and have
+an accessible parameterless constructor; this includes types such as
+`LinkedList<T>`. The generator discovers these types when they are model members
+or closed generic arguments in direct `Reader.Find<T>` and `Reader.FindAll<T>`
+calls.
+
+There are several current limitations:
+
+- Source generation is supported for C# models. Other .NET languages continue to
+  use the reflection fallback, which is not guaranteed to work after trimming or
+  with NativeAOT.
+- Source generation requires C# 9 or later because generated registrations use
+  module initializers. Earlier C# versions continue to use the reflection
+  fallback in non-AOT builds.
+- A generic wrapper around `Find<T>` or `FindAll<T>` is fine for models. Models
+  are registered from their declarations, not from lookup sites, so a method
+  like `T Lookup<T>(Reader reader, IPAddress address)` still resolves generated
+  activation for every model declared in a generator-enabled project.
+
+  What such a wrapper cannot carry is a **collection** result type. Collection
+  and dictionary types have no annotated declaration to find, so they are
+  discovered from the lookup site, and a wrapper hides which one is used. Use a
+  concrete type argument at the call site — `Find<Dictionary<string, object>>`
+  rather than `Lookup<Dictionary<string, object>>` — or make the collection a
+  member of a model. The same applies to a result type chosen at run time.
+
+  No diagnostic is reported for a wrapper, because the generator cannot tell
+  from the call site whether the eventual type argument is a registered model or
+  an unregistered collection, and warning on every wrapper would be a false
+  positive for the common case. A constructed type that still contains a type
+  parameter, such as `Find<Dictionary<string, T>>`, is reported as `MMDBSG015`.
+
+- Generic model classes are not supported, closed or otherwise. Models are
+  discovered from their declarations, so the generator only ever sees the
+  unbound definition and reports `MMDBSG004`, even where every use is a closed
+  construction such as `Find<Wrapper<string>>`.
+- Models must be classes or records. Annotated structs and record structs are
+  reported as `MMDBSG012`. A constructor-based struct then falls back to
+  reflection and works; a property-based struct or record struct fails at run
+  time, in a plain JIT build as much as under NativeAOT, because reflection does
+  not surface a struct's implicit parameterless constructor and there is nothing
+  to activate unless one is declared explicitly.
+- MMDB array values cannot be deserialized into CLR array model members. Use a
+  supported generic collection instead. `byte[]` remains supported for MMDB byte
+  values.
+- Private or protected model constructors, types, property getters, and property
+  setters cannot be called by the generated code. Use `public` or `internal`
+  accessibility.
+- Models with `required` members must mark the constructor used for
+  deserialization with `SetsRequiredMembersAttribute`. For property models, this
+  is the accessible parameterless constructor.
+
+Treat these diagnostics as build errors rather than suppressing them; each one
+means a model would fall back to reflection, which is not guaranteed to work
+after trimming or with NativeAOT. They are reported by default, including in a
+model class library that knows nothing about how it will be published. That is
+deliberate: an application's `PublishAot` does not propagate across a
+`ProjectReference`, so keying the diagnostics off it would silence them in the
+one compilation that can report them. To turn them off in a project that will
+never be trimmed:
+
+```xml
+<PropertyGroup>
+  <MaxMindDbAotDiagnostics>false</MaxMindDbAotDiagnostics>
+</PropertyGroup>
+```
+
+Because that property decides whether the diagnostics are produced at all,
+setting `dotnet_diagnostic.MMDBSG0NN.severity` in `.editorconfig` has no effect
+once it is `false`.
+
+A separately packaged model library must be built or rebuilt with a version of
+`MaxMind.Db` that includes the source generator. Updating only the application
+cannot add registrations to an already compiled model assembly; precompiled
+model libraries without generated registrations are not guaranteed to work after
+trimming or with NativeAOT. The absence of a source-generator diagnostic does
+not validate models from an already-compiled referenced assembly. If that
+assembly has no generated registrations, its reflection fallback is unsupported
+and may fail at run time after trimming or with NativeAOT.
+
 ## Format
 
 The MaxMind DB format is an open format for quickly mapping IP addresses to

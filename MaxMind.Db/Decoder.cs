@@ -315,8 +315,13 @@ namespace MaxMind.Db
             if (!expectedType.IsGenericType && expectedType.IsAssignableFrom(objDictType))
                 expectedType = objDictType;
 
-            // Currently we don't support non-dict generic types
-            if (expectedType.IsGenericType)
+            // Currently we don't support non-dict generic types. A non-generic type only
+            // decodes as a dictionary if one was registered for it, and the flag keeps
+            // that lookup off the path every model map takes: probing unconditionally
+            // measured ~2% slower on a City lookup.
+            if (expectedType.IsGenericType ||
+                (SourceGeneratorSupport.HasNonGenericDictionaryRegistration &&
+                 SourceGeneratorSupport.TryGetDictionaryRegistration(expectedType, out _)))
             {
                 return DecodeMapToDictionary(expectedType, offset, size, out outOffset, injectables, network);
             }
@@ -327,8 +332,6 @@ namespace MaxMind.Db
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
             InjectableValues? injectables, Network? network)
         {
-            IDictionary obj;
-
             // Fast path for Dictionary<string, string> (and parents).
             if (expectedType.IsAssignableFrom(typeof(Dictionary<string, string>)))
             {
@@ -340,29 +343,57 @@ namespace MaxMind.Db
                     dic.Add(key, value);
                 }
 
-                obj = dic;
+                outOffset = offset;
+                return dic;
             }
-            else
+
+            // Fast path for Dictionary<string, object> (and parents).
+            if (expectedType.IsAssignableFrom(typeof(Dictionary<string, object>)))
             {
-                var genericArgs = expectedType.GetGenericArguments();
-                if (genericArgs.Length != 2)
-                {
-                    throw new DeserializationException(
-                        $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
-                }
-
-                obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
-
+                Dictionary<string, object> dic = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var key = Decode(genericArgs[0], offset, out offset);
-                    var value = Decode(genericArgs[1], offset, out offset, injectables, network);
-                    obj.Add(key, value);
+                    var key = Decode<string>(offset, out offset);
+                    var value = Decode<object>(offset, out offset, injectables, network);
+                    dic.Add(key, value);
                 }
+
+                outOffset = offset;
+                return dic;
+            }
+
+            if (SourceGeneratorSupport.TryGetDictionaryRegistration(
+                    expectedType, out var registration))
+            {
+                var generatedDictionary = registration.Factory(size);
+                for (var i = 0; i < size; i++)
+                {
+                    var key = Decode(registration.KeyType, offset, out offset);
+                    var value = Decode(
+                        registration.ValueType, offset, out offset, injectables, network);
+                    registration.Add(generatedDictionary, key, value);
+                }
+
+                outOffset = offset;
+                return generatedDictionary;
+            }
+
+            var genericArgs = expectedType.GetGenericArguments();
+            if (genericArgs.Length != 2)
+            {
+                throw new DeserializationException(
+                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
+            }
+
+            var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
+            for (var i = 0; i < size; i++)
+            {
+                var key = Decode(genericArgs[0], offset, out offset);
+                var value = Decode(genericArgs[1], offset, out offset, injectables, network);
+                obj.Add(key, value);
             }
 
             outOffset = offset;
-
             return obj;
         }
 
@@ -560,11 +591,15 @@ namespace MaxMind.Db
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns></returns>
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "AOT",
+            "IL3050",
+            Justification = "Generated collection registrations return before this runtime generic construction path. This path serves only the documented fallback for unregistered collection types, which is unsupported in NativeAOT applications.")]
+#endif
         private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
             InjectableValues? injectables, Network? network)
         {
-            object array;
-
             // Fast path for List<string> (and parents).
             if (expectedType != typeof(object) && expectedType.IsAssignableFrom(typeof(List<string>)))
             {
@@ -575,30 +610,53 @@ namespace MaxMind.Db
                     list.Add(r);
                 }
 
-                array = list;
+                outOffset = offset;
+                return list;
             }
-            else
+
+            // Database values decoded as object use List<object>.
+            if (expectedType == typeof(object) || expectedType.IsAssignableFrom(typeof(List<object>)))
             {
-                var genericArgs = expectedType.GetGenericArguments();
-                var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
-                var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
-                if (interfaceType == null)
-                {
-                    throw new DeserializationException("Unexpected null generic type while decoding array");
-                }
-
-                var addMethod = interfaceType.GetMethod("Add");
-                if (addMethod == null)
-                {
-                    throw new DeserializationException("Missing Add method when decoding array");
-                }
-
-                array = _listActivatorCreator.GetActivator(expectedType)(size);
+                List<object> list = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var r = Decode(argType, offset, out offset, injectables, network);
-                    addMethod.Invoke(array, [r]);
+                    var value = Decode<object>(offset, out offset, injectables, network);
+                    list.Add(value);
                 }
+
+                outOffset = offset;
+                return list;
+            }
+
+            if (SourceGeneratorSupport.TryGetCollectionRegistration(
+                    expectedType, out var registration))
+            {
+                var generatedCollection = registration.Factory(size);
+                for (var i = 0; i < size; i++)
+                {
+                    var value = Decode(
+                        registration.ElementType, offset, out offset, injectables, network);
+                    registration.Add(generatedCollection, value);
+                }
+
+                outOffset = offset;
+                return generatedCollection;
+            }
+
+            var genericArgs = expectedType.GetGenericArguments();
+            var argType = genericArgs.Length == 0 ? typeof(object) : genericArgs[0];
+            var interfaceType = typeof(ICollection<>).MakeGenericType(argType);
+            var addMethod = interfaceType.GetMethod("Add");
+            if (addMethod == null)
+            {
+                throw new DeserializationException("Missing Add method when decoding array");
+            }
+
+            var array = _listActivatorCreator.GetActivator(expectedType)(size);
+            for (var i = 0; i < size; i++)
+            {
+                var value = Decode(argType, offset, out offset, injectables, network);
+                addMethod.Invoke(array, [value]);
             }
 
             outOffset = offset;

@@ -18,15 +18,19 @@ namespace MaxMind.Db
         internal ObjectActivator GetActivator(Type expectedType)
             => _dictActivators.GetOrAdd(expectedType, DictionaryActivator);
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "AOT",
+            "IL3050",
+            Justification = "Generated dictionary registrations return before this runtime generic construction path. This path serves only the documented fallback for unregistered dictionary types, which is unsupported in NativeAOT applications.")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2070",
+            Justification = "Generated dictionary registrations return before this reflection path. This path serves only the documented fallback for unregistered dictionary types, which is unsupported in trimmed applications.")]
+#endif
         private static ObjectActivator DictionaryActivator(Type expectedType)
         {
             var genericArgs = expectedType.GetGenericArguments();
-            if (genericArgs.Length != 2)
-            {
-                throw new DeserializationException(
-                    $"Unexpected number of Dictionary generic arguments: {genericArgs.Length}");
-            }
-
             ConstructorInfo? constructor;
             if (expectedType.GetTypeInfo().IsInterface)
             {

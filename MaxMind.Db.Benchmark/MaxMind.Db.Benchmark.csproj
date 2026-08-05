@@ -32,6 +32,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MaxMind.Db\MaxMind.Db.csproj" />
+    <ProjectReference Include="..\MaxMind.Db.SourceGenerator\MaxMind.Db.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
