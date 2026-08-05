@@ -30,6 +30,16 @@ namespace MaxMind.Db
         ///     dictionaries are already routed by their arity, so decoding only needs to
         ///     look for a registration when this is <see langword="true"/>.
         /// </summary>
+        /// <remarks>
+        ///     Process-wide and write-once, like the registries themselves, which are
+        ///     populated from module initializers and never reset. Setting it cannot
+        ///     change the outcome for any other type: decoding still requires a
+        ///     registration keyed by the exact type, so for every unrelated type the
+        ///     lookup misses and the branch behaves as if this were still
+        ///     <see langword="false"/>. It only decides whether that lookup happens at
+        ///     all, which is why a test registering a non-generic dictionary cannot
+        ///     perturb tests that run after it.
+        /// </remarks>
         internal static bool HasNonGenericDictionaryRegistration
             => _hasNonGenericDictionaryRegistration;
 
