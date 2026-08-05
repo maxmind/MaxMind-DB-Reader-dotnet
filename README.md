@@ -189,13 +189,24 @@ There are several current limitations:
 - Source generation requires C# 9 or later because generated registrations use
   module initializers. Earlier C# versions continue to use the reflection
   fallback in non-AOT builds.
-- Generic wrappers around `Find<T>` and `FindAll<T>` and result types selected
-  at run time cannot be discovered automatically. Lookup result types that still
-  contain a type parameter are not emitted. Ensure concrete model types are
-  declared in a generator-enabled project and concrete collection types are also
-  used in a directly discoverable model member or lookup. The reflection
-  fallback remains available in normal JIT builds but is not guaranteed after
-  trimming or with NativeAOT.
+- A generic wrapper around `Find<T>` or `FindAll<T>` is fine for models. Models
+  are registered from their declarations, not from lookup sites, so a method
+  like `T Lookup<T>(Reader reader, IPAddress address)` still resolves generated
+  activation for every model declared in a generator-enabled project.
+
+  What such a wrapper cannot carry is a **collection** result type. Collection
+  and dictionary types have no annotated declaration to find, so they are
+  discovered from the lookup site, and a wrapper hides which one is used. Use a
+  concrete type argument at the call site — `Find<Dictionary<string, object>>`
+  rather than `Lookup<Dictionary<string, object>>` — or make the collection a
+  member of a model. The same applies to a result type chosen at run time.
+
+  No diagnostic is reported for a wrapper, because the generator cannot tell
+  from the call site whether the eventual type argument is a registered model or
+  an unregistered collection, and warning on every wrapper would be a false
+  positive for the common case. A constructed type that still contains a type
+  parameter, such as `Find<Dictionary<string, T>>`, is reported as `MMDBSG015`.
+
 - Generic model classes are not supported, closed or otherwise. Models are
   discovered from their declarations, so the generator only ever sees the
   unbound definition and reports `MMDBSG004`, even where every use is a closed

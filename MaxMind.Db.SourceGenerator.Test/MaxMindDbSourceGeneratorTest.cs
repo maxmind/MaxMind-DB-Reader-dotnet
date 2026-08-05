@@ -1078,12 +1078,14 @@ namespace MaxMind.Db.SourceGenerator.Test
                 }
                 """;
 
+            // Silent by design: model registration comes from declarations, so a
+            // wrapper over model lookups is fully registered and a warning here would
+            // be a false positive. MaxMind.GeoIP2's DatabaseReader.Execute<T> is this
+            // shape, and it gets registrations for all of its response types.
             var result = RunGenerator(modelSource, aotDiagnostics: true);
 
             Assert.Empty(result.Source);
-            Assert.Contains(
-                result.Diagnostics,
-                diagnostic => diagnostic.Id == "MMDBSG015");
+            Assert.Empty(result.Diagnostics);
             Assert.Empty(result.Errors);
         }
 

@@ -177,11 +177,15 @@ namespace MaxMind.Db.SourceGenerator
                 context.CancellationToken.ThrowIfCancellationRequested();
                 if (SymbolHelpers.ContainsTypeParameter(root.TypeSymbol))
                 {
-                    // Reported for a bare type parameter too. This branch exists
-                    // precisely because the type argument is unresolved, and a generic
-                    // wrapper around Find<T> is the usual way to encapsulate lookups,
-                    // so staying silent here left the most common shape unwarned.
-                    if (reportAotDiagnostics)
+                    // Only for a constructed type such as Find<Dictionary<string, T>>,
+                    // where the type argument is a collection that cannot be registered
+                    // whatever T turns out to be. A bare T is deliberately silent: model
+                    // registration comes from declarations, not from call sites, so a
+                    // generic wrapper over model lookups is fully registered and warning
+                    // there is a false positive. What a bare T cannot rule out is a
+                    // collection type argument, or a model from an assembly that never
+                    // ran the generator, and neither is visible from the wrapper.
+                    if (reportAotDiagnostics && root.TypeSymbol is INamedTypeSymbol)
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             Diagnostics.UnresolvableLookupType,
