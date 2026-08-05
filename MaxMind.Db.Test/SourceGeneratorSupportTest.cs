@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Numerics;
 using System.Text;
 using MaxMind.Db.ReflectionFallback.TestModels;
 using MaxMind.Db.Test.Helper;
@@ -51,6 +52,88 @@ namespace MaxMind.Db.Test
             Assert.Equal("unicode! ☯ - ♫", propertyModel.Utf8String);
             Assert.Equal([1, 2, 3], propertyModel.Values);
             Assert.Equal("preserved default", propertyModel.Missing);
+        }
+
+        [Fact]
+        public void ReflectionFallbackDecodesEveryTypeHolderMember()
+        {
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
+                typeof(ReflectionTypeHolder), out _));
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var injectables = new InjectableValues();
+            injectables.AddValue("injected", "injected string");
+
+            var record = reader.Find<ReflectionTypeHolder>(
+                IPAddress.Parse("1.1.1.1"), injectables);
+
+            Assert.NotNull(record);
+            Assert.True(record.Boolean);
+            Assert.Equal([0, 0, 0, 42], record.Bytes);
+            Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
+            Assert.Equal(new List<long> { 1, 2, 3 }, record.Array);
+            Assert.Equal(42.123456, record.Double, 9);
+            Assert.Equal(1.1F, record.Float, 5);
+            Assert.Equal(-268435456, record.Int32);
+            Assert.Equal(100, record.Uint16);
+            Assert.Equal(268435456, record.Uint32);
+            Assert.Equal(1152921504606846976UL, record.Uint64);
+            Assert.Equal(
+                BigInteger.Parse("1329227995784915872903807060280344576"),
+                record.Uint128);
+
+            var mapX = record.Map.MapX;
+            Assert.Equal("hello", mapX.Utf8StringX);
+            Assert.Equal(new List<long> { 7, 8, 9 }, mapX.ArrayX);
+            Assert.Equal("1.1.1.0/24", mapX.Network.ToString());
+
+            // AlwaysCreate through reflection, including injection and network on a
+            // member whose parent is absent from the database.
+            Assert.Equal("injected string", record.Nonexistant.Injected);
+            Assert.Equal("1.1.1.0/24", record.Nonexistant.Network.ToString());
+            Assert.Equal(
+                "injected string",
+                record.Nonexistant.InnerNonexistant.Injected);
+            Assert.Equal(
+                "1.1.1.0/24",
+                record.Nonexistant.InnerNonexistant.Network.ToString());
+        }
+
+        [Fact]
+        public void ReflectionFallbackDecodesEveryPropertyHolderMember()
+        {
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
+                typeof(ReflectionPropTypeHolder), out _));
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
+            var injectables = new InjectableValues();
+            injectables.AddValue("injected", "injected string");
+
+            var record = reader.Find<ReflectionPropTypeHolder>(
+                IPAddress.Parse("1.1.1.1"), injectables);
+
+            Assert.NotNull(record);
+            Assert.True(record.Boolean);
+            Assert.Equal([0, 0, 0, 42], record.Bytes);
+            Assert.Equal("unicode! ☯ - ♫", record.Utf8String);
+            Assert.Equal(new List<long> { 1, 2, 3 }, record.Array);
+            Assert.Equal(42.123456, record.Double, 9);
+            Assert.Equal(1.1F, record.Float, 5);
+            Assert.Equal(-268435456, record.Int32);
+            Assert.Equal(100, record.Uint16);
+            Assert.Equal(268435456, record.Uint32);
+            Assert.Equal(1152921504606846976UL, record.Uint64);
+            Assert.Equal(
+                BigInteger.Parse("1329227995784915872903807060280344576"),
+                record.Uint128);
+            Assert.Equal("injected string", record.Injected);
+            Assert.Equal("1.1.1.0/24", record.Network?.ToString());
+
+            var mapX = record.Map?.MapX;
+            Assert.NotNull(mapX);
+            Assert.Equal("hello", mapX.Utf8StringX);
+            Assert.Equal(new List<long> { 7, 8, 9 }, mapX.ArrayX);
+            Assert.Equal("1.1.1.0/24", mapX.Network?.ToString());
         }
 
         [Fact]
