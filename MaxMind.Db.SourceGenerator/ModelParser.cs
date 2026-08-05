@@ -48,6 +48,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.HiddenModelProperty,
                     hiddenAnnotatedProperty,
+                    type,
                     type.ToDisplayString(),
                     hiddenAnnotatedProperty.Name);
                 return null;
@@ -68,6 +69,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.UnsupportedModelKind,
                     type,
+                    type,
                     type.ToDisplayString());
                 return null;
             }
@@ -78,6 +80,7 @@ namespace MaxMind.Db.SourceGenerator
                     reportAotDiagnostics,
                     context,
                     Diagnostics.OpenGenericModel,
+                    type,
                     type,
                     type.ToDisplayString());
                 return null;
@@ -90,6 +93,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.InaccessibleType,
                     type,
+                    type,
                     type.ToDisplayString());
                 return null;
             }
@@ -100,6 +104,7 @@ namespace MaxMind.Db.SourceGenerator
                     reportAotDiagnostics,
                     context,
                     Diagnostics.MultipleDeserializationConstructors,
+                    type,
                     type,
                     type.ToDisplayString());
                 return null;
@@ -130,6 +135,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.InaccessibleConstructor,
                     constructor,
+                    type,
                     type.ToDisplayString());
                 return null;
             }
@@ -186,6 +192,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.MissingParameterlessConstructor,
                     type,
+                    type,
                     type.ToDisplayString());
                 return null;
             }
@@ -208,6 +215,7 @@ namespace MaxMind.Db.SourceGenerator
                         context,
                         Diagnostics.InaccessibleProperty,
                         property,
+                        type,
                         property.Name,
                         type.ToDisplayString());
                     return null;
@@ -256,6 +264,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.DerivedMapKeyAttribute,
                     symbol,
+                    modelType,
                     mapKeyAttribute.AttributeClass?.ToDisplayString() ?? "unknown",
                     modelType.ToDisplayString());
                 return null;
@@ -275,6 +284,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.ConflictingMemberAttributes,
                     symbol,
+                    modelType,
                     modelType.ToDisplayString(),
                     sourceName);
                 return null;
@@ -423,6 +433,7 @@ namespace MaxMind.Db.SourceGenerator
                         context,
                         Diagnostics.DuplicateMapKey,
                         type,
+                        type,
                         type.ToDisplayString(),
                         member.MapKey);
                     return false;
@@ -458,6 +469,7 @@ namespace MaxMind.Db.SourceGenerator
                     context,
                     Diagnostics.RequiredMembers,
                     requiredProperty,
+                    type,
                     type.ToDisplayString(),
                     requiredProperty.Name);
                 return false;
@@ -476,6 +488,7 @@ namespace MaxMind.Db.SourceGenerator
             SourceProductionContext context,
             DiagnosticDescriptor descriptor,
             ISymbol symbol,
+            ISymbol fallbackSymbol,
             params object[] messageArguments
             )
         {
@@ -484,10 +497,17 @@ namespace MaxMind.Db.SourceGenerator
                 return;
             }
 
+            // An inherited member can come from a referenced assembly, where it has no
+            // source location and the diagnostic would land with no file or line. The
+            // model type is always declared in this compilation, so it stands in.
+            var location = SourceLocation(symbol) ?? SourceLocation(fallbackSymbol);
             context.ReportDiagnostic(Diagnostic.Create(
                 descriptor,
-                symbol.Locations.FirstOrDefault(location => location.IsInSource),
+                location,
                 messageArguments));
         }
+
+        private static Location? SourceLocation(ISymbol symbol) =>
+            symbol.Locations.FirstOrDefault(location => location.IsInSource);
     }
 }

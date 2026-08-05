@@ -585,9 +585,13 @@ namespace MaxMind.Db.SourceGenerator.Test
                 aotDiagnostics: true,
                 additionalReferences: [baseReference]);
 
-            Assert.Contains(
+            var diagnostic = Assert.Single(
                 result.Diagnostics,
-                diagnostic => diagnostic.Id == "MMDBSG003");
+                candidate => candidate.Id == "MMDBSG003");
+            // The offending property lives in a referenced assembly, so without a
+            // fallback the warning lands at Location.None with no file or line.
+            Assert.True(diagnostic.Location.IsInSource);
+            Assert.Contains("DerivedModel", diagnostic.Location.SourceTree!.ToString());
             Assert.Empty(result.Source);
             Assert.Empty(result.Errors);
         }
