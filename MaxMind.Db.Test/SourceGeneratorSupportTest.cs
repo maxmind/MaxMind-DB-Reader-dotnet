@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
 using MaxMind.Db.ReflectionFallback.TestModels;
 using MaxMind.Db.Test.Helper;
 using Xunit;
@@ -22,21 +23,16 @@ namespace MaxMind.Db.Test
         [Fact]
         public void SourceGeneratedTestModelsAreRegistered()
         {
-            Assert.True(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(TypeHolder), out _));
-            Assert.True(SourceGeneratorSupport.TryGetCollectionRegistration(
-                typeof(ICollection<long>), out _));
+            Assert.True(SourceGeneratorSupport.TryGetTypeRegistration(typeof(TypeHolder), out _));
+            Assert.True(SourceGeneratorSupport.TryGetCollectionRegistration(typeof(ICollection<long>), out _));
         }
 
         [Fact]
         public void ReflectionFallbackDeserializesModelsFromAssemblyWithoutGenerator()
         {
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(ReflectionConstructorModel), out _));
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(ReflectionPropertyModel), out _));
-            Assert.False(SourceGeneratorSupport.TryGetCollectionRegistration(
-                typeof(FallbackList<long>), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(ReflectionConstructorModel), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(ReflectionPropertyModel), out _));
+            Assert.False(SourceGeneratorSupport.TryGetCollectionRegistration(typeof(FallbackList<long>), out _));
 
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
@@ -57,8 +53,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public void ReflectionFallbackDecodesEveryTypeHolderMember()
         {
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(ReflectionTypeHolder), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(ReflectionTypeHolder), out _));
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
             var injectables = new InjectableValues();
@@ -102,8 +97,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public void ReflectionFallbackDecodesEveryPropertyHolderMember()
         {
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(ReflectionPropTypeHolder), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(ReflectionPropTypeHolder), out _));
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
             var injectables = new InjectableValues();
@@ -161,9 +155,7 @@ namespace MaxMind.Db.Test
             SourceGeneratorSupport.RegisterType<AlwaysCreateValueTypeGeneratedModel>(
                 values => new AlwaysCreateValueTypeGeneratedModel((long)values[0]!),
                 () => [default(long)],
-                [GeneratedMember.Mapped("no_such_key",
-                typeof(long),
-                true)]);
+                [GeneratedMember.Mapped("no_such_key", typeof(long), true)]);
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
 
@@ -177,10 +169,8 @@ namespace MaxMind.Db.Test
         [Fact]
         public void DerivedMapKeyAttributesUseReflectionFallbackSemantics()
         {
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(DerivedMapKeyFallbackModel), out _));
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(DerivedMapKeyPropertyFallbackModel), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(DerivedMapKeyFallbackModel), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(DerivedMapKeyPropertyFallbackModel), out _));
 
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
@@ -201,8 +191,7 @@ namespace MaxMind.Db.Test
             SourceGeneratorSupport.RegisterType<GeneratedAlwaysCreated>(
                 values => new GeneratedAlwaysCreated((string)values[0]!),
                 () => [null],
-                [GeneratedMember.Injected("injected",
-                typeof(string))]);
+                [GeneratedMember.Injected("injected", typeof(string))]);
             SourceGeneratorSupport.RegisterType<GeneratedModel>(
                 values => new GeneratedModel(
                     (string)values[0]!,
@@ -211,15 +200,10 @@ namespace MaxMind.Db.Test
                 (GeneratedAlwaysCreated)values[3]!),
                 () => [null, null, null, null],
                 [
-                    GeneratedMember.Mapped("utf8_string",
-                typeof(string),
-                false),
-                    GeneratedMember.Injected("injected",
-                typeof(string)),
+                    GeneratedMember.Mapped("utf8_string", typeof(string), false),
+                    GeneratedMember.Injected("injected", typeof(string)),
                     GeneratedMember.Networked(typeof(Network)),
-                    GeneratedMember.Mapped("missing",
-                typeof(GeneratedAlwaysCreated),
-                true),
+                    GeneratedMember.Mapped("missing", typeof(GeneratedAlwaysCreated), true),
                 ]);
 
             var injectables = new InjectableValues();
@@ -246,8 +230,7 @@ namespace MaxMind.Db.Test
                     [default]));
 
             Assert.Equal("members", exception.ParamName);
-            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(
-                typeof(InvalidGeneratedModel), out _));
+            Assert.False(SourceGeneratorSupport.TryGetTypeRegistration(typeof(InvalidGeneratedModel), out _));
         }
 
         [Fact]
@@ -268,8 +251,7 @@ namespace MaxMind.Db.Test
 
             Assert.True(activator.DeserializationParameters.ContainsKey(
                 new Key(Encoding.UTF8.GetBytes("original"))));
-            Assert.Equal(
-                typeof(string),
+            Assert.Equal(typeof(string),
                 Assert.Single(activator.DeserializationParameters).Value.MemberType);
         }
 
@@ -279,9 +261,7 @@ namespace MaxMind.Db.Test
             SourceGeneratorSupport.RegisterType<MismatchedDefaultsGeneratedModel>(
                 _ => new MismatchedDefaultsGeneratedModel(),
                 () => [],
-                [GeneratedMember.Mapped("value",
-                typeof(string),
-                false)]);
+                [GeneratedMember.Mapped("value", typeof(string), false)]);
 
             var exception = Assert.Throws<DeserializationException>(() =>
                 new TypeActivatorCreator()
@@ -297,12 +277,8 @@ namespace MaxMind.Db.Test
                 _ => new DuplicateMapKeyGeneratedModel(),
                 () => [null, null],
                 [
-                    GeneratedMember.Mapped("value",
-                typeof(string),
-                false),
-                    GeneratedMember.Mapped("value",
-                typeof(string),
-                false),
+                    GeneratedMember.Mapped("value", typeof(string), false),
+                    GeneratedMember.Mapped("value", typeof(string), false),
                 ]);
 
             var exception = Assert.Throws<DeserializationException>(() =>
@@ -319,15 +295,11 @@ namespace MaxMind.Db.Test
             SourceGeneratorSupport.RegisterType<DuplicateRegistrationGeneratedModel>(
                 _ => new DuplicateRegistrationGeneratedModel(),
                 () => [null],
-                [GeneratedMember.Mapped("first",
-                typeof(string),
-                false)]);
+                [GeneratedMember.Mapped("first", typeof(string), false)]);
             SourceGeneratorSupport.RegisterType<DuplicateRegistrationGeneratedModel>(
                 _ => new DuplicateRegistrationGeneratedModel(),
                 () => [null],
-                [GeneratedMember.Mapped("second",
-                typeof(string),
-                false)]);
+                [GeneratedMember.Mapped("second", typeof(string), false)]);
 
             var activator = new TypeActivatorCreator()
                 .GetActivator(typeof(DuplicateRegistrationGeneratedModel));
@@ -367,9 +339,7 @@ namespace MaxMind.Db.Test
                     defaultsFactoryCalls++;
                     return [new object()];
                 },
-                [GeneratedMember.Mapped("value",
-                typeof(object),
-                false)]);
+                [GeneratedMember.Mapped("value", typeof(object), false)]);
 
             var first = new TypeActivatorCreator()
                 .GetActivator(typeof(CachedMetadataGeneratedModel));
@@ -389,8 +359,7 @@ namespace MaxMind.Db.Test
             SourceGeneratorSupport.RegisterType<GeneratedInjectedCollectionModel>(
                 values => new GeneratedInjectedCollectionModel((string[])values[0]!),
                 () => [null],
-                [GeneratedMember.Injected("locales",
-                typeof(string[]))]);
+                [GeneratedMember.Injected("locales", typeof(string[]))]);
 
             var activator = new TypeActivatorCreator()
                 .GetActivator(typeof(GeneratedInjectedCollectionModel));
@@ -402,16 +371,15 @@ namespace MaxMind.Db.Test
         [Fact]
         public void RegisteredCollectionsTakePrecedenceOverReflection()
         {
+            // The factories build canary subclasses so this cannot pass on the
+            // reflection fallback: ListActivatorCreator would produce a plain
+            // List<long>, and DictionaryActivatorCreator a plain GeneratedDictionary.
             SourceGeneratorSupport.RegisterCollection<IReadOnlyList<long>, long>(
-                capacity => new List<long>(capacity),
-                (collection,
-                value) => ((ICollection<long>)collection).Add((long)value!));
+                capacity => new CanaryList<long>(capacity),
+                (collection, value) => ((ICollection<long>)collection).Add((long)value!));
             SourceGeneratorSupport.RegisterDictionary<GeneratedDictionary<string, object>, string, object>(
-                _ => new GeneratedDictionary<string,
-                object>(),
-                (dictionary,
-                key,
-                value) =>
+                _ => new CanaryDictionary<string, object>(),
+                (dictionary, key, value) =>
                     ((IDictionary<string, object>)dictionary).Add((string)key!, value!));
             SourceGeneratorSupport.RegisterType<GeneratedCollectionModel>(
                 values => new GeneratedCollectionModel(
@@ -419,12 +387,8 @@ namespace MaxMind.Db.Test
                 (GeneratedDictionary<string, object>)values[1]!),
                 () => [null, null],
                 [
-                    GeneratedMember.Mapped("array",
-                typeof(IReadOnlyList<long>),
-                false),
-                    GeneratedMember.Mapped("map",
-                typeof(GeneratedDictionary<string, object>),
-                false),
+                    GeneratedMember.Mapped("array", typeof(IReadOnlyList<long>), false),
+                    GeneratedMember.Mapped("map", typeof(GeneratedDictionary<string, object>), false),
                 ]);
 
             using var reader = new Reader(
@@ -434,7 +398,9 @@ namespace MaxMind.Db.Test
 
             Assert.NotNull(model);
             Assert.Equal([1L, 2L, 3L], model.Array);
+            Assert.IsType<CanaryList<long>>(model.Array);
             Assert.Single(model.Map);
+            Assert.IsType<CanaryDictionary<string, object>>(model.Map);
             Assert.IsType<Dictionary<string, object>>(model.Map["mapX"]);
         }
 
@@ -443,9 +409,7 @@ namespace MaxMind.Db.Test
         {
             SourceGeneratorSupport.RegisterDictionary<GeneratedNonGenericDictionary, string, object>(
                 _ => new GeneratedNonGenericDictionary(),
-                (dictionary,
-                key,
-                value) =>
+                (dictionary, key, value) =>
                     ((IDictionary<string, object>)dictionary).Add((string)key!, value!));
             SourceGeneratorSupport.RegisterType<GeneratedNonGenericDictionary>(
                 _ => throw new InvalidOperationException("Model activator should not be used."),
@@ -455,9 +419,7 @@ namespace MaxMind.Db.Test
                 values => new GeneratedNonGenericDictionaryModel(
                     (GeneratedNonGenericDictionary)values[0]!),
                 () => [null],
-                [GeneratedMember.Mapped("map",
-                typeof(GeneratedNonGenericDictionary),
-                false)]);
+                [GeneratedMember.Mapped("map", typeof(GeneratedNonGenericDictionary), false)]);
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
 
@@ -467,6 +429,57 @@ namespace MaxMind.Db.Test
             Assert.NotNull(model);
             Assert.Single(model.Map);
             Assert.IsType<Dictionary<string, object>>(model.Map["mapX"]);
+        }
+
+        [Fact]
+        public void GeneratedActivatorMetadataIsBuiltOnceUnderConcurrentUse()
+        {
+            SourceGeneratorSupport.RegisterType<ConcurrentMetadataGeneratedModel>(
+                values => new ConcurrentMetadataGeneratedModel((string)values[0]!),
+                () => [null],
+                [GeneratedMember.Mapped("value", typeof(string), false)]);
+            var creators = new TypeActivatorCreator[32];
+            var activators = new TypeActivator[creators.Length];
+
+            Parallel.For(0, creators.Length, index =>
+            {
+                creators[index] = new TypeActivatorCreator();
+                activators[index] = creators[index]
+                    .GetActivator(typeof(ConcurrentMetadataGeneratedModel));
+            });
+
+            // The metadata is published with a compare-exchange, so a racing caller can
+            // legitimately observe a different instance than the one it built. What must
+            // hold for every caller is that the metadata is complete and correct.
+            foreach (var activator in activators)
+            {
+                Assert.Single(activator.DeserializationParameters);
+                Assert.True(activator.DeserializationParameters.ContainsKey(
+                    new Key(Encoding.UTF8.GetBytes("value"))));
+            }
+        }
+
+        private sealed class CanaryList<T> : List<T>
+        {
+            internal CanaryList(int capacity) : base(capacity)
+            {
+            }
+        }
+
+        private sealed class CanaryDictionary<TKey, TValue>
+            : GeneratedDictionary<TKey, TValue>
+            where TKey : notnull
+        {
+        }
+
+        private sealed class ConcurrentMetadataGeneratedModel
+        {
+            internal ConcurrentMetadataGeneratedModel(string value)
+            {
+                Value = value;
+            }
+
+            internal string Value { get; }
         }
 
         private sealed class GeneratedAlwaysCreated
@@ -583,7 +596,7 @@ namespace MaxMind.Db.Test
             internal GeneratedNonGenericDictionary Map { get; }
         }
 
-        private sealed class GeneratedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+        private class GeneratedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
             where TKey : notnull
         {
         }
