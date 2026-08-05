@@ -11,20 +11,6 @@ namespace MaxMind.Db.SourceGenerator
         internal static string DisplayType(ITypeSymbol type) =>
             type.ToDisplayString(TypeDisplayFormat);
 
-        internal static bool IsAccessible(ISymbol symbol, Compilation compilation)
-        {
-            if (symbol.DeclaredAccessibility == Accessibility.Public)
-            {
-                return true;
-            }
-
-            return SymbolEqualityComparer.Default.Equals(
-                       symbol.ContainingAssembly,
-                       compilation.Assembly) &&
-                   symbol.DeclaredAccessibility is Accessibility.Internal or
-                       Accessibility.ProtectedOrInternal;
-        }
-
         internal static bool IsTypeAccessible(
             ITypeSymbol type,
             Compilation compilation
@@ -58,6 +44,20 @@ namespace MaxMind.Db.SourceGenerator
             }
             return true;
         }
+        internal static bool IsAccessible(ISymbol symbol, Compilation compilation)
+        {
+            if (symbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                return true;
+            }
+
+            return SymbolEqualityComparer.Default.Equals(
+                       symbol.ContainingAssembly,
+                       compilation.Assembly) &&
+                   symbol.DeclaredAccessibility is Accessibility.Internal or
+                       Accessibility.ProtectedOrInternal;
+        }
+
 
         internal static bool ContainsTypeParameter(ITypeSymbol type)
         {

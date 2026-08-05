@@ -33,7 +33,8 @@ namespace MaxMind.Db.SourceGenerator
             }
 
             var constructors = type.InstanceConstructors
-                .Where(constructor => HasAttribute(constructor, ConstructorAttributeName))
+                .Where(constructor =>
+                    GetAttribute(constructor, ConstructorAttributeName) != null)
                 .ToImmutableArray();
             var properties = GetAnnotatedProperties(type, out var hiddenAnnotatedProperty);
 
@@ -391,8 +392,6 @@ namespace MaxMind.Db.SourceGenerator
             _ => null,
         };
 
-        private static bool HasAttribute(ISymbol symbol, string metadataName) =>
-            GetAttribute(symbol, metadataName) != null;
 
         private static bool IsAttribute(INamedTypeSymbol? attribute, string metadataName)
         {
@@ -465,7 +464,7 @@ namespace MaxMind.Db.SourceGenerator
             SourceProductionContext context
             )
         {
-            if (HasAttribute(constructor, SetsRequiredMembersAttributeName))
+            if (GetAttribute(constructor, SetsRequiredMembersAttributeName) != null)
             {
                 return true;
             }
