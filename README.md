@@ -159,10 +159,9 @@ The `MaxMind.Db` NuGet package includes a C# source generator that enables
 trim-safe, reflection-free deserialization for NativeAOT applications. The
 generator is included automatically; no additional package or registration is
 required. It needs the .NET SDK 7.0.100 or later; an older SDK reports `CS9057`
-and skips the generator, leaving models on the reflection fallback. Publishing
-with `PublishAot`, `PublishTrimmed`, or `IsAotCompatible` also enables generator
-diagnostics for model shapes that cannot be generated safely in the project
-where that property is set.
+and skips the generator, leaving models on the reflection fallback. The
+generator reports a diagnostic for any annotated model it cannot generate, in
+whichever project declares that model.
 
 The generator supports both model styles shown above:
 
@@ -210,39 +209,33 @@ There are several current limitations:
   deserialization with `SetsRequiredMembersAttribute`. For property models, this
   is the accessible parameterless constructor.
 
-Treat NativeAOT diagnostics as build errors rather than suppressing them; they
-indicate that a model would fall back to reflection. `MaxMindDbAotDiagnostics`
-is the only switch that turns them on: when it is not set, the generator never
-reports them, so setting `dotnet_diagnostic.MMDBSG0NN.severity` in
-`.editorconfig` has no effect on its own. A NativeAOT project that declares its
-models in the application only needs the standard SDK property:
+Treat these diagnostics as build errors rather than suppressing them; each one
+means a model would fall back to reflection, which is not guaranteed to work
+after trimming or with NativeAOT. They are reported by default, including in a
+model class library that knows nothing about how it will be published. That is
+deliberate: an application's `PublishAot` does not propagate across a
+`ProjectReference`, so keying the diagnostics off it would silence them in the
+one compilation that can report them. To turn them off in a project that will
+never be trimmed:
 
 ```xml
 <PropertyGroup>
-  <PublishAot>true</PublishAot>
+  <MaxMindDbAotDiagnostics>false</MaxMindDbAotDiagnostics>
 </PropertyGroup>
 ```
 
-If models are declared in a separate class library, enable compatibility
-analysis in that project as well. An application's `PublishAot` value does not
-propagate to referenced projects:
+Because that property decides whether the diagnostics are produced at all,
+setting `dotnet_diagnostic.MMDBSG0NN.severity` in `.editorconfig` has no effect
+once it is `false`.
 
-```xml
-<PropertyGroup>
-  <IsAotCompatible>true</IsAotCompatible>
-</PropertyGroup>
-```
-
-Alternatively, set `MaxMindDbAotDiagnostics` to `true` in each project that
-declares models. A separately packaged model library must be built or rebuilt
-with a version of `MaxMind.Db` that includes the source generator. Updating only
-the application cannot add registrations to an already compiled model assembly;
-precompiled model libraries without generated registrations are not guaranteed
-to work after trimming or with NativeAOT. The absence of a source-generator
-diagnostic does not validate models from an already-compiled referenced
-assembly. If that assembly has no generated registrations, its reflection
-fallback is unsupported and may fail at run time after trimming or with
-NativeAOT.
+A separately packaged model library must be built or rebuilt with a version of
+`MaxMind.Db` that includes the source generator. Updating only the application
+cannot add registrations to an already compiled model assembly; precompiled
+model libraries without generated registrations are not guaranteed to work after
+trimming or with NativeAOT. The absence of a source-generator diagnostic does
+not validate models from an already-compiled referenced assembly. If that
+assembly has no generated registrations, its reflection fallback is unsupported
+and may fail at run time after trimming or with NativeAOT.
 
 ## Format
 
