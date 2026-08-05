@@ -34,9 +34,9 @@ namespace MaxMind.Db
             => _hasNonGenericDictionaryRegistration;
 
         /// <summary>
-        ///     Registers source-generated deserialization metadata for a type.
+        ///     Registers source-generated deserialization metadata for a model type.
         /// </summary>
-        /// <param name="type">The type being registered.</param>
+        /// <typeparam name="T">The model type being registered.</typeparam>
         /// <param name="activator">Creates an instance from the ordered member values.</param>
         /// <param name="defaultsFactory">Creates the ordered default member values.</param>
         /// <param name="members">The ordered deserialization member metadata.</param>
@@ -44,21 +44,17 @@ namespace MaxMind.Db
         ///     Thrown when any argument is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///     Thrown when a member contains a <see langword="null"/> map key or
-        ///     member type.
+        ///     Thrown when a member was not created by one of the
+        ///     <see cref="GeneratedMember"/> factory methods.
         /// </exception>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void RegisterType(
-            Type type,
-            Func<object?[], object> activator,
+        public static void RegisterType<T>(
+            Func<object?[], T> activator,
             Func<object?[]> defaultsFactory,
             GeneratedMember[] members
             )
+            where T : class
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
             if (activator == null)
             {
                 throw new ArgumentNullException(nameof(activator));
@@ -75,15 +71,11 @@ namespace MaxMind.Db
             var registeredMembers = (GeneratedMember[])members.Clone();
             for (var i = 0; i < registeredMembers.Length; i++)
             {
-                if (registeredMembers[i].MapKey == null)
-                {
-                    throw new ArgumentException(
-                        "Members must not contain null map keys.", nameof(members));
-                }
                 if (registeredMembers[i].MemberType == null)
                 {
                     throw new ArgumentException(
-                        "Members must not contain null member types.", nameof(members));
+                        "Members must be created with a GeneratedMember factory method.",
+                        nameof(members));
                 }
             }
 
@@ -94,41 +86,37 @@ namespace MaxMind.Db
             // type in that assembly. Consistency checks that involve the member set as
             // a whole belong in GeneratedTypeActivatorRegistration, where they run on
             // first use and fail only the offending type.
-            TypeRegistrations.TryAdd(type, new GeneratedTypeActivatorRegistration(
-                type,
-                activator,
+            TypeRegistrations.TryAdd(typeof(T), new GeneratedTypeActivatorRegistration(
+                typeof(T),
+                args => activator(args),
                 defaultsFactory,
                 registeredMembers));
         }
 
         /// <summary>
-        ///     Registers source-generated creation and mutation delegates for a collection type.
+        ///     Registers source-generated creation and mutation delegates for a
+        ///     collection type.
         /// </summary>
-        /// <param name="type">The declared collection type.</param>
-        /// <param name="elementType">The collection element type.</param>
+        /// <typeparam name="TCollection">The declared collection type.</typeparam>
+        /// <typeparam name="TElement">The collection element type.</typeparam>
         /// <param name="factory">
         ///     Creates a collection using the decoded item count as a capacity hint.
         /// </param>
-        /// <param name="add">Adds an element to the collection.</param>
+        /// <param name="add">
+        ///     Adds a decoded element to the collection. This stays untyped so that the
+        ///     cast lives in generated code rather than in a wrapper delegate on the
+        ///     per-element decode path.
+        /// </param>
         /// <exception cref="ArgumentNullException">
         ///     Thrown when any argument is <see langword="null"/>.
         /// </exception>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void RegisterCollection(
-            Type type,
-            Type elementType,
-            Func<int, object> factory,
+        public static void RegisterCollection<TCollection, TElement>(
+            Func<int, TCollection> factory,
             Action<object, object?> add
             )
+            where TCollection : class
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (elementType == null)
-            {
-                throw new ArgumentNullException(nameof(elementType));
-            }
             if (factory == null)
             {
                 throw new ArgumentNullException(nameof(factory));
@@ -139,44 +127,35 @@ namespace MaxMind.Db
             }
 
             CollectionRegistrations.TryAdd(
-                type,
-                new GeneratedCollectionRegistration(elementType, factory, add));
+                typeof(TCollection),
+                new GeneratedCollectionRegistration(
+                    typeof(TElement), capacity => factory(capacity), add));
         }
 
         /// <summary>
-        ///     Registers source-generated creation and mutation delegates for a dictionary type.
+        ///     Registers source-generated creation and mutation delegates for a
+        ///     dictionary type.
         /// </summary>
-        /// <param name="type">The declared dictionary type.</param>
-        /// <param name="keyType">The dictionary key type.</param>
-        /// <param name="valueType">The dictionary value type.</param>
+        /// <typeparam name="TDictionary">The declared dictionary type.</typeparam>
+        /// <typeparam name="TKey">The dictionary key type.</typeparam>
+        /// <typeparam name="TValue">The dictionary value type.</typeparam>
         /// <param name="factory">
         ///     Creates a dictionary using the decoded item count as a capacity hint.
         /// </param>
-        /// <param name="add">Adds a key and value to the dictionary.</param>
+        /// <param name="add">
+        ///     Adds a decoded key and value to the dictionary. This stays untyped for
+        ///     the same reason as the collection overload.
+        /// </param>
         /// <exception cref="ArgumentNullException">
         ///     Thrown when any argument is <see langword="null"/>.
         /// </exception>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void RegisterDictionary(
-            Type type,
-            Type keyType,
-            Type valueType,
-            Func<int, object> factory,
+        public static void RegisterDictionary<TDictionary, TKey, TValue>(
+            Func<int, TDictionary> factory,
             Action<object, object?, object?> add
             )
+            where TDictionary : class
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (keyType == null)
-            {
-                throw new ArgumentNullException(nameof(keyType));
-            }
-            if (valueType == null)
-            {
-                throw new ArgumentNullException(nameof(valueType));
-            }
             if (factory == null)
             {
                 throw new ArgumentNullException(nameof(factory));
@@ -187,9 +166,13 @@ namespace MaxMind.Db
             }
 
             if (DictionaryRegistrations.TryAdd(
-                    type,
-                    new GeneratedDictionaryRegistration(keyType, valueType, factory, add)) &&
-                !type.IsGenericType)
+                    typeof(TDictionary),
+                    new GeneratedDictionaryRegistration(
+                        typeof(TKey),
+                        typeof(TValue),
+                        capacity => factory(capacity),
+                        add)) &&
+                !typeof(TDictionary).IsGenericType)
             {
                 _hasNonGenericDictionaryRegistration = true;
             }
@@ -212,44 +195,103 @@ namespace MaxMind.Db
     }
 
     /// <summary>
+    ///     Which source of data supplies a source-generated member's value.
+    /// </summary>
+    internal enum GeneratedMemberKind
+    {
+        Mapped,
+        Injected,
+        Networked,
+    }
+
+    /// <summary>
     ///     Describes one member used by source-generated MaxMind DB deserialization.
+    ///     A member draws its value from exactly one source, so instances are created
+    ///     through <see cref="Mapped"/>, <see cref="Injected"/> or
+    ///     <see cref="Networked"/> rather than a constructor that could express a
+    ///     combination none of the decode paths can resolve.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public readonly struct GeneratedMember
     {
+        private GeneratedMember(
+            GeneratedMemberKind kind,
+            string? mapKey,
+            Type memberType,
+            string? injectableName,
+            bool alwaysCreate
+            )
+        {
+            Kind = kind;
+            MapKey = mapKey;
+            MemberType = memberType;
+            InjectableName = injectableName;
+            AlwaysCreate = alwaysCreate;
+        }
+
         /// <summary>
-        ///     Initializes source-generated deserialization metadata for one member.
+        ///     Creates metadata for a member read from a database map key.
         /// </summary>
         /// <param name="mapKey">The database map key for the member.</param>
         /// <param name="memberType">The type of the member.</param>
-        /// <param name="injectableName">
-        ///     The injectable name for the member, or <see langword="null"/>.
+        /// <param name="alwaysCreate">
+        ///     Whether the member is created even when the key is absent.
         /// </param>
-        /// <param name="isNetwork">Whether the member receives the network.</param>
-        /// <param name="alwaysCreate">Whether the member is always created.</param>
+        /// <returns>The member metadata.</returns>
         /// <exception cref="ArgumentNullException">
         ///     Thrown when <paramref name="mapKey"/> or <paramref name="memberType"/>
         ///     is <see langword="null"/>.
         /// </exception>
-        public GeneratedMember(
+        public static GeneratedMember Mapped(
             string mapKey,
             Type memberType,
-            string? injectableName,
-            bool isNetwork,
             bool alwaysCreate
-            )
-        {
-            MapKey = mapKey ?? throw new ArgumentNullException(nameof(mapKey));
-            MemberType = memberType ?? throw new ArgumentNullException(nameof(memberType));
-            InjectableName = injectableName;
-            IsNetwork = isNetwork;
-            AlwaysCreate = alwaysCreate;
-        }
+            ) => new(
+                GeneratedMemberKind.Mapped,
+                mapKey ?? throw new ArgumentNullException(nameof(mapKey)),
+                memberType ?? throw new ArgumentNullException(nameof(memberType)),
+                null,
+                alwaysCreate);
+
+        /// <summary>
+        ///     Creates metadata for a member supplied from injectable values.
+        /// </summary>
+        /// <param name="injectableName">The injectable name for the member.</param>
+        /// <param name="memberType">The type of the member.</param>
+        /// <returns>The member metadata.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///     Thrown when <paramref name="injectableName"/> or
+        ///     <paramref name="memberType"/> is <see langword="null"/>.
+        /// </exception>
+        public static GeneratedMember Injected(
+            string injectableName,
+            Type memberType
+            ) => new(
+                GeneratedMemberKind.Injected,
+                null,
+                memberType ?? throw new ArgumentNullException(nameof(memberType)),
+                injectableName ?? throw new ArgumentNullException(nameof(injectableName)),
+                false);
+
+        /// <summary>
+        ///     Creates metadata for a member that receives the matched network.
+        /// </summary>
+        /// <param name="memberType">The type of the member.</param>
+        /// <returns>The member metadata.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///     Thrown when <paramref name="memberType"/> is <see langword="null"/>.
+        /// </exception>
+        public static GeneratedMember Networked(Type memberType) => new(
+            GeneratedMemberKind.Networked,
+            null,
+            memberType ?? throw new ArgumentNullException(nameof(memberType)),
+            null,
+            false);
 
         internal bool AlwaysCreate { get; }
         internal string? InjectableName { get; }
-        internal bool IsNetwork { get; }
-        internal string MapKey { get; }
+        internal GeneratedMemberKind Kind { get; }
+        internal string? MapKey { get; }
         internal Type MemberType { get; }
     }
 
@@ -378,30 +420,31 @@ namespace MaxMind.Db
             {
                 var registeredMember = _members[i];
                 var member = new DeserializationMember(i, registeredMember.MemberType);
-                if (registeredMember.InjectableName == null && !registeredMember.IsNetwork)
+                switch (registeredMember.Kind)
                 {
-                    var key = new Key(Encoding.UTF8.GetBytes(registeredMember.MapKey));
-                    if (deserializationParameters.ContainsKey(key))
-                    {
-                        throw new DeserializationException(
-                            $"Source-generated metadata for {_type} contains the duplicate "
-                            + $"map key '{registeredMember.MapKey}'.");
-                    }
-                    deserializationParameters.Add(key, member);
-                }
-                if (registeredMember.InjectableName != null)
-                {
-                    injectables.Add(
-                        new KeyValuePair<string, DeserializationMember>(
-                            registeredMember.InjectableName, member));
-                }
-                if (registeredMember.IsNetwork)
-                {
-                    networkParameters.Add(member);
-                }
-                if (registeredMember.AlwaysCreate)
-                {
-                    alwaysCreatedParameters.Add(member);
+                    case GeneratedMemberKind.Injected:
+                        injectables.Add(
+                            new KeyValuePair<string, DeserializationMember>(
+                                registeredMember.InjectableName!, member));
+                        break;
+                    case GeneratedMemberKind.Networked:
+                        networkParameters.Add(member);
+                        break;
+                    default:
+                        var key = new Key(
+                            Encoding.UTF8.GetBytes(registeredMember.MapKey!));
+                        if (deserializationParameters.ContainsKey(key))
+                        {
+                            throw new DeserializationException(
+                                $"Source-generated metadata for {_type} contains the "
+                                + $"duplicate map key '{registeredMember.MapKey}'.");
+                        }
+                        deserializationParameters.Add(key, member);
+                        if (registeredMember.AlwaysCreate)
+                        {
+                            alwaysCreatedParameters.Add(member);
+                        }
+                        break;
                 }
             }
 

@@ -158,11 +158,12 @@ namespace MaxMind.Db.Test
         [Fact]
         public void GeneratedAlwaysCreateLeavesValueTypeMembersAtTheirDefault()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(AlwaysCreateValueTypeGeneratedModel),
+            SourceGeneratorSupport.RegisterType<AlwaysCreateValueTypeGeneratedModel>(
                 values => new AlwaysCreateValueTypeGeneratedModel((long)values[0]!),
                 () => [default(long)],
-                [new GeneratedMember("no_such_key", typeof(long), null, false, true)]);
+                [GeneratedMember.Mapped("no_such_key",
+                typeof(long),
+                true)]);
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
 
@@ -197,25 +198,28 @@ namespace MaxMind.Db.Test
         [Fact]
         public void RegisteredActivatorTakesPrecedenceOverReflection()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedAlwaysCreated),
+            SourceGeneratorSupport.RegisterType<GeneratedAlwaysCreated>(
                 values => new GeneratedAlwaysCreated((string)values[0]!),
                 () => [null],
-                [new GeneratedMember("injected", typeof(string), "injected", false, false)]);
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedModel),
+                [GeneratedMember.Injected("injected",
+                typeof(string))]);
+            SourceGeneratorSupport.RegisterType<GeneratedModel>(
                 values => new GeneratedModel(
                     (string)values[0]!,
-                    (string)values[1]!,
-                    (Network?)values[2],
-                    (GeneratedAlwaysCreated)values[3]!),
+                (string)values[1]!,
+                (Network?)values[2],
+                (GeneratedAlwaysCreated)values[3]!),
                 () => [null, null, null, null],
                 [
-                    new GeneratedMember("utf8_string", typeof(string), null, false, false),
-                    new GeneratedMember("injected", typeof(string), "injected", false, false),
-                    new GeneratedMember("network", typeof(Network), null, true, false),
-                    new GeneratedMember(
-                        "missing", typeof(GeneratedAlwaysCreated), null, false, true),
+                    GeneratedMember.Mapped("utf8_string",
+                typeof(string),
+                false),
+                    GeneratedMember.Injected("injected",
+                typeof(string)),
+                    GeneratedMember.Networked(typeof(Network)),
+                    GeneratedMember.Mapped("missing",
+                typeof(GeneratedAlwaysCreated),
+                true),
                 ]);
 
             var injectables = new InjectableValues();
@@ -236,9 +240,8 @@ namespace MaxMind.Db.Test
         public void RegisterTypeRejectsDefaultGeneratedMember()
         {
             var exception = Assert.Throws<ArgumentException>(() =>
-                SourceGeneratorSupport.RegisterType(
-                    typeof(InvalidGeneratedModel),
-                    _ => new InvalidGeneratedModel(),
+                SourceGeneratorSupport.RegisterType<InvalidGeneratedModel>(
+                _ => new InvalidGeneratedModel(),
                     () => [null],
                     [default]));
 
@@ -252,15 +255,14 @@ namespace MaxMind.Db.Test
         {
             var members = new[]
             {
-                new GeneratedMember("original", typeof(string), null, false, false),
+                GeneratedMember.Mapped("original", typeof(string), false),
             };
-            SourceGeneratorSupport.RegisterType(
-                typeof(CopiedMembersGeneratedModel),
+            SourceGeneratorSupport.RegisterType<CopiedMembersGeneratedModel>(
                 _ => new CopiedMembersGeneratedModel(),
                 () => [null],
                 members);
 
-            members[0] = new GeneratedMember("changed", typeof(long), null, false, false);
+            members[0] = GeneratedMember.Mapped("changed", typeof(long), false);
             var activator = new TypeActivatorCreator()
                 .GetActivator(typeof(CopiedMembersGeneratedModel));
 
@@ -274,11 +276,12 @@ namespace MaxMind.Db.Test
         [Fact]
         public void GeneratedDefaultsMustMatchMemberCount()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(MismatchedDefaultsGeneratedModel),
+            SourceGeneratorSupport.RegisterType<MismatchedDefaultsGeneratedModel>(
                 _ => new MismatchedDefaultsGeneratedModel(),
                 () => [],
-                [new GeneratedMember("value", typeof(string), null, false, false)]);
+                [GeneratedMember.Mapped("value",
+                typeof(string),
+                false)]);
 
             var exception = Assert.Throws<DeserializationException>(() =>
                 new TypeActivatorCreator()
@@ -290,13 +293,16 @@ namespace MaxMind.Db.Test
         [Fact]
         public void GeneratedDuplicateMapKeysAreRejectedOnFirstUse()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(DuplicateMapKeyGeneratedModel),
+            SourceGeneratorSupport.RegisterType<DuplicateMapKeyGeneratedModel>(
                 _ => new DuplicateMapKeyGeneratedModel(),
                 () => [null, null],
                 [
-                    new GeneratedMember("value", typeof(string), null, false, false),
-                    new GeneratedMember("value", typeof(string), null, false, false),
+                    GeneratedMember.Mapped("value",
+                typeof(string),
+                false),
+                    GeneratedMember.Mapped("value",
+                typeof(string),
+                false),
                 ]);
 
             var exception = Assert.Throws<DeserializationException>(() =>
@@ -310,16 +316,18 @@ namespace MaxMind.Db.Test
         [Fact]
         public void DuplicateTypeRegistrationKeepsTheFirstRegistration()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(DuplicateRegistrationGeneratedModel),
+            SourceGeneratorSupport.RegisterType<DuplicateRegistrationGeneratedModel>(
                 _ => new DuplicateRegistrationGeneratedModel(),
                 () => [null],
-                [new GeneratedMember("first", typeof(string), null, false, false)]);
-            SourceGeneratorSupport.RegisterType(
-                typeof(DuplicateRegistrationGeneratedModel),
+                [GeneratedMember.Mapped("first",
+                typeof(string),
+                false)]);
+            SourceGeneratorSupport.RegisterType<DuplicateRegistrationGeneratedModel>(
                 _ => new DuplicateRegistrationGeneratedModel(),
                 () => [null],
-                [new GeneratedMember("second", typeof(string), null, false, false)]);
+                [GeneratedMember.Mapped("second",
+                typeof(string),
+                false)]);
 
             var activator = new TypeActivatorCreator()
                 .GetActivator(typeof(DuplicateRegistrationGeneratedModel));
@@ -334,8 +342,7 @@ namespace MaxMind.Db.Test
         public void GeneratedDefaultFactoryExceptionsHaveDeserializationContext()
         {
             var inner = new InvalidOperationException("Default construction failed.");
-            SourceGeneratorSupport.RegisterType(
-                typeof(ThrowingDefaultsGeneratedModel),
+            SourceGeneratorSupport.RegisterType<ThrowingDefaultsGeneratedModel>(
                 _ => new ThrowingDefaultsGeneratedModel(),
                 () => throw inner,
                 []);
@@ -353,15 +360,16 @@ namespace MaxMind.Db.Test
         public void GeneratedActivatorMetadataIsReusedAcrossCreators()
         {
             var defaultsFactoryCalls = 0;
-            SourceGeneratorSupport.RegisterType(
-                typeof(CachedMetadataGeneratedModel),
+            SourceGeneratorSupport.RegisterType<CachedMetadataGeneratedModel>(
                 values => new CachedMetadataGeneratedModel(values[0]!),
                 () =>
                 {
                     defaultsFactoryCalls++;
                     return [new object()];
                 },
-                [new GeneratedMember("value", typeof(object), null, false, false)]);
+                [GeneratedMember.Mapped("value",
+                typeof(object),
+                false)]);
 
             var first = new TypeActivatorCreator()
                 .GetActivator(typeof(CachedMetadataGeneratedModel));
@@ -378,12 +386,11 @@ namespace MaxMind.Db.Test
         [Fact]
         public void GeneratedRuntimeMembersAreNotDatabaseParameters()
         {
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedInjectedCollectionModel),
+            SourceGeneratorSupport.RegisterType<GeneratedInjectedCollectionModel>(
                 values => new GeneratedInjectedCollectionModel((string[])values[0]!),
                 () => [null],
-                [new GeneratedMember(
-                    "locales", typeof(string[]), "locales", false, false)]);
+                [GeneratedMember.Injected("locales",
+                typeof(string[]))]);
 
             var activator = new TypeActivatorCreator()
                 .GetActivator(typeof(GeneratedInjectedCollectionModel));
@@ -395,33 +402,29 @@ namespace MaxMind.Db.Test
         [Fact]
         public void RegisteredCollectionsTakePrecedenceOverReflection()
         {
-            SourceGeneratorSupport.RegisterCollection(
-                typeof(IReadOnlyList<long>),
-                typeof(long),
+            SourceGeneratorSupport.RegisterCollection<IReadOnlyList<long>, long>(
                 capacity => new List<long>(capacity),
-                (collection, value) => ((ICollection<long>)collection).Add((long)value!));
-            SourceGeneratorSupport.RegisterDictionary(
-                typeof(GeneratedDictionary<string, object>),
-                typeof(string),
-                typeof(object),
-                _ => new GeneratedDictionary<string, object>(),
-                (dictionary, key, value) =>
+                (collection,
+                value) => ((ICollection<long>)collection).Add((long)value!));
+            SourceGeneratorSupport.RegisterDictionary<GeneratedDictionary<string, object>, string, object>(
+                _ => new GeneratedDictionary<string,
+                object>(),
+                (dictionary,
+                key,
+                value) =>
                     ((IDictionary<string, object>)dictionary).Add((string)key!, value!));
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedCollectionModel),
+            SourceGeneratorSupport.RegisterType<GeneratedCollectionModel>(
                 values => new GeneratedCollectionModel(
                     (IReadOnlyList<long>)values[0]!,
-                    (GeneratedDictionary<string, object>)values[1]!),
+                (GeneratedDictionary<string, object>)values[1]!),
                 () => [null, null],
                 [
-                    new GeneratedMember(
-                        "array", typeof(IReadOnlyList<long>), null, false, false),
-                    new GeneratedMember(
-                        "map",
-                        typeof(GeneratedDictionary<string, object>),
-                        null,
-                        false,
-                        false),
+                    GeneratedMember.Mapped("array",
+                typeof(IReadOnlyList<long>),
+                false),
+                    GeneratedMember.Mapped("map",
+                typeof(GeneratedDictionary<string, object>),
+                false),
                 ]);
 
             using var reader = new Reader(
@@ -438,25 +441,23 @@ namespace MaxMind.Db.Test
         [Fact]
         public void RegisteredNonGenericDictionaryTakesPrecedenceOverModelActivation()
         {
-            SourceGeneratorSupport.RegisterDictionary(
-                typeof(GeneratedNonGenericDictionary),
-                typeof(string),
-                typeof(object),
+            SourceGeneratorSupport.RegisterDictionary<GeneratedNonGenericDictionary, string, object>(
                 _ => new GeneratedNonGenericDictionary(),
-                (dictionary, key, value) =>
+                (dictionary,
+                key,
+                value) =>
                     ((IDictionary<string, object>)dictionary).Add((string)key!, value!));
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedNonGenericDictionary),
+            SourceGeneratorSupport.RegisterType<GeneratedNonGenericDictionary>(
                 _ => throw new InvalidOperationException("Model activator should not be used."),
                 () => [],
                 []);
-            SourceGeneratorSupport.RegisterType(
-                typeof(GeneratedNonGenericDictionaryModel),
+            SourceGeneratorSupport.RegisterType<GeneratedNonGenericDictionaryModel>(
                 values => new GeneratedNonGenericDictionaryModel(
                     (GeneratedNonGenericDictionary)values[0]!),
                 () => [null],
-                [new GeneratedMember(
-                    "map", typeof(GeneratedNonGenericDictionary), null, false, false)]);
+                [GeneratedMember.Mapped("map",
+                typeof(GeneratedNonGenericDictionary),
+                false)]);
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder.mmdb"));
 

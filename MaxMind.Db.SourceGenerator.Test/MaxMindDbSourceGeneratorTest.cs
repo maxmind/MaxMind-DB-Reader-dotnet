@@ -41,13 +41,13 @@ namespace MaxMind.Db.SourceGenerator.Test
             Assert.Contains("new global::Models.ConstructorModel(", first.Source);
             Assert.Contains("new global::MaxMind.Db.GeneratedMember[]", first.Source);
             Assert.Contains(
-                "new(\"city\", typeof(global::System.String), null, false, true)",
+                "global::MaxMind.Db.GeneratedMember.Mapped(\"city\", typeof(global::System.String), true)",
                 first.Source);
             Assert.Contains(
-                "new(\"locales\", typeof(global::System.String[]), \"locales\", false, false)",
+                "global::MaxMind.Db.GeneratedMember.Injected(\"locales\", typeof(global::System.String[]))",
                 first.Source);
             Assert.Contains(
-                "new(\"network\", typeof(global::MaxMind.Db.Network), null, true, false)",
+                "global::MaxMind.Db.GeneratedMember.Networked(typeof(global::MaxMind.Db.Network))",
                 first.Source);
             Assert.DoesNotContain(
                 first.Diagnostics,
@@ -71,7 +71,7 @@ namespace MaxMind.Db.SourceGenerator.Test
 
             Assert.Contains("new global::Models.PositionalModel(", result.Source);
             Assert.Contains(
-                "new(\"value\", typeof(global::System.String), null, false, false)",
+                "global::MaxMind.Db.GeneratedMember.Mapped(\"value\", typeof(global::System.String), false)",
                 result.Source);
             Assert.Empty(result.Diagnostics);
             Assert.Empty(result.Errors);
@@ -97,7 +97,7 @@ namespace MaxMind.Db.SourceGenerator.Test
 
             Assert.Contains("new global::Models.PrimaryModel(", result.Source);
             Assert.Contains(
-                "new(\"database_value\", typeof(global::System.String), null, false, false)",
+                "global::MaxMind.Db.GeneratedMember.Mapped(\"database_value\", typeof(global::System.String), false)",
                 result.Source);
             Assert.Empty(result.Diagnostics);
             Assert.Empty(result.Errors);
@@ -154,7 +154,7 @@ namespace MaxMind.Db.SourceGenerator.Test
             var result = RunGenerator(modelSource);
 
             Assert.Contains(
-                "new(\"database_name\", typeof(global::System.String), null, false, true)",
+                "global::MaxMind.Db.GeneratedMember.Mapped(\"database_name\", typeof(global::System.String), true)",
                 result.Source);
             Assert.Empty(result.Errors);
         }
@@ -905,15 +905,17 @@ namespace MaxMind.Db.SourceGenerator.Test
 
             var result = RunGenerator(modelSource);
 
-            Assert.Contains("RegisterCollection(", result.Source);
-            Assert.Contains("typeof(global::System.Collections.Generic.IReadOnlyList<global::System.Int64>)", result.Source);
+            Assert.Contains("RegisterCollection<", result.Source);
+            Assert.Contains("RegisterCollection<global::System.Collections.Generic.IReadOnlyList<global::System.Int64>, global::System.Int64>(", result.Source);
             Assert.Contains("capacity => new global::System.Collections.Generic.List<global::System.Int64>(capacity)", result.Source);
             Assert.Contains("capacity => new global::System.Collections.Generic.LinkedList<global::System.Int64>()", result.Source);
             Assert.Contains("capacity => new global::Models.CustomList<global::System.Int64>()", result.Source);
-            Assert.Contains("RegisterDictionary(", result.Source);
-            Assert.Contains("typeof(global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.Int64>)", result.Source);
+            Assert.Contains("RegisterDictionary<", result.Source);
+            Assert.Contains("RegisterDictionary<global::System.Collections.Generic.IReadOnlyDictionary<global::System.String, global::System.Int64>, global::System.String, global::System.Int64>(", result.Source);
             Assert.Contains("capacity => new global::Models.CustomDictionary<global::System.String, global::System.Int64>()", result.Source);
-            Assert.Contains("typeof(global::Models.NonGenericDictionary)", result.Source);
+            Assert.Contains(
+                "RegisterDictionary<global::Models.NonGenericDictionary, global::System.String, global::System.Int64>(",
+                result.Source);
             Assert.Contains("capacity => new global::Models.NonGenericDictionary()", result.Source);
             Assert.Empty(result.Errors);
         }
@@ -942,10 +944,10 @@ namespace MaxMind.Db.SourceGenerator.Test
             var result = RunGenerator(modelSource, aotDiagnostics: true);
 
             Assert.Contains(
-                "typeof(global::System.Collections.Concurrent.ConcurrentDictionary<global::System.String, global::System.Object>)",
+                "RegisterDictionary<global::System.Collections.Concurrent.ConcurrentDictionary<global::System.String, global::System.Object>, global::System.String, global::System.Object>(",
                 result.Source);
             Assert.Contains(
-                "typeof(global::System.Collections.Generic.LinkedList<global::System.Int64>)",
+                "RegisterCollection<global::System.Collections.Generic.LinkedList<global::System.Int64>, global::System.Int64>(",
                 result.Source);
             Assert.Empty(result.Diagnostics);
             Assert.Empty(result.Errors);
@@ -975,10 +977,10 @@ namespace MaxMind.Db.SourceGenerator.Test
             var result = RunGenerator(modelSource, aotDiagnostics: true);
 
             Assert.Contains(
-                "typeof(global::System.Collections.Concurrent.ConcurrentDictionary<global::System.String, global::System.Object>)",
+                "RegisterDictionary<global::System.Collections.Concurrent.ConcurrentDictionary<global::System.String, global::System.Object>, global::System.String, global::System.Object>(",
                 result.Source);
             Assert.Contains(
-                "typeof(global::System.Collections.Generic.LinkedList<global::System.Int64>)",
+                "RegisterCollection<global::System.Collections.Generic.LinkedList<global::System.Int64>, global::System.Int64>(",
                 result.Source);
             Assert.Empty(result.Diagnostics);
             Assert.Empty(result.Errors);

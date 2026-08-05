@@ -312,8 +312,8 @@ namespace MaxMind.Db.SourceGenerator
 
         private static void RenderRegistration(StringBuilder source, TypeSpec spec)
         {
-            source.AppendLine("            global::MaxMind.Db.SourceGeneratorSupport.RegisterType(");
-            source.Append("                typeof(").Append(spec.TypeName).AppendLine("),");
+            source.Append("            global::MaxMind.Db.SourceGeneratorSupport.RegisterType<")
+                .Append(spec.TypeName).AppendLine(">(");
             RenderActivator(source, spec);
             RenderDefaultsFactory(source, spec);
             RenderMembers(source, spec.Members);
@@ -327,9 +327,9 @@ namespace MaxMind.Db.SourceGenerator
         {
             if (spec.Kind == CollectionKind.Collection)
             {
-                source.AppendLine("            global::MaxMind.Db.SourceGeneratorSupport.RegisterCollection(");
-                source.Append("                typeof(").Append(spec.TypeName).AppendLine("),");
-                source.Append("                typeof(").Append(spec.FirstTypeArgument).AppendLine("),");
+                source.Append("            global::MaxMind.Db.SourceGeneratorSupport.RegisterCollection<")
+                    .Append(spec.TypeName).Append(", ").Append(spec.FirstTypeArgument)
+                    .AppendLine(">(");
                 source.Append("                capacity => new ").Append(spec.FactoryTypeName)
                     .Append(spec.FactoryUsesCapacity ? "(capacity)," : "(),")
                     .AppendLine();
@@ -341,10 +341,9 @@ namespace MaxMind.Db.SourceGenerator
             }
 
             var valueType = spec.SecondTypeArgument!;
-            source.AppendLine("            global::MaxMind.Db.SourceGeneratorSupport.RegisterDictionary(");
-            source.Append("                typeof(").Append(spec.TypeName).AppendLine("),");
-            source.Append("                typeof(").Append(spec.FirstTypeArgument).AppendLine("),");
-            source.Append("                typeof(").Append(valueType).AppendLine("),");
+            source.Append("            global::MaxMind.Db.SourceGeneratorSupport.RegisterDictionary<")
+                .Append(spec.TypeName).Append(", ").Append(spec.FirstTypeArgument)
+                .Append(", ").Append(valueType).AppendLine(">(");
             source.Append("                capacity => new ").Append(spec.FactoryTypeName)
                 .Append(spec.FactoryUsesCapacity ? "(capacity)," : "(),")
                 .AppendLine();
@@ -424,15 +423,25 @@ namespace MaxMind.Db.SourceGenerator
             source.AppendLine("                {");
             foreach (var member in members)
             {
-                source.Append("                    new(")
+                source.Append("                    global::MaxMind.Db.GeneratedMember.");
+                if (member.IsNetwork)
+                {
+                    source.Append("Networked(typeof(").Append(member.TypeName)
+                        .AppendLine(")),");
+                    continue;
+                }
+                if (member.InjectableName != null)
+                {
+                    source.Append("Injected(")
+                        .Append(SymbolDisplay.FormatLiteral(
+                            member.InjectableName, quote: true))
+                        .Append(", typeof(").Append(member.TypeName).AppendLine(")),");
+                    continue;
+                }
+                source.Append("Mapped(")
                     .Append(SymbolDisplay.FormatLiteral(member.MapKey, quote: true))
-                    .Append(", typeof(").Append(member.TypeName).Append("), ");
-                source.Append(member.InjectableName == null
-                    ? "null"
-                    : SymbolDisplay.FormatLiteral(member.InjectableName, quote: true));
-                source.Append(", ").Append(member.IsNetwork ? "true" : "false")
-                    .Append(", ").Append(member.AlwaysCreate ? "true" : "false")
-                    .AppendLine("),");
+                    .Append(", typeof(").Append(member.TypeName).Append("), ")
+                    .Append(member.AlwaysCreate ? "true" : "false").AppendLine("),");
             }
             source.AppendLine("                }");
         }
