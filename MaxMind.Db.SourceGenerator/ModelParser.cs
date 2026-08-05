@@ -56,6 +56,22 @@ namespace MaxMind.Db.SourceGenerator
 
             if (constructors.Length == 0 && properties.Length == 0)
             {
+                // Candidate discovery admits far more types than are models, so silence
+                // is right here in general. Annotated constructor parameters are the
+                // exception: they say the author meant this type to be deserialized. A
+                // positional record is the common shape, where the attributes bind to
+                // the primary constructor's parameters and nothing carries
+                // ConstructorAttribute.
+                if (HasAnnotatedConstructorParameter(type))
+                {
+                    Report(
+                        reportAotDiagnostics,
+                        context,
+                        Diagnostics.MissingDeserializationConstructor,
+                        type,
+                        type,
+                        type.ToDisplayString());
+                }
                 return null;
             }
 
@@ -475,6 +491,13 @@ namespace MaxMind.Db.SourceGenerator
             }
             return true;
         }
+
+        private static bool HasAnnotatedConstructorParameter(INamedTypeSymbol type) =>
+            type.InstanceConstructors.Any(constructor =>
+                constructor.Parameters.Any(parameter =>
+                    GetAttribute(parameter, MapKeyAttributeName) != null ||
+                    GetAttribute(parameter, InjectAttributeName) != null ||
+                    GetAttribute(parameter, NetworkAttributeName) != null));
 
         private static bool IsRequiredMember(ISymbol member) => member switch
         {

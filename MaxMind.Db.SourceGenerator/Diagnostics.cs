@@ -94,6 +94,14 @@ namespace MaxMind.Db.SourceGenerator
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor MissingDeserializationConstructor = new(
+            "MMDBSG016",
+            "Annotated model has no deserialization constructor",
+            "Type '{0}' has annotated constructor parameters but no constructor marked with ConstructorAttribute, so source-generated deserialization cannot activate it. A positional record needs the attribute on its primary constructor, as in [method: Constructor].",
+            Category,
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor UnresolvableLookupType = new(
             "MMDBSG015",
             "Lookup result type is not statically resolvable",

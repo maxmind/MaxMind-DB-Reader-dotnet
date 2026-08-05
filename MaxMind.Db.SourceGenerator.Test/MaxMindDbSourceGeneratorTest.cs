@@ -559,6 +559,57 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void ReportsPositionalRecordWithoutConstructorAttributeForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed record PositionalModel([MapKey("v")] string Value);
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG016");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void IgnoresUnannotatedTypesWithoutDiagnostics()
+        {
+            const string modelSource = """
+                using System;
+                using System.Collections.Generic;
+
+                namespace Models;
+
+                internal sealed class Unrelated : List<string>, IDisposable
+                {
+                    internal Unrelated(string name)
+                    {
+                        Name = name;
+                    }
+
+                    internal string Name { get; }
+
+                    public void Dispose()
+                    {
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Empty(result.Diagnostics);
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void ReportsRequiredFieldsForAot()
         {
             const string modelSource = """

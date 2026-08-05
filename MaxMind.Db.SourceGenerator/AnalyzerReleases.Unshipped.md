@@ -19,3 +19,4 @@ MMDBSG012 | MaxMind.Db.SourceGenerator | Warning | Models must be classes or rec
 MMDBSG013 | MaxMind.Db.SourceGenerator | Warning | MapKey cannot be combined with Inject or Network
 MMDBSG014 | MaxMind.Db.SourceGenerator | Warning | Model property is hidden by a more derived member
 MMDBSG015 | MaxMind.Db.SourceGenerator | Warning | Lookup result type is not statically resolvable
+MMDBSG016 | MaxMind.Db.SourceGenerator | Warning | Annotated model has no deserialization constructor
