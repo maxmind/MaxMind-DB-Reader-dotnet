@@ -559,6 +559,34 @@ namespace MaxMind.Db.SourceGenerator.Test
         }
 
         [Fact]
+        public void ReportsRequiredFieldsForAot()
+        {
+            const string modelSource = """
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed class RequiredFieldModel
+                {
+                    [Constructor]
+                    internal RequiredFieldModel([MapKey("utf8_string")] string value)
+                    {
+                    }
+
+                    internal required string Extra;
+                }
+                """;
+
+            var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG010");
+            Assert.Empty(result.Source);
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
         public void ReportsInaccessibleInheritedPropertyForAot()
         {
             const string baseSource = """

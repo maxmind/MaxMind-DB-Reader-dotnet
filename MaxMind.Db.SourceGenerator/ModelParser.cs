@@ -457,8 +457,7 @@ namespace MaxMind.Db.SourceGenerator
             for (var current = type; current != null; current = current.BaseType)
             {
                 var requiredProperty = current.GetMembers()
-                    .OfType<IPropertySymbol>()
-                    .FirstOrDefault(property => property.IsRequired);
+                    .FirstOrDefault(IsRequiredMember);
                 if (requiredProperty == null)
                 {
                     continue;
@@ -476,6 +475,13 @@ namespace MaxMind.Db.SourceGenerator
             }
             return true;
         }
+
+        private static bool IsRequiredMember(ISymbol member) => member switch
+        {
+            IPropertySymbol property => property.IsRequired,
+            IFieldSymbol field => field.IsRequired,
+            _ => false,
+        };
 
         private static string EscapeIdentifier(string identifier) =>
             SyntaxFacts.GetKeywordKind(identifier) == SyntaxKind.None &&
