@@ -22,6 +22,9 @@ jobs:
           # We must fetch at least the immediate parents so that if this is
           # a pull request then we can checkout the head.
           fetch-depth: 2
+          # The NativeAOT test application copies test databases out of this
+          # submodule, so autobuild cannot compile the solution without it.
+          submodules: true
           persist-credentials: false
 
       # If this run was triggered by a pull request event, then checkout
