@@ -11,10 +11,18 @@
   collection types used directly with `Find<T>` and `FindAll<T>`.
 - Reused immutable source-generated activation metadata across readers, reducing
   the time and allocation cost of the first model lookup on a new reader.
-- Enabled trim, AOT, and single-file compatibility analysis. NativeAOT model
-  diagnostics are enabled automatically in projects configured for compatible
-  builds, and CI now publishes and runs a strictly trimmed NativeAOT application
-  on Linux, Windows, and macOS.
+- Enabled trim, AOT, and single-file compatibility analysis.
+- Added the `MMDBSG001` through `MMDBSG016` diagnostics, which report model
+  shapes the generator cannot support so that they are caught at build time
+  rather than after trimming or an AOT publish. They are reported by default in
+  any project that declares models; set the `MaxMindDbAotDiagnostics` MSBuild
+  property to `false` to turn them off.
+- Added the `MaxMind.Db.SourceGeneratorSupport` and `MaxMind.Db.GeneratedMember`
+  public types. They exist for generated code to call and are not intended to be
+  used directly.
+- Fixed a `[MapKey(..., true)]` member of a non-nullable value type throwing
+  during property-based activation instead of keeping its default. This affected
+  the reflection path before this release and is now consistent across both.
 
 ## 5.1.0 (2026-05-22)
 

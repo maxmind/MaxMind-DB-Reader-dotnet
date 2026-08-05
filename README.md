@@ -196,9 +196,16 @@ There are several current limitations:
   used in a directly discoverable model member or lookup. The reflection
   fallback remains available in normal JIT builds but is not guaranteed after
   trimming or with NativeAOT.
-- Open generic model classes are not supported.
+- Generic model classes are not supported, closed or otherwise. Models are
+  discovered from their declarations, so the generator only ever sees the
+  unbound definition and reports `MMDBSG004`, even where every use is a closed
+  construction such as `Find<Wrapper<string>>`.
 - Models must be classes or records. Annotated structs and record structs are
-  reported as `MMDBSG012` and use the reflection fallback.
+  reported as `MMDBSG012`. A constructor-based struct then falls back to
+  reflection and works; a property-based struct or record struct fails at run
+  time, in a plain JIT build as much as under NativeAOT, because reflection does
+  not surface a struct's implicit parameterless constructor and there is nothing
+  to activate unless one is declared explicitly.
 - MMDB array values cannot be deserialized into CLR array model members. Use a
   supported generic collection instead. `byte[]` remains supported for MMDB byte
   values.
