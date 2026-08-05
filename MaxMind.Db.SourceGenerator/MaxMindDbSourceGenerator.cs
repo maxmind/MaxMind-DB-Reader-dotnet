@@ -163,10 +163,14 @@ namespace MaxMind.Db.SourceGenerator
                 context.CancellationToken.ThrowIfCancellationRequested();
                 if (SymbolHelpers.ContainsTypeParameter(root.TypeSymbol))
                 {
-                    if (reportAotDiagnostics && root.TypeSymbol is INamedTypeSymbol)
+                    // Reported for a bare type parameter too. This branch exists
+                    // precisely because the type argument is unresolved, and a generic
+                    // wrapper around Find<T> is the usual way to encapsulate lookups,
+                    // so staying silent here left the most common shape unwarned.
+                    if (reportAotDiagnostics)
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
-                            Diagnostics.UnsupportedCollection,
+                            Diagnostics.UnresolvableLookupType,
                             root.Location,
                             root.TypeSymbol.ToDisplayString(),
                             root.Description));

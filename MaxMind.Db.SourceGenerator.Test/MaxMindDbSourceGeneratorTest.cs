@@ -923,9 +923,11 @@ namespace MaxMind.Db.SourceGenerator.Test
 
             var result = RunGenerator(modelSource, aotDiagnostics: true);
 
+            // MMDBSG015 rather than MMDBSG008: the cause is the unresolved type
+            // parameter, and Dictionary<string, T> being a collection is incidental.
             Assert.Equal(
                 2,
-                result.Diagnostics.Count(diagnostic => diagnostic.Id == "MMDBSG008"));
+                result.Diagnostics.Count(diagnostic => diagnostic.Id == "MMDBSG015"));
             Assert.Empty(result.Source);
             Assert.Empty(result.Errors);
         }
@@ -992,6 +994,33 @@ namespace MaxMind.Db.SourceGenerator.Test
                 """;
 
             var result = RunGenerator(modelSource, aotDiagnostics: true);
+
+            Assert.Empty(result.Source);
+            Assert.Contains(
+                result.Diagnostics,
+                diagnostic => diagnostic.Id == "MMDBSG015");
+            Assert.Empty(result.Errors);
+        }
+
+        [Fact]
+        public void IgnoresGenericReaderWrappersSilentlyWithoutAotDiagnostics()
+        {
+            const string modelSource = """
+                using System.Net;
+                using MaxMind.Db;
+
+                namespace Models;
+
+                internal sealed class Lookup
+                {
+                    internal T? Run<T>(Reader reader, IPAddress address) where T : class
+                    {
+                        return reader.Find<T>(address);
+                    }
+                }
+                """;
+
+            var result = RunGenerator(modelSource);
 
             Assert.Empty(result.Source);
             Assert.Empty(result.Diagnostics);

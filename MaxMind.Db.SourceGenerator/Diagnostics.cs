@@ -94,6 +94,14 @@ namespace MaxMind.Db.SourceGenerator
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor UnresolvableLookupType = new(
+            "MMDBSG015",
+            "Lookup result type is not statically resolvable",
+            "The type argument '{0}' of {1} still contains a type parameter, so no registration can be generated for this call",
+            Category,
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor HiddenModelProperty = new(
             "MMDBSG014",
             "Model property is hidden by a more derived member",

@@ -18,3 +18,4 @@ MMDBSG011 | MaxMind.Db.SourceGenerator | Warning | Derived MapKey attributes can
 MMDBSG012 | MaxMind.Db.SourceGenerator | Warning | Models must be classes or records
 MMDBSG013 | MaxMind.Db.SourceGenerator | Warning | MapKey cannot be combined with Inject or Network
 MMDBSG014 | MaxMind.Db.SourceGenerator | Warning | Model property is hidden by a more derived member
+MMDBSG015 | MaxMind.Db.SourceGenerator | Warning | Lookup result type is not statically resolvable
