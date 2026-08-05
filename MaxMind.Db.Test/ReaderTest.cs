@@ -247,8 +247,8 @@ namespace MaxMind.Db.Test
         public void NoIPV4SearchTree()
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, "MaxMind-DB-no-ipv4-search-tree.mmdb"));
-            Assert.Equal("::0/64", reader.Find<string>(IPAddress.Parse("1.1.1.1")));
-            Assert.Equal("::0/64", reader.Find<string>(IPAddress.Parse("192.1.1.1")));
+            Assert.Equal("::/64", reader.Find<string>(IPAddress.Parse("1.1.1.1")));
+            Assert.Equal("::/64", reader.Find<string>(IPAddress.Parse("192.1.1.1")));
         }
 
         [Theory]
