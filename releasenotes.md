@@ -23,7 +23,10 @@
 - Fixed a `[MapKey(..., true)]` member of a non-nullable value type throwing
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
-
+- Added decoding limits to prevent crafted databases from consuming excessive
+  time and memory during lookups and metadata reads. Excessive work and
+  pointer cycles throw `InvalidDatabaseException`. Available stack space can
+  impose a lower nesting limit.
 ## 5.1.0 (2026-05-22)
 
 - `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
