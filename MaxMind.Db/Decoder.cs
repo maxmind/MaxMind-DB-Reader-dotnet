@@ -495,7 +495,7 @@ namespace MaxMind.Db
                 }
                 else
                 {
-                    offset = NextValueOffset(offset, 1);
+                    offset = NextValueOffset(offset, 1, depth + 1, ref budget);
                 }
             }
 
@@ -600,15 +600,13 @@ namespace MaxMind.Db
             }
         }
 
-        private long NextValueOffset(long offset, int numberToSkip)
+        // The enclosing container already charged the values in numberToSkip.
+        // Keep sibling values in a loop and recurse only into containers, where
+        // their children must be charged and their structural depth checked.
+        private long NextValueOffset(long offset, int numberToSkip, int depth, ref int budget)
         {
-            while (true)
+            while (numberToSkip > 0)
             {
-                if (numberToSkip == 0)
-                {
-                    return offset;
-                }
-
                 var type = CtrlData(offset, out var size, out offset);
                 switch (type)
                 {
@@ -618,11 +616,13 @@ namespace MaxMind.Db
                         break;
 
                     case ObjectType.Map:
-                        numberToSkip += 2 * size;
+                        CheckContainer(depth, 2 * size, ref budget);
+                        offset = NextValueOffset(offset, 2 * size, depth + 1, ref budget);
                         break;
 
                     case ObjectType.Array:
-                        numberToSkip += size;
+                        CheckContainer(depth, size, ref budget);
+                        offset = NextValueOffset(offset, size, depth + 1, ref budget);
                         break;
 
                     case ObjectType.Boolean:
@@ -635,6 +635,8 @@ namespace MaxMind.Db
 
                 numberToSkip--;
             }
+
+            return offset;
         }
 
         /// <summary>

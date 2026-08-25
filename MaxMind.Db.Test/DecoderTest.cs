@@ -48,6 +48,27 @@ namespace MaxMind.Db.Test
             bytes.Add((byte)(target & 0xFF));
         }
 
+        private static byte[] NestedContainers(int count)
+        {
+            var bytes = new List<byte>(count * 3 + 1);
+            for (var i = 0; i < count; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    bytes.Add(0x01); // array with one element
+                    bytes.Add(0x04);
+                }
+                else
+                {
+                    bytes.Add(0xE1); // map with one entry
+                    bytes.Add(0x41); // one-byte string key
+                    bytes.Add((byte)'x');
+                }
+            }
+            bytes.Add(0xA0); // leaf: uint16 with value 0
+            return [.. bytes];
+        }
+
         [Fact]
         public static void TestPointerFanOutIsBounded()
         {
@@ -70,7 +91,60 @@ namespace MaxMind.Db.Test
 
             using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
             var decoder = new Decoder(database, 0);
-            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestMapPointerFanOutIsBounded()
+        {
+            // Each map has two distinct keys whose values point to the map
+            // below. Re-decoding the shared targets must consume the map's two
+            // key/value pairs from the value budget on every visit.
+            const int depth = 100;
+            var bytes = new List<byte> { 0xA0 }; // leaf: uint16 with value 0
+            var prev = 0;
+            for (var i = 0; i < depth; i++)
+            {
+                var offset = bytes.Count;
+                bytes.Add(0xE2);
+                bytes.Add(0x41);
+                bytes.Add((byte)'a');
+                WritePointer1(bytes, prev);
+                bytes.Add(0x41);
+                bytes.Add((byte)'b');
+                WritePointer1(bytes, prev);
+                prev = offset;
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(513, false)]
+        [InlineData(514, true)]
+        public static void TestContainerDepthIsBounded(int containerCount, bool exceedsLimit)
+        {
+            // The root container has depth zero, so 513 nested containers reach
+            // the allowed depth of 512. One more must be rejected. Alternating
+            // maps and arrays exercises depth propagation through both paths.
+            var bytes = NestedContainers(containerCount);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Contains("maximum depth", ex.Message);
+            }
+            else
+            {
+                decoder.Decode<object>(0, out var offset);
+                Assert.Equal(bytes.Length, offset);
+            }
         }
 
         [Fact]
@@ -101,7 +175,55 @@ namespace MaxMind.Db.Test
             // bytes for 32,769 - 285 = 32,484 (0x7ee4).
             using var database = new MemoryMapBuffer(new MemoryStream([0xfe, 0x7e, 0xe4], writable: false));
             var decoder = new Decoder(database, 0);
-            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUnknownFieldValueCountIsBounded()
+        {
+            // The root map already charges its key and value. The unknown value
+            // is a complete array whose 65,535 children exceed the remaining
+            // budget. Skipping it must enforce the same limit as decoding it.
+            const int childCount = 65_535;
+            var bytes = new List<byte>(childCount * 2 + 16)
+            {
+                0xE1,
+                0x47,
+                (byte)'u', (byte)'n', (byte)'k', (byte)'n', (byte)'o', (byte)'w', (byte)'n',
+                0x1E, 0x04, 0xFE, 0xE2,
+            };
+            for (var i = 0; i < childCount; i++)
+            {
+                bytes.Add(0x00); // extended boolean with value false
+                bytes.Add(0x07);
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUnknownFieldDepthIsBounded()
+        {
+            // The unknown map value begins at depth one. Its 513th nested
+            // container therefore exceeds the maximum depth while being
+            // skipped, without any pointers in the data.
+            var nested = NestedContainers(513);
+            var bytes = new List<byte>(nested.Length + 9)
+            {
+                0xE1,
+                0x47,
+                (byte)'u', (byte)'n', (byte)'k', (byte)'n', (byte)'o', (byte)'w', (byte)'n',
+            };
+            bytes.AddRange(nested);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+            Assert.Contains("maximum depth", ex.Message);
         }
 
         [Fact]
