@@ -124,13 +124,17 @@ namespace MaxMind.Db.Test
         }
 
         [Theory]
-        [InlineData(513, false)]
+        [InlineData(32, false)]
+        [InlineData(33, false)]
         [InlineData(514, true)]
         public static void TestContainerDepthIsBounded(int containerCount, bool exceedsLimit)
         {
-            // The root container has depth zero, so 513 nested containers reach
-            // the allowed depth of 512. One more must be rejected. Alternating
-            // maps and arrays exercises depth propagation through both paths.
+            // Each container level consumes several managed stack frames. The
+            // available stack varies by runtime, so do not require all 512
+            // format-level depths to fit. The decoder must reject the corrupt
+            // case with a catchable exception before the runtime terminates the
+            // process. Alternating maps and arrays exercises depth propagation
+            // through both paths.
             var bytes = NestedContainers(containerCount);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
@@ -138,7 +142,7 @@ namespace MaxMind.Db.Test
             if (exceedsLimit)
             {
                 var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-                Assert.Contains("maximum depth", ex.Message);
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
             }
             else
             {

@@ -56,11 +56,44 @@ namespace MaxMind.Db
         // mutable state. The largest real records decode a few hundred values.
         private const int MaxDepth = 512;
         private const int MaxDecodedValues = 1 << 16;
+        // Each data-structure level uses several managed frames. Some runtimes
+        // have less stack space than others, so the format-level limit alone
+        // cannot guarantee that there is enough CLR stack to reach it. Real
+        // records are much shallower; delay the runtime probe until this point
+        // to keep it completely off their decode path.
+        private const int RuntimeStackCheckDepth = 32;
+
+        private static bool HasSufficientExecutionStack()
+        {
+#if NETSTANDARD2_0
+            // netstandard2.0 exposes only the throwing form of the runtime
+            // stack probe. Keep the exception path limited to malformed data.
+            try
+            {
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+                return true;
+            }
+            catch (InsufficientExecutionStackException)
+            {
+                return false;
+            }
+#else
+            return RuntimeHelpers.TryEnsureSufficientExecutionStack();
+#endif
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckDepth(int depth)
         {
-            if (depth > MaxDepth)
+            // Preserve the original single-comparison fast path. The runtime
+            // probe and the second comparison are reached only by structures
+            // far deeper than real database records.
+            if (depth < RuntimeStackCheckDepth)
+            {
+                return;
+            }
+
+            if (depth > MaxDepth || !HasSufficientExecutionStack())
             {
                 throw new InvalidDatabaseException(
                     "The MaxMind DB file's data section exceeds the maximum depth.");
