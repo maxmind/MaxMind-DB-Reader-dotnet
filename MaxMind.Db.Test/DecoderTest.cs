@@ -41,6 +41,83 @@ namespace MaxMind.Db.Test
             }
         }
 
+        private static void WritePointer1(List<byte> bytes, int target)
+        {
+            // One-byte-payload pointer (type 1, pointer_size 1) with base 0.
+            bytes.Add((byte)((1 << 5) | ((target >> 8) & 0x7)));
+            bytes.Add((byte)(target & 0xFF));
+        }
+
+        [Fact]
+        public static void TestPointerFanOutIsBounded()
+        {
+            // A data section of nested arrays, each holding two pointers to the
+            // node below, would cost 2**depth decode operations. The decoder
+            // bounds the number of values it decodes per lookup and rejects the
+            // database.
+            const int depth = 100;
+            var bytes = new List<byte> { 0xA0 }; // leaf: uint16 with value 0
+            var prev = 0;
+            for (var i = 0; i < depth; i++)
+            {
+                var offset = bytes.Count;
+                bytes.Add(0x02);
+                bytes.Add(0x04);
+                WritePointer1(bytes, prev);
+                WritePointer1(bytes, prev);
+                prev = offset;
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+        }
+
+        [Fact]
+        public static void TestCyclicPointerThrows()
+        {
+            // A pointer to itself must throw a catchable InvalidDatabaseException
+            // rather than recursing until the stack overflows.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x20, 0x00], writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+        }
+
+        private sealed class KeyOnlyModel
+        {
+            [Constructor]
+            public KeyOnlyModel([MapKey("name")] string? name = null) => Name = name;
+
+            public string? Name { get; }
+        }
+
+        [Fact]
+        public static void TestOversizedMapIsBounded()
+        {
+            // A map entry decodes a key and a value, so a map of N entries costs
+            // 2N values. A map that declares 32,769 entries reaches 65,538
+            // values, just past the 65,536 limit, and is rejected before any
+            // entry is read. 0xfe is a map with size code 30, then the two size
+            // bytes for 32,769 - 285 = 32,484 (0x7ee4).
+            using var database = new MemoryMapBuffer(new MemoryStream([0xfe, 0x7e, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+        }
+
+        [Fact]
+        public static void TestCyclicPointerAsMapKeyThrows()
+        {
+            // Decoding into a model type reads map keys through a separate path
+            // (DecodeKey) from the dictionary path. A key that is a pointer to
+            // itself must also throw a catchable InvalidDatabaseException rather
+            // than overflowing the stack.
+            // 0xe1: map with one entry. The key at offset 1 is a one-byte
+            // pointer (0x20 0x01) whose target is offset 1, the pointer itself.
+            using var database = new MemoryMapBuffer(new MemoryStream([0xe1, 0x20, 0x01], writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
