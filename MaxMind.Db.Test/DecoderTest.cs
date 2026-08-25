@@ -124,6 +124,86 @@ namespace MaxMind.Db.Test
         }
 
         [Theory]
+        [InlineData(32_768, false)]
+        [InlineData(32_769, true)]
+        public static void TestFlatScalarPointerTargetsConsumeValueBudget(int pointerCount, bool exceedsLimit)
+        {
+            // The array charges each pointer field, and following each pointer
+            // charges its scalar target. At 32,768 pointers the two charges use
+            // the full 65,536-value budget. One more must be rejected. This is
+            // intentionally flat so neither depth nor exponential fan-out can
+            // hide incorrect target accounting.
+            var encodedSize = pointerCount - 285;
+            var bytes = new List<byte>(pointerCount * 2 + 5)
+            {
+                0x40, // target: empty UTF-8 string
+                0x1E, 0x04, // array with a two-byte encoded size
+                (byte)(encodedSize >> 8), (byte)encodedSize,
+            };
+            for (var i = 0; i < pointerCount; i++)
+            {
+                WritePointer1(bytes, 0);
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(1, out _));
+                Assert.Equal(
+                    "The MaxMind DB file's data section exceeds the maximum number of values.",
+                    ex.Message);
+            }
+            else
+            {
+                var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(1, out var offset));
+                Assert.Equal(pointerCount, decoded.Count);
+                Assert.Equal(bytes.Count, offset);
+            }
+        }
+
+        [Theory]
+        [InlineData(21_845, false)]
+        [InlineData(21_846, true)]
+        public static void TestFlatModelKeyPointerTargetsConsumeValueBudget(int pointerCount, bool exceedsLimit)
+        {
+            // A map charges its key and value fields, and following each key
+            // pointer charges the UTF-8 target that DecodeKey hashes. At 21,845
+            // entries those charges use 65,535 values. One more entry crosses
+            // the limit. Empty keys are unknown to KeyOnlyModel, so their false
+            // values are skipped without introducing another pointer path.
+            var encodedSize = pointerCount - 285;
+            var bytes = new List<byte>(pointerCount * 4 + 4)
+            {
+                0x40, // target: empty UTF-8 string
+                0xFE, // map with a two-byte encoded size
+                (byte)(encodedSize >> 8), (byte)encodedSize,
+            };
+            for (var i = 0; i < pointerCount; i++)
+            {
+                WritePointer1(bytes, 0);
+                bytes.Add(0x00); // extended boolean
+                bytes.Add(0x07); // false
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(1, out _));
+                Assert.Equal(
+                    "The MaxMind DB file's data section exceeds the maximum number of values.",
+                    ex.Message);
+            }
+            else
+            {
+                var decoded = decoder.Decode<KeyOnlyModel>(1, out var offset);
+                Assert.Null(decoded.Name);
+                Assert.Equal(bytes.Count, offset);
+            }
+        }
+
+        [Theory]
         [InlineData(32, false)]
         [InlineData(33, false)]
         [InlineData(514, true)]

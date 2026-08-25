@@ -116,6 +116,19 @@ namespace MaxMind.Db
             }
         }
 
+        // A pointer field is charged by its enclosing container. Its target is
+        // another decoded value and must be charged each time it is followed.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ConsumePointerTarget(ref int budget)
+        {
+            budget--;
+            if (budget < 0)
+            {
+                throw new InvalidDatabaseException(
+                    "The MaxMind DB file's data section exceeds the maximum number of values.");
+            }
+        }
+
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
 
@@ -256,6 +269,7 @@ namespace MaxMind.Db
                     }
 
                     CheckDepth(depth);
+                    ConsumePointerTarget(ref budget);
                     return Decode(expectedType, pointer, out _, depth + 1, ref budget, injectables, network);
 
                 case ObjectType.Map:
@@ -518,7 +532,7 @@ namespace MaxMind.Db
 
             for (var i = 0; i < size; i++)
             {
-                var key = DecodeKey(offset, out offset, depth + 1);
+                var key = DecodeKey(offset, out offset, depth + 1, ref budget);
                 if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
                     var param = v;
@@ -610,7 +624,7 @@ namespace MaxMind.Db
 
         private readonly TypeActivatorCreator _typeActivatorCreator;
 
-        private Key DecodeKey(long offset, out long outOffset, int depth)
+        private Key DecodeKey(long offset, out long outOffset, int depth, ref int budget)
         {
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
@@ -622,7 +636,8 @@ namespace MaxMind.Db
                     // the stack with an uncatchable StackOverflowException.
                     CheckDepth(depth);
                     offset = DecodePointer(offset, size, out outOffset);
-                    return DecodeKey(offset, out _, depth + 1);
+                    ConsumePointerTarget(ref budget);
+                    return DecodeKey(offset, out _, depth + 1, ref budget);
 
                 case ObjectType.Utf8String:
                     outOffset = offset + size;
