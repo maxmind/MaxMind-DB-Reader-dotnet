@@ -41,6 +41,289 @@ namespace MaxMind.Db.Test
             }
         }
 
+        private static void WritePointer1(List<byte> bytes, int target)
+        {
+            // One-byte-payload pointer (type 1, pointer_size 1) with base 0.
+            bytes.Add((byte)((1 << 5) | ((target >> 8) & 0x7)));
+            bytes.Add((byte)(target & 0xFF));
+        }
+
+        private static byte[] NestedContainers(int count)
+        {
+            var bytes = new List<byte>(count * 3 + 1);
+            for (var i = 0; i < count; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    bytes.Add(0x01); // array with one element
+                    bytes.Add(0x04);
+                }
+                else
+                {
+                    bytes.Add(0xE1); // map with one entry
+                    bytes.Add(0x41); // one-byte string key
+                    bytes.Add((byte)'x');
+                }
+            }
+            bytes.Add(0xA0); // leaf: uint16 with value 0
+            return [.. bytes];
+        }
+
+        [Fact]
+        public static void TestPointerFanOutIsBounded()
+        {
+            // A data section of nested arrays, each holding two pointers to the
+            // node below, would cost 2**depth decode operations. The decoder
+            // bounds the number of values it decodes per lookup and rejects the
+            // database.
+            const int depth = 100;
+            var bytes = new List<byte> { 0xA0 }; // leaf: uint16 with value 0
+            var prev = 0;
+            for (var i = 0; i < depth; i++)
+            {
+                var offset = bytes.Count;
+                bytes.Add(0x02);
+                bytes.Add(0x04);
+                WritePointer1(bytes, prev);
+                WritePointer1(bytes, prev);
+                prev = offset;
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestMapPointerFanOutIsBounded()
+        {
+            // Each map has two distinct keys whose values point to the map
+            // below. Re-decoding the shared targets must consume the map's two
+            // key/value pairs from the value budget on every visit.
+            const int depth = 100;
+            var bytes = new List<byte> { 0xA0 }; // leaf: uint16 with value 0
+            var prev = 0;
+            for (var i = 0; i < depth; i++)
+            {
+                var offset = bytes.Count;
+                bytes.Add(0xE2);
+                bytes.Add(0x41);
+                bytes.Add((byte)'a');
+                WritePointer1(bytes, prev);
+                bytes.Add(0x41);
+                bytes.Add((byte)'b');
+                WritePointer1(bytes, prev);
+                prev = offset;
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(prev, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(32_768, false)]
+        [InlineData(32_769, true)]
+        public static void TestFlatScalarPointerTargetsConsumeValueBudget(int pointerCount, bool exceedsLimit)
+        {
+            // The array charges each pointer field, and following each pointer
+            // charges its scalar target. At 32,768 pointers the two charges use
+            // the full 65,536-value budget. One more must be rejected. This is
+            // intentionally flat so neither depth nor exponential fan-out can
+            // hide incorrect target accounting.
+            var encodedSize = pointerCount - 285;
+            var bytes = new List<byte>(pointerCount * 2 + 5)
+            {
+                0x40, // target: empty UTF-8 string
+                0x1E, 0x04, // array with a two-byte encoded size
+                (byte)(encodedSize >> 8), (byte)encodedSize,
+            };
+            for (var i = 0; i < pointerCount; i++)
+            {
+                WritePointer1(bytes, 0);
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(1, out _));
+                Assert.Equal(
+                    "The MaxMind DB file's data section exceeds the maximum number of values.",
+                    ex.Message);
+            }
+            else
+            {
+                var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(1, out var offset));
+                Assert.Equal(pointerCount, decoded.Count);
+                Assert.Equal(bytes.Count, offset);
+            }
+        }
+
+        [Theory]
+        [InlineData(21_845, false)]
+        [InlineData(21_846, true)]
+        public static void TestFlatModelKeyPointerTargetsConsumeValueBudget(int pointerCount, bool exceedsLimit)
+        {
+            // A map charges its key and value fields, and following each key
+            // pointer charges the UTF-8 target that DecodeKey hashes. At 21,845
+            // entries those charges use 65,535 values. One more entry crosses
+            // the limit. Empty keys are unknown to KeyOnlyModel, so their false
+            // values are skipped without introducing another pointer path.
+            var encodedSize = pointerCount - 285;
+            var bytes = new List<byte>(pointerCount * 4 + 4)
+            {
+                0x40, // target: empty UTF-8 string
+                0xFE, // map with a two-byte encoded size
+                (byte)(encodedSize >> 8), (byte)encodedSize,
+            };
+            for (var i = 0; i < pointerCount; i++)
+            {
+                WritePointer1(bytes, 0);
+                bytes.Add(0x00); // extended boolean
+                bytes.Add(0x07); // false
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(1, out _));
+                Assert.Equal(
+                    "The MaxMind DB file's data section exceeds the maximum number of values.",
+                    ex.Message);
+            }
+            else
+            {
+                var decoded = decoder.Decode<KeyOnlyModel>(1, out var offset);
+                Assert.Null(decoded.Name);
+                Assert.Equal(bytes.Count, offset);
+            }
+        }
+
+        [Theory]
+        [InlineData(32, false)]
+        [InlineData(33, false)]
+        [InlineData(514, true)]
+        public static void TestContainerDepthIsBounded(int containerCount, bool exceedsLimit)
+        {
+            // Each container level consumes several managed stack frames. The
+            // available stack varies by runtime, so do not require all 512
+            // format-level depths to fit. The decoder must reject the corrupt
+            // case with a catchable exception before the runtime terminates the
+            // process. Alternating maps and arrays exercises depth propagation
+            // through both paths.
+            var bytes = NestedContainers(containerCount);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+            }
+            else
+            {
+                decoder.Decode<object>(0, out var offset);
+                Assert.Equal(bytes.Length, offset);
+            }
+        }
+
+        [Fact]
+        public static void TestCyclicPointerThrows()
+        {
+            // A pointer to itself must throw a catchable InvalidDatabaseException
+            // rather than recursing until the stack overflows.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x20, 0x00], writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+        }
+
+        private sealed class KeyOnlyModel
+        {
+            [Constructor]
+            public KeyOnlyModel([MapKey("name")] string? name = null) => Name = name;
+
+            public string? Name { get; }
+        }
+
+        [Fact]
+        public static void TestOversizedMapIsBounded()
+        {
+            // A map entry decodes a key and a value, so a map of N entries costs
+            // 2N values. A map that declares 32,769 entries reaches 65,538
+            // values, just past the 65,536 limit, and is rejected before any
+            // entry is read. 0xfe is a map with size code 30, then the two size
+            // bytes for 32,769 - 285 = 32,484 (0x7ee4).
+            using var database = new MemoryMapBuffer(new MemoryStream([0xfe, 0x7e, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUnknownFieldValueCountIsBounded()
+        {
+            // The root map already charges its key and value. The unknown value
+            // is a complete array whose 65,535 children exceed the remaining
+            // budget. Skipping it must enforce the same limit as decoding it.
+            const int childCount = 65_535;
+            var bytes = new List<byte>(childCount * 2 + 16)
+            {
+                0xE1,
+                0x47,
+                (byte)'u', (byte)'n', (byte)'k', (byte)'n', (byte)'o', (byte)'w', (byte)'n',
+                0x1E, 0x04, 0xFE, 0xE2,
+            };
+            for (var i = 0; i < childCount; i++)
+            {
+                bytes.Add(0x00); // extended boolean with value false
+                bytes.Add(0x07);
+            }
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUnknownFieldDepthIsBounded()
+        {
+            // The unknown map value begins at depth one. Its 513th nested
+            // container therefore exceeds the maximum depth while being
+            // skipped, without any pointers in the data.
+            var nested = NestedContainers(513);
+            var bytes = new List<byte>(nested.Length + 9)
+            {
+                0xE1,
+                0x47,
+                (byte)'u', (byte)'n', (byte)'k', (byte)'n', (byte)'o', (byte)'w', (byte)'n',
+            };
+            bytes.AddRange(nested);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+            Assert.Contains("maximum depth", ex.Message);
+        }
+
+        [Fact]
+        public static void TestCyclicPointerAsMapKeyThrows()
+        {
+            // Decoding into a model type reads map keys through a separate path
+            // (DecodeKey) from the dictionary path. A key that is a pointer to
+            // itself must also throw a catchable InvalidDatabaseException rather
+            // than overflowing the stack.
+            // 0xe1: map with one entry. The key at offset 1 is a one-byte
+            // pointer (0x20 0x01) whose target is offset 1, the pointer itself.
+            using var database = new MemoryMapBuffer(new MemoryStream([0xe1, 0x20, 0x01], writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>

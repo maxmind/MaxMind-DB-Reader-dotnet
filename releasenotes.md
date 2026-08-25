@@ -23,6 +23,13 @@
 - Fixed a `[MapKey(..., true)]` member of a non-nullable value type throwing
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
+- Fixed a denial-of-service issue in the decoder. A crafted database could nest
+  data-section pointers to shared targets so that decoding one record cost
+  exponential time and memory from a small file. The decoder now limits the
+  number of values it decodes for a single record and rejects a database that
+  exceeds it, along with pointer cycles and over-deep data, with an
+  `InvalidDatabaseException`. This matches the reader resource limits now
+  recommended by the MaxMind DB specification. See GHSA-hj94-g986-h9r7.
 
 ## 5.1.0 (2026-05-22)
 
