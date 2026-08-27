@@ -681,6 +681,62 @@ namespace MaxMind.Db.Test
             }
         }
 
+        // A crafted database can point many array elements or map values at one
+        // large string or bytes value. The value count stays low, but a reader
+        // that copies each target materializes far more than the file holds.
+        // The decoder bounds the total string and bytes payload per lookup and
+        // rejects these. See GHSA-hj94-g986-h9r7.
+        [Theory]
+        [InlineData("MaxMind-DB-test-payload-amplification-dos.mmdb", "maximum payload size")]
+        [InlineData("MaxMind-DB-test-payload-amplification-dos-string.mmdb", "maximum payload size")]
+        // The worst-case fixture keeps its payload just under 2 MiB, so only a
+        // bound other than the payload budget can reject it. This reader charges
+        // the array's declared size and each pointer follow, so its value budget
+        // rejects the huge fan-out first; either way the amplification is stopped.
+        [InlineData("MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb", "maximum number of values")]
+        public void TestPayloadAmplificationIsRejected(string fixture, string expected)
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, fixture));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains(expected, ex.Message);
+        }
+
+        [Fact]
+        public void TestPayloadAtLimitDecodes()
+        {
+            // The record references exactly 2 MiB of string and bytes payload,
+            // the boundary the limit allows, so it must still decode.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-payload-limit.mmdb"));
+            var result = reader.Find<object>(IPAddress.Parse("1.1.1.1"));
+            var list = Assert.IsType<List<object>>(result);
+            Assert.Equal(33, list.Count);
+        }
+
+        [Fact]
+        public void TestPayloadOverLimitIsRejected()
+        {
+            // One byte over 2 MiB. Catches an off-by-one in the comparison.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-payload-limit-over.mmdb"));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public void TestMetadataPayloadLimitIsRejectedOnOpen()
+        {
+            // Metadata is decoded while opening the database, so the payload
+            // bound must cover it too. This metadata references more than 2 MiB
+            // of string payload through pointers in its languages array.
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => new Reader(
+                    Path.Combine(_testDataRoot, "MaxMind-DB-test-metadata-payload-limit.mmdb")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;

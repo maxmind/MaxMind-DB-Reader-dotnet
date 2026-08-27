@@ -51,11 +51,20 @@ namespace MaxMind.Db
         // stack overflows (a StackOverflowException cannot be caught in .NET).
         // The value limit stops a pointer fan-out, where nested pointers to
         // shared targets would otherwise cost 2**depth decode operations. The
-        // running depth and value budget are passed through the decode call, so
-        // a single Decoder stays safe for concurrent lookups with no shared
-        // mutable state. The largest real records decode a few hundred values.
+        // payload limit stops payload amplification, where many pointers to one
+        // large string or bytes value would otherwise materialize N*size bytes
+        // from a small file; each string, bytes, and wide-integer value is
+        // charged by its length wherever it is decoded, so a re-decoded shared
+        // target is recharged. The running depth, value budget, and payload
+        // budget are passed through the decode call, so a single Decoder stays
+        // safe for concurrent lookups with no shared mutable state. The largest
+        // real records decode a few hundred values and a few kilobytes.
         private const int MaxDepth = 512;
         private const int MaxDecodedValues = 1 << 16;
+        // 2 MiB, matching libmaxminddb and the Go reader. A single value can
+        // legitimately approach the 16 MiB format maximum, so this bounds the
+        // total payload materialized for one lookup, not any one value.
+        private const int MaxPayloadBytes = 1 << 21;
         // Each data-structure level uses several managed frames. Some runtimes
         // have less stack space than others, so the format-level limit alone
         // cannot guarantee that there is enough CLR stack to reach it. Real
@@ -129,6 +138,23 @@ namespace MaxMind.Db
             }
         }
 
+        // Charges a string, bytes, or wide-integer value by its length before
+        // the bytes are materialized. Charged on every decode of the value, so
+        // a fan-out that points many times at one large target recharges it and
+        // is rejected. Compare before subtracting so an oversized declared size
+        // cannot make the counter wrap, and so the bound holds before an
+        // over-long value is copied.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ConsumePayload(int size, ref int payloadBudget)
+        {
+            if (size > payloadBudget)
+            {
+                throw new InvalidDatabaseException(
+                    "The MaxMind DB file's data section exceeds the maximum payload size.");
+            }
+            payloadBudget -= size;
+        }
+
         private readonly DictionaryActivatorCreator _dictionaryActivatorCreator;
         private readonly ListActivatorCreator _listActivatorCreator;
 
@@ -159,29 +185,32 @@ namespace MaxMind.Db
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
             // The per-lookup decode limits are threaded as parameters (a value
-            // depth and a shared remaining-value budget) rather than stored on
-            // the shared Decoder, so they add no thread-local access and keep the
-            // decoder safe for concurrent reads.
+            // depth, a shared remaining-value budget, and a shared remaining
+            // payload-byte budget) rather than stored on the shared Decoder, so
+            // they add no thread-local access and keep the decoder safe for
+            // concurrent reads.
             var budget = MaxDecodedValues;
-            return DecodeNested<T>(offset, out outOffset, 0, ref budget, injectables, network);
+            var payloadBudget = MaxPayloadBytes;
+            return DecodeNested<T>(offset, out outOffset, 0, ref budget, ref payloadBudget, injectables, network);
         }
 
-        private T DecodeNested<T>(long offset, out long outOffset, int depth, ref int budget, InjectableValues? injectables, Network? network) where T : class
+        private T DecodeNested<T>(long offset, out long outOffset, int depth, ref int budget, ref int payloadBudget, InjectableValues? injectables, Network? network) where T : class
         {
-            if (Decode(typeof(T), offset, out outOffset, depth, ref budget, injectables, network) is not T decoded)
+            if (Decode(typeof(T), offset, out outOffset, depth, ref budget, ref payloadBudget, injectables, network) is not T decoded)
             {
                 throw new InvalidDatabaseException("The value cannot be decoded as " + typeof(T));
             }
             return decoded;
         }
 
-        private object Decode(Type expectedType, long offset, out long outOffset, int depth, ref int budget, InjectableValues? injectables = null, Network? network = null)
+        private object Decode(Type expectedType, long offset, out long outOffset, int depth, ref int budget, ref int payloadBudget, InjectableValues? injectables = null, Network? network = null)
         {
-            // Scalars decode with no guard overhead; the depth and value limits
+            // Scalars decode with no guard overhead beyond the payload charge on
+            // string, bytes, and wide-integer values; the depth and value limits
             // are applied only where the structure nests (containers and
             // pointers), which keeps the per-value path free.
             var type = CtrlData(offset, out var size, out offset);
-            return DecodeByType(expectedType, type, offset, size, out outOffset, depth, ref budget, injectables, network);
+            return DecodeByType(expectedType, type, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
         }
 
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
@@ -240,6 +269,7 @@ namespace MaxMind.Db
         /// <param name="outOffset">The out offset</param>
         /// <param name="depth">The current nesting depth.</param>
         /// <param name="budget">The remaining number of values that may be decoded.</param>
+        /// <param name="payloadBudget">The remaining string and bytes payload budget.</param>
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns></returns>
@@ -252,6 +282,7 @@ namespace MaxMind.Db
             out long outOffset,
             int depth,
             ref int budget,
+            ref int payloadBudget,
             InjectableValues? injectables,
             Network? network
             )
@@ -270,23 +301,23 @@ namespace MaxMind.Db
 
                     CheckDepth(depth);
                     ConsumePointerTarget(ref budget);
-                    return Decode(expectedType, pointer, out _, depth + 1, ref budget, injectables, network);
+                    return Decode(expectedType, pointer, out _, depth + 1, ref budget, ref payloadBudget, injectables, network);
 
                 case ObjectType.Map:
                     // A map entry decodes a key and a value, so it costs two values.
                     CheckContainer(depth, size * 2, ref budget);
-                    return DecodeMap(expectedType, offset, size, out outOffset, depth, ref budget, injectables, network);
+                    return DecodeMap(expectedType, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
 
                 case ObjectType.Array:
                     CheckContainer(depth, size, ref budget);
-                    return DecodeArray(expectedType, size, offset, out outOffset, depth, ref budget, injectables, network);
+                    return DecodeArray(expectedType, size, offset, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
 
                 case ObjectType.Boolean:
                     outOffset = offset;
                     return DecodeBoolean(expectedType, size);
 
                 case ObjectType.Utf8String:
-                    return DecodeString(expectedType, offset, size);
+                    return DecodeString(expectedType, offset, size, ref payloadBudget);
 
                 case ObjectType.Double:
                     return DecodeDouble(expectedType, offset, size);
@@ -295,22 +326,22 @@ namespace MaxMind.Db
                     return DecodeFloat(expectedType, offset, size);
 
                 case ObjectType.Bytes:
-                    return DecodeBytes(expectedType, offset, size);
+                    return DecodeBytes(expectedType, offset, size, ref payloadBudget);
 
                 case ObjectType.Uint16:
                     return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint32:
-                    return DecodeLong(expectedType, offset, size);
+                    return DecodeLong(expectedType, offset, size, ref payloadBudget);
 
                 case ObjectType.Int32:
                     return DecodeInteger(expectedType, offset, size);
 
                 case ObjectType.Uint64:
-                    return DecodeUInt64(expectedType, offset, size);
+                    return DecodeUInt64(expectedType, offset, size, ref payloadBudget);
 
                 case ObjectType.Uint128:
-                    return DecodeBigInteger(expectedType, offset, size);
+                    return DecodeBigInteger(expectedType, offset, size, ref payloadBudget);
 
                 default:
                     throw new InvalidDatabaseException("Unable to handle type: " + type);
@@ -383,17 +414,19 @@ namespace MaxMind.Db
         ///     Decodes the string.
         /// </summary>
         /// <returns></returns>
-        private string DecodeString(Type expectedType, long offset, int size)
+        private string DecodeString(Type expectedType, long offset, int size, ref int payloadBudget)
         {
             ReflectionUtil.CheckType(expectedType, typeof(string));
 
+            ConsumePayload(size, ref payloadBudget);
             return _database.ReadString(offset, size);
         }
 
-        private byte[] DecodeBytes(Type expectedType, long offset, int size)
+        private byte[] DecodeBytes(Type expectedType, long offset, int size, ref int payloadBudget)
         {
             ReflectionUtil.CheckType(expectedType, typeof(byte[]));
 
+            ConsumePayload(size, ref payloadBudget);
             return _database.Read(offset, size);
         }
 
@@ -406,6 +439,7 @@ namespace MaxMind.Db
         /// <param name="outOffset">The out offset.</param>
         /// <param name="depth">The current nesting depth.</param>
         /// <param name="budget">The remaining number of values that may be decoded.</param>
+        /// <param name="payloadBudget">The remaining string and bytes payload budget.</param>
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns></returns>
@@ -416,6 +450,7 @@ namespace MaxMind.Db
             out long outOffset,
             int depth,
             ref int budget,
+            ref int payloadBudget,
             InjectableValues? injectables,
             Network? network
             )
@@ -432,14 +467,14 @@ namespace MaxMind.Db
                 (SourceGeneratorSupport.HasNonGenericDictionaryRegistration &&
                  SourceGeneratorSupport.TryGetDictionaryRegistration(expectedType, out _)))
             {
-                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, depth, ref budget, injectables, network);
+                return DecodeMapToDictionary(expectedType, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
             }
 
-            return DecodeMapToType(expectedType, offset, size, out outOffset, depth, ref budget, injectables, network);
+            return DecodeMapToType(expectedType, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
         }
 
         private object DecodeMapToDictionary(Type expectedType, long offset, int size, out long outOffset,
-            int depth, ref int budget, InjectableValues? injectables, Network? network)
+            int depth, ref int budget, ref int payloadBudget, InjectableValues? injectables, Network? network)
         {
             // Fast path for Dictionary<string, string> (and parents).
             if (expectedType.IsAssignableFrom(typeof(Dictionary<string, string>)))
@@ -447,8 +482,8 @@ namespace MaxMind.Db
                 Dictionary<string, string> dic = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var key = DecodeNested<string>(offset, out offset, depth + 1, ref budget, null, null);
-                    var value = DecodeNested<string>(offset, out offset, depth + 1, ref budget, injectables, network);
+                    var key = DecodeNested<string>(offset, out offset, depth + 1, ref budget, ref payloadBudget, null, null);
+                    var value = DecodeNested<string>(offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     dic.Add(key, value);
                 }
 
@@ -462,8 +497,8 @@ namespace MaxMind.Db
                 Dictionary<string, object> dic = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var key = DecodeNested<string>(offset, out offset, depth + 1, ref budget, null, null);
-                    var value = DecodeNested<object>(offset, out offset, depth + 1, ref budget, injectables, network);
+                    var key = DecodeNested<string>(offset, out offset, depth + 1, ref budget, ref payloadBudget, null, null);
+                    var value = DecodeNested<object>(offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     dic.Add(key, value);
                 }
 
@@ -477,9 +512,9 @@ namespace MaxMind.Db
                 var generatedDictionary = registration.Factory(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var key = Decode(registration.KeyType, offset, out offset, depth + 1, ref budget);
+                    var key = Decode(registration.KeyType, offset, out offset, depth + 1, ref budget, ref payloadBudget);
                     var value = Decode(
-                        registration.ValueType, offset, out offset, depth + 1, ref budget, injectables, network);
+                        registration.ValueType, offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     registration.Add(generatedDictionary, key, value);
                 }
 
@@ -497,8 +532,8 @@ namespace MaxMind.Db
             var obj = (IDictionary)_dictionaryActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
-                var key = Decode(genericArgs[0], offset, out offset, depth + 1, ref budget);
-                var value = Decode(genericArgs[1], offset, out offset, depth + 1, ref budget, injectables, network);
+                var key = Decode(genericArgs[0], offset, out offset, depth + 1, ref budget, ref payloadBudget);
+                var value = Decode(genericArgs[1], offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                 obj.Add(key, value);
             }
 
@@ -513,6 +548,7 @@ namespace MaxMind.Db
             out long outOffset,
             int depth,
             ref int budget,
+            ref int payloadBudget,
             InjectableValues? injectables,
             Network? network
             )
@@ -532,12 +568,12 @@ namespace MaxMind.Db
 
             for (var i = 0; i < size; i++)
             {
-                var key = DecodeKey(offset, out offset, depth + 1, ref budget);
+                var key = DecodeKey(offset, out offset, depth + 1, ref budget, ref payloadBudget);
                 if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
                     var param = v;
                     var paramType = param.MemberType;
-                    var value = Decode(paramType, offset, out offset, depth + 1, ref budget, injectables, network);
+                    var value = Decode(paramType, offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     parameters[param.Position] = value;
                 }
                 else
@@ -624,7 +660,7 @@ namespace MaxMind.Db
 
         private readonly TypeActivatorCreator _typeActivatorCreator;
 
-        private Key DecodeKey(long offset, out long outOffset, int depth, ref int budget)
+        private Key DecodeKey(long offset, out long outOffset, int depth, ref int budget, ref int payloadBudget)
         {
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
@@ -637,9 +673,13 @@ namespace MaxMind.Db
                     CheckDepth(depth);
                     offset = DecodePointer(offset, size, out outOffset);
                     ConsumePointerTarget(ref budget);
-                    return DecodeKey(offset, out _, depth + 1, ref budget);
+                    return DecodeKey(offset, out _, depth + 1, ref budget, ref payloadBudget);
 
                 case ObjectType.Utf8String:
+                    // The key is hashed over its bytes now and compared later, so
+                    // a pointer-backed key re-hashes its target on every visit.
+                    // Charge its length so a fan-out of large keys is bounded.
+                    ConsumePayload(size, ref payloadBudget);
                     outOffset = offset + size;
                     return new Key(_database, offset, size);
 
@@ -691,12 +731,16 @@ namespace MaxMind.Db
         ///     Decodes the long.
         /// </summary>
         /// <returns></returns>
-        private long DecodeLong(Type expectedType, long offset, int size)
+        private long DecodeLong(Type expectedType, long offset, int size, ref int payloadBudget)
         {
             if (expectedType != typeof(long) && expectedType != typeof(long?))
             {
                 ReflectionUtil.CheckType(expectedType, typeof(long));
             }
+            // A well-formed uint32 is at most four bytes, but the size is not
+            // range-checked before the read, so charge the declared length to
+            // bound an oversized or fanned-out integer before it is read.
+            ConsumePayload(size, ref payloadBudget);
             return _database.ReadLong(offset, size);
         }
 
@@ -709,6 +753,7 @@ namespace MaxMind.Db
         /// <param name="outOffset">The out offset.</param>
         /// <param name="depth">The current nesting depth.</param>
         /// <param name="budget">The remaining number of values that may be decoded.</param>
+        /// <param name="payloadBudget">The remaining string and bytes payload budget.</param>
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns></returns>
@@ -719,7 +764,7 @@ namespace MaxMind.Db
             Justification = "Generated collection registrations return before this runtime generic construction path. This path serves only the documented fallback for unregistered collection types, which is unsupported in NativeAOT applications.")]
 #endif
         private object DecodeArray(Type expectedType, int size, long offset, out long outOffset,
-            int depth, ref int budget, InjectableValues? injectables, Network? network)
+            int depth, ref int budget, ref int payloadBudget, InjectableValues? injectables, Network? network)
         {
             // Fast path for List<string> (and parents).
             if (expectedType != typeof(object) && expectedType.IsAssignableFrom(typeof(List<string>)))
@@ -727,7 +772,7 @@ namespace MaxMind.Db
                 List<string> list = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var r = DecodeNested<string>(offset, out offset, depth + 1, ref budget, injectables, network);
+                    var r = DecodeNested<string>(offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     list.Add(r);
                 }
 
@@ -741,7 +786,7 @@ namespace MaxMind.Db
                 List<object> list = new(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var value = DecodeNested<object>(offset, out offset, depth + 1, ref budget, injectables, network);
+                    var value = DecodeNested<object>(offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     list.Add(value);
                 }
 
@@ -756,7 +801,7 @@ namespace MaxMind.Db
                 for (var i = 0; i < size; i++)
                 {
                     var value = Decode(
-                        registration.ElementType, offset, out offset, depth + 1, ref budget, injectables, network);
+                        registration.ElementType, offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                     registration.Add(generatedCollection, value);
                 }
 
@@ -776,7 +821,7 @@ namespace MaxMind.Db
             var array = _listActivatorCreator.GetActivator(expectedType)(size);
             for (var i = 0; i < size; i++)
             {
-                var value = Decode(argType, offset, out offset, depth + 1, ref budget, injectables, network);
+                var value = Decode(argType, offset, out offset, depth + 1, ref budget, ref payloadBudget, injectables, network);
                 addMethod.Invoke(array, [value]);
             }
 
@@ -788,12 +833,13 @@ namespace MaxMind.Db
         ///     Decodes the uint64.
         /// </summary>
         /// <returns></returns>
-        private ulong DecodeUInt64(Type expectedType, long offset, int size)
+        private ulong DecodeUInt64(Type expectedType, long offset, int size, ref int payloadBudget)
         {
             if (expectedType != typeof(ulong) && expectedType != typeof(ulong?))
             {
                 ReflectionUtil.CheckType(expectedType, typeof(ulong));
             }
+            ConsumePayload(size, ref payloadBudget);
             return _database.ReadULong(offset, size);
         }
 
@@ -801,12 +847,16 @@ namespace MaxMind.Db
         ///     Decodes the big integer.
         /// </summary>
         /// <returns></returns>
-        private BigInteger DecodeBigInteger(Type expectedType, long offset, int size)
+        private BigInteger DecodeBigInteger(Type expectedType, long offset, int size, ref int payloadBudget)
         {
             if (expectedType != typeof(BigInteger) && expectedType != typeof(BigInteger?))
             {
                 ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
             }
+            // ReadBigInteger copies the declared bytes into a new array before
+            // range-checking, so charge the length to bound an oversized or
+            // fanned-out uint128 before the copy.
+            ConsumePayload(size, ref payloadBudget);
             return _database.ReadBigInteger(offset, size);
         }
 

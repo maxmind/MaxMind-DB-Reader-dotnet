@@ -25,11 +25,14 @@
   the reflection path before this release and is now consistent across both.
 - Fixed a denial-of-service issue in the decoder. A crafted database could nest
   data-section pointers to shared targets so that decoding one record cost
-  exponential time and memory from a small file. The decoder now limits the
-  number of values it decodes for a single record and rejects a database that
-  exceeds it, along with pointer cycles and over-deep data, with an
-  `InvalidDatabaseException`. This matches the reader resource limits now
-  recommended by the MaxMind DB specification. See GHSA-hj94-g986-h9r7.
+  exponential time and memory from a small file, or point many values at one
+  large string or bytes value so that decoding copied far more data than the
+  file holds. The decoder now limits the number of values it decodes and the
+  total string and bytes payload it materializes for a single record, and
+  rejects a database that exceeds either limit, along with pointer cycles and
+  over-deep data, with an `InvalidDatabaseException`. This matches the reader
+  resource limits now recommended by the MaxMind DB specification. See
+  GHSA-hj94-g986-h9r7.
 
 ## 5.1.0 (2026-05-22)
 
