@@ -11,6 +11,7 @@
   collection types used directly with `Find<T>` and `FindAll<T>`.
 - Reused immutable source-generated activation metadata across readers, reducing
   the time and allocation cost of the first model lookup on a new reader.
+- Improved lookup performance.
 - Enabled trim, AOT, and single-file compatibility analysis.
 - Added the `MMDBSG001` through `MMDBSG016` diagnostics, which report model
   shapes the generator cannot support so that they are caught at build time

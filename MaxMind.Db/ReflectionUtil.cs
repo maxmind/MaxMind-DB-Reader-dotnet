@@ -93,8 +93,15 @@ namespace MaxMind.Db
             }
             if (!expected.IsAssignableFrom(from))
             {
-                throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
+                ThrowCannotConvert(expected, from);
             }
+        }
+
+        // Keep error-message construction out of callers that inline CheckType.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowCannotConvert(Type expected, Type from)
+        {
+            throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
         }
     }
 }
