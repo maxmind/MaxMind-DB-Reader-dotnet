@@ -300,6 +300,41 @@ namespace MaxMind.Db.Test
             Assert.Contains("maximum depth", ex.Message);
         }
 
+        // These headers declare oversized values without a body. Expect
+        // a limit error, proving rejection occurs before a payload read.
+
+        [Fact]
+        public static void TestOversizedArrayIsRejectedBeforeFirstChild()
+        {
+            // Declare 65,536 children, one more than the root leaves available.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x1e, 0x04, 0xfe, 0xe3], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestOversizedStringIsRejectedBeforeItIsRead()
+        {
+            // Declare 2 MiB + 1 string bytes without a payload.
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x5f, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public static void TestOversizedBytesIsRejectedBeforeItIsRead()
+        {
+            // Declare 2 MiB + 1 bytes without a payload.
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x9f, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         [Fact]
         public static void TestTruncatedPayloadThrowsDatabaseException()
         {
@@ -315,9 +350,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public static void TestBufferReadRejectsOutOfBoundsOffsets()
         {
-            // MemoryMapBuffer's netstandard2.0 read paths and its modern
-            // GetSpan path share one bounds check. This exercises it
-            // directly through Read rather than through the decoder.
+            // Exercise the shared bounds check through the buffer API.
             using var database = new MemoryMapBuffer(new MemoryStream([0x01, 0x02, 0x03, 0x04], writable: false));
 
             // A read that ends exactly at Length is accepted.
