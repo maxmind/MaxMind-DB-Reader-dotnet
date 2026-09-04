@@ -365,6 +365,62 @@ namespace MaxMind.Db.Test
             Assert.Contains("beyond the end", negativeOffset.Message);
         }
 
+        private static byte[] PointerChain(int length)
+        {
+            // Each pointer targets the next two-byte link. The chain ends
+            // in a uint16 zero at offset 2 * length.
+            var bytes = new List<byte>(length * 2 + 1);
+            for (var i = 0; i < length; i++)
+            {
+                WritePointer1(bytes, 2 * (i + 1));
+            }
+            bytes.Add(0xA0); // leaf: uint16 with value 0
+            return [.. bytes];
+        }
+
+        [Theory]
+        [InlineData(511, false)]
+        [InlineData(513, false)]
+        [InlineData(514, true)]
+        public static void TestPointerChainDepthIsBounded(int chainLength, bool exceedsLimit)
+        {
+            // A chain of 513 pointer follows is allowed. The 514th follow
+            // exceeds the depth limit.
+            var bytes = PointerChain(chainLength);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+            }
+            else
+            {
+                Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(0, out _)));
+            }
+        }
+
+        [Fact]
+        public static void TestWideIntegerConsumesPayloadBudget()
+        {
+            // DecodeBigInteger calls ConsumePayload before ReadBigInteger
+            // copies the declared bytes into a new array. An oversized
+            // uint128 must be charged against the payload budget before the
+            // copy. This declares a size one byte over the 2 MiB budget with
+            // no body. An early charge reports the payload limit. A late
+            // charge would instead read past the end and report truncation.
+            // 0x1f selects the extended type with size code 31 (three size
+            // bytes). 0x03 is the extended type byte for uint128
+            // (ObjectType.Uint128 - 7). The size bytes encode
+            // 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x1f, 0x03, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
