@@ -30,13 +30,17 @@
   holds. The decoder now rejects a database that exceeds any of three per-record
   limits with an `InvalidDatabaseException`, along with pointer cycles and
   over-deep data. The decoded-value count (65,536) and nesting depth (512) are
-  the limits the MaxMind DB specification recommends. The total string and bytes
-  payload for one record (2 MiB) is specific to this reader and matches
-  libmaxminddb and the Go reader; the specification leaves that policy to each
-  implementation. See GHSA-hj94-g986-h9r7.
+  the limits the MaxMind DB specification recommends. The total string, bytes,
+  and wide-integer payload for one record (2 MiB) is specific to this reader and
+  matches libmaxminddb and the Go reader; the specification leaves that policy
+  to each implementation. See GHSA-hj94-g986-h9r7.
 - A truncated or out-of-bounds read in the data section now throws
-  `InvalidDatabaseException` instead of `ArgumentOutOfRangeException`. Malformed
-  database content is reported consistently as a database error.
+  `InvalidDatabaseException` instead of `ArgumentOutOfRangeException`. On
+  `netstandard2.0`, the same read used to return zero bytes instead of throwing,
+  because a memory-mapped view is rounded up to the page size. A truncated
+  database could decode to wrong data instead of being rejected. Malformed
+  database content is now reported consistently as a database error on every
+  target.
 
 ## 5.1.0 (2026-05-22)
 
