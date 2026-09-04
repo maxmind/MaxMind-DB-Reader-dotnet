@@ -24,15 +24,16 @@
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
 - Fixed a denial-of-service issue in the decoder. A crafted database could nest
-  data-section pointers to shared targets so that decoding one record cost
+  data-section pointers to shared targets so decoding one record cost
   exponential time and memory from a small file, or point many values at one
-  large string or bytes value so that decoding copied far more data than the
-  file holds. The decoder now limits the number of values it decodes and the
-  total string and bytes payload it materializes for a single record, and
-  rejects a database that exceeds either limit, along with pointer cycles and
-  over-deep data, with an `InvalidDatabaseException`. This matches the reader
-  resource limits now recommended by the MaxMind DB specification. See
-  GHSA-hj94-g986-h9r7.
+  large string or bytes value so decoding copied far more data than the file
+  holds. The decoder now rejects a database that exceeds any of three per-record
+  limits with an `InvalidDatabaseException`, along with pointer cycles and
+  over-deep data. The decoded-value count (65,536) and nesting depth (512) are
+  the limits the MaxMind DB specification recommends. The total string and bytes
+  payload for one record (2 MiB) is specific to this reader and matches
+  libmaxminddb and the Go reader; the specification leaves that policy to each
+  implementation. See GHSA-hj94-g986-h9r7.
 - A truncated or out-of-bounds read in the data section now throws
   `InvalidDatabaseException` instead of `ArgumentOutOfRangeException`. Malformed
   database content is reported consistently as a database error.
