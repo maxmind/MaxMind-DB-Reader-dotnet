@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 #endregion
@@ -271,7 +273,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public static void TestUnknownFieldDepthIsBounded()
         {
-            // The unknown map value begins at depth one. Its 513th nested
+            // The unknown map value begins at depth one. Its 512th nested
             // container therefore exceeds the maximum depth while being
             // skipped, without any pointers in the data.
             var nested = NestedContainers(513);
@@ -380,11 +382,11 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(511, false)]
-        [InlineData(513, false)]
-        [InlineData(514, true)]
+        [InlineData(512, false)]
+        [InlineData(513, true)]
         public static void TestPointerChainDepthIsBounded(int chainLength, bool exceedsLimit)
         {
-            // A chain of 513 pointer follows is allowed. The 514th follow
+            // A chain of 512 pointer follows is allowed. The 513th follow
             // exceeds the depth limit.
             var bytes = PointerChain(chainLength);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
@@ -398,6 +400,47 @@ namespace MaxMind.Db.Test
             else
             {
                 Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(0, out _)));
+            }
+        }
+
+        [Fact]
+        public static void TestDepthAccumulatesAcrossContainerIntoPointerChain()
+        {
+            // The array element adds one pointer to a 511-link chain.
+            // Those 512 follows succeed at root depth but exceed the limit
+            // when the array contributes one level. Give the thread enough
+            // stack to test the depth limit without a runtime stack rejection.
+            var chain = PointerChain(511);
+            var arrayOffset = chain.Length;
+            var bytes = new List<byte>(chain.Length + 4);
+            bytes.AddRange(chain);
+            bytes.Add(0x01); // extended type, size 1
+            bytes.Add(0x04); // extended type byte: array (11 - 7)
+            var pointerOffset = bytes.Count;
+            WritePointer1(bytes, 0);
+            Exception? failure = null;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+                    var decoder = new Decoder(database, 0);
+                    Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(pointerOffset, out _)));
+                    var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(arrayOffset, out _));
+                    Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+            }, maxStackSize: 16 << 20);
+            thread.Start();
+            thread.Join();
+
+            if (failure != null)
+            {
+                ExceptionDispatchInfo.Capture(failure).Throw();
             }
         }
 

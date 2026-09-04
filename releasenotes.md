@@ -25,11 +25,11 @@
   the reflection path before this release and is now consistent across both.
 - Added decoding limits to prevent crafted databases from consuming excessive
   time and memory. Each lookup and metadata read allows at most 65,536 decoded
-  values and 2 MiB of combined string, bytes, uint32, uint64, and uint128 payload. Exceeding a limit or
-  encountering a pointer cycle throws `InvalidDatabaseException`. These limits
-  reject some previously accepted databases, including those with a string or
-  bytes value larger than 2 MiB. Available stack space can impose a lower
-  nesting limit.
+  values, 512 nesting levels, and 2 MiB of combined string, bytes, uint32,
+  uint64, and uint128 payload. Exceeding a limit or encountering a pointer cycle
+  throws `InvalidDatabaseException`. These limits reject some previously
+  accepted databases, including those with a string or bytes value larger than
+  2 MiB. Available stack space can impose a lower nesting limit.
 - Truncated or out-of-bounds data reads now throw `InvalidDatabaseException`
   instead of `ArgumentOutOfRangeException`. This also prevents incorrect decoded
   values on `netstandard2.0`.
