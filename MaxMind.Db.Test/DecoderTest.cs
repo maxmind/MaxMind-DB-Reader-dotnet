@@ -246,32 +246,29 @@ namespace MaxMind.Db.Test
             }
         }
 
-        [Theory]
-        [InlineData(512, false)]
-        [InlineData(513, true)]
-        public static void TestContainerDepthBoundaryIsExact(int containerCount, bool exceedsLimit)
+        [Fact]
+        public static void TestContainerDepthBoundaryRejectsOneOverTheLimit()
         {
-            // TestContainerDepthIsBounded brackets the limit loosely (32, 33,
-            // 514) because a deeply recursive container decode can exhaust
-            // the CLR stack before reaching the logical limit on some
-            // runtimes. This test pins the corrected format-level boundary
-            // at exactly 512 containers accepted and 513 rejected. Verified:
-            // 512 containers decode with no stack-probe rejection on .NET 10
-            // on Linux, the CI-representative runtime for this repo.
-            var bytes = NestedContainers(containerCount);
+            // Pins the corrected format-level boundary from the tight side:
+            // 513 nested containers must reject. This does not pin a
+            // matching 512-container accept case. Commit b254329 on this
+            // branch deliberately dropped that accept row from
+            // TestContainerDepthIsBounded (513 down to 32/33) after a deep
+            // container decode terminated the .NET 8 test host on macOS and
+            // Windows with an uncatchable StackOverflowException. A 512
+            // versus 513 container difference is one stack-frame group
+            // through the same heavier decode path, so the risk is the
+            // same. Do not re-add a 512-container accept row here. The
+            // tight accept side stays pinned by
+            // TestPointerChainDepthIsBounded instead, where each level is
+            // cheap. A rejection cannot overflow the stack: the guard fires
+            // before the recursion that would grow it.
+            var bytes = NestedContainers(513);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
-            if (exceedsLimit)
-            {
-                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
-            }
-            else
-            {
-                decoder.Decode<object>(0, out var offset);
-                Assert.Equal(bytes.Length, offset);
-            }
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
         }
 
         [Fact]
@@ -339,7 +336,7 @@ namespace MaxMind.Db.Test
         [Fact]
         public static void TestUnknownFieldDepthIsBounded()
         {
-            // The unknown map value begins at depth one. Its 513th nested
+            // The unknown map value begins at depth one. Its 512th nested
             // container therefore exceeds the maximum depth while being
             // skipped, without any pointers in the data.
             var nested = NestedContainers(513);
@@ -506,16 +503,19 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public static void TestContainerSlotsEachExceedDepthViaPointerChain()
+        public static void TestDepthAccumulatesAcrossContainerIntoPointerChain()
         {
-            // Pointer follows no longer cost value budget. The worst case is
-            // now MaxDecodedValues container slots, each walking a long
-            // pointer chain past MaxDepth. TestCyclicPointerThrows covers the
-            // depth guard on one pointer. TestPointerChainDepthIsBounded pins
-            // the exact chain boundary. Neither pins this shape: a container
-            // whose every slot independently crosses the depth limit. A
-            // three-slot array is enough to pin the shape. A 65,535-slot
-            // fixture is not needed.
+            // The array's elements decode at depth one, inside the
+            // container, not depth zero. A pointer chain followed from
+            // there inherits that starting depth: this 600-link chain,
+            // read through the array's first slot, rejects at the same
+            // format-level depth TestPointerChainDepthIsBounded pins for a
+            // bare chain, one link earlier than a chain starting at depth
+            // zero would. The array's other two slots are never reached,
+            // because the first slot's chain already throws. This does not
+            // prove every slot independently exceeds the limit, only that
+            // depth carries across the container-to-pointer boundary
+            // instead of resetting.
             var chain = PointerChain(600);
             var arrayOffset = chain.Length;
             var bytes = new List<byte>(chain.Length + 8);
