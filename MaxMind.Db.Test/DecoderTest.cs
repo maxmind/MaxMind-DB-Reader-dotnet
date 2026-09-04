@@ -191,10 +191,9 @@ namespace MaxMind.Db.Test
         }
 
         [Theory]
-        [InlineData(32, false)]
-        [InlineData(33, false)]
-        [InlineData(514, true)]
-        public static void TestContainerDepthIsBounded(int containerCount, bool exceedsLimit)
+        [InlineData(32)]
+        [InlineData(33)]
+        public static void TestContainerDepthAroundStackProbeDecodes(int containerCount)
         {
             // Exercise alternating maps and arrays on both sides of the
             // runtime stack-probe threshold.
@@ -202,16 +201,20 @@ namespace MaxMind.Db.Test
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
-            if (exceedsLimit)
-            {
-                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
-            }
-            else
-            {
-                decoder.Decode<object>(0, out var offset);
-                Assert.Equal(bytes.Length, offset);
-            }
+            decoder.Decode<object>(0, out var offset);
+            Assert.Equal(bytes.Length, offset);
+        }
+
+        [Fact]
+        public static void TestContainerDepthBoundaryRejectsOneOverTheLimit()
+        {
+            // One container beyond the depth limit must be rejected.
+            var bytes = NestedContainers(513);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
         }
 
         [Fact]
@@ -459,6 +462,40 @@ namespace MaxMind.Db.Test
             // 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
             using var database = new MemoryMapBuffer(
                 new MemoryStream([0x1f, 0x03, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUint32ConsumesPayloadBudget()
+        {
+            // DecodeLong shares ConsumePayload's call pattern with
+            // DecodeBigInteger: it charges the declared length before
+            // ReadLong reads it. This is the same shape as
+            // TestWideIntegerConsumesPayloadBudget, for a uint32 instead of
+            // a uint128. Uint32 (type 6) is a direct type, so no extended
+            // type byte is needed: 0xdf is uint32 with size code 31 (three
+            // size bytes). The size bytes encode the same one-byte-over
+            // length, 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0xdf, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public static void TestUint64ConsumesPayloadBudget()
+        {
+            // Same shape as TestWideIntegerConsumesPayloadBudget, for
+            // DecodeUInt64. 0x1f selects the extended type with size code
+            // 31 (three size bytes). 0x02 is the extended type byte for
+            // uint64 (ObjectType.Uint64 - 7). The size bytes encode the
+            // same one-byte-over length, 2,097,153 - 65,821 = 2,031,332
+            // (0x1efee4).
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x1f, 0x02, 0x1e, 0xfe, 0xe4], writable: false));
             var decoder = new Decoder(database, 0);
             var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
             Assert.Contains("maximum payload size", ex.Message);
