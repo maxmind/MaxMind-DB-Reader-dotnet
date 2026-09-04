@@ -260,11 +260,9 @@ namespace MaxMind.Db
                         return pointer;
                     }
 
-                    // The pointer occupies a logical slot its container already
-                    // charged, so following it adds depth but no value. The
-                    // resolved value charges itself: a container charges its
-                    // declared size and a string, bytes, or wide integer
-                    // charges its length.
+                    // The logical slot is already charged. Following a pointer
+                    // adds depth. Its target charges children or payload as
+                    // applicable. Boolean and double targets add no payload charge.
                     CheckDepth(depth);
                     return Decode(expectedType, pointer, out _, depth + 1, ref budget, ref payloadBudget, injectables, network);
 
