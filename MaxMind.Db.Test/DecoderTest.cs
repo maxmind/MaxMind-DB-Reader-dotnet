@@ -445,24 +445,23 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(511, false)]
-        [InlineData(513, false)]
-        [InlineData(514, true)]
+        [InlineData(512, false)]
+        [InlineData(513, true)]
         public static void TestPointerChainDepthIsBounded(int chainLength, bool exceedsLimit)
         {
             // Pointer follows guard depth on their own code path, separate
             // from the container path that TestContainerDepthIsBounded
             // covers. This test pins the pointer-chain boundary. A pointer
             // follow costs fewer stack frames than a container level, so the
-            // exact boundary is reachable on this runtime. Verified: 513
+            // exact boundary is reachable on this runtime. Verified: 512
             // links decode with no stack-probe rejection on .NET 10 on
             // Linux, the CI-representative runtime for this repo.
             //
-            // The boundary sits at 513/514, not 512/513. CheckDepth guards
-            // the depth of the pointer being followed, not the depth being
-            // entered. A chain of N links only checks depths 0 through N-1,
-            // and trips only once that value exceeds 512, at N=514. This
-            // matches TestContainerDepthIsBounded, whose failing case is
-            // also 514.
+            // The boundary sits at 512/513, matching MaxDepth. CheckDepth
+            // guards the depth of the pointer being followed, not the depth
+            // being entered. A chain of N links only checks depths 0
+            // through N-1, and trips once that value reaches 512, at
+            // N=513.
             var bytes = PointerChain(chainLength);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);

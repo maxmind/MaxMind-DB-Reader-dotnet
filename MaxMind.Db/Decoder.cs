@@ -111,7 +111,7 @@ namespace MaxMind.Db
                 return;
             }
 
-            if (depth > MaxDepth || !HasSufficientExecutionStack())
+            if (depth >= MaxDepth || !HasSufficientExecutionStack())
             {
                 throw new InvalidDatabaseException(
                     "The MaxMind DB file's data section exceeds the maximum depth.");
