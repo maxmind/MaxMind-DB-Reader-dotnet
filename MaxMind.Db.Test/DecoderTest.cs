@@ -559,6 +559,44 @@ namespace MaxMind.Db.Test
             }
         }
 
+        // Each array slot follows the shared chain again. This exercises many
+        // pointer follows within the depth and value limits, without a timing assertion.
+        private static byte[] ManySlotsEachFollowingALongPointerChain(int slotCount, int chainLength, out int arrayOffset)
+        {
+            var chain = PointerChain(chainLength);
+            var bytes = new List<byte>(chain.Length + slotCount * 2 + 8);
+            bytes.AddRange(chain);
+            arrayOffset = bytes.Count;
+            var encodedSize = slotCount - 285;
+            bytes.Add(0x1E); // array with a two-byte encoded size
+            bytes.Add(0x04);
+            bytes.Add((byte)(encodedSize >> 8));
+            bytes.Add((byte)encodedSize);
+            for (var i = 0; i < slotCount; i++)
+            {
+                WritePointer1(bytes, 0);
+            }
+
+            return [.. bytes];
+        }
+
+        [Fact]
+        public static void TestManySlotsEachFollowingALongPointerChainTerminates()
+        {
+            // Each slot adds one pointer before the 300-link chain: 301,000
+            // follows in total. The root and slots cost 1,001 values, and the
+            // leaf is reached at depth 302, within both limits.
+            const int slotCount = 1_000;
+            const int chainLength = 300;
+            var bytes = ManySlotsEachFollowingALongPointerChain(slotCount, chainLength, out var arrayOffset);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out var offset));
+            Assert.Equal(slotCount, decoded.Count);
+            Assert.Equal(bytes.Length, offset);
+        }
+
         [Fact]
         public static void TestWideIntegerConsumesPayloadBudget()
         {
