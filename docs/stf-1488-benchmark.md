@@ -12,8 +12,10 @@ on a normal, benign lookup, the everyday hot path.
 
 ## Commits compared
 
-- Branch tip (`greg/stf-1488`): `20728f4`
-- `origin/main`: `4ad3a8c`
+- Branch tip of `greg/stf-1488` at the time of this measurement (a rebase or
+  squash merge changes this SHA, so treat it as a label, not a stable
+  reference): `20728f4`
+- `origin/main` (stable): `4ad3a8c`
 
 ## What the benchmark measures
 
@@ -74,21 +76,21 @@ discarded).
 
 ### Run 1
 
-| Commit           | Method                 | Mean (us) | Error (us) | StdDev (us) | Allocated |
-| ---------------- | ---------------------- | --------: | ---------: | ----------: | --------: |
-| `4ad3a8c` (main) | CityMemoryMappedLookup |     39.22 |      0.120 |       0.112 |  89.55 KB |
-| `4ad3a8c` (main) | CityMemoryLookup       |     38.96 |      0.106 |       0.099 |  89.55 KB |
-| `20728f4` (HEAD) | CityMemoryMappedLookup |     42.25 |      0.232 |       0.217 |  89.55 KB |
-| `20728f4` (HEAD) | CityMemoryLookup       |     41.26 |      0.107 |       0.100 |  89.55 KB |
+| Commit            | Method                 | Mean (us) | Error (us) | StdDev (us) | Allocated |
+| ----------------- | ---------------------- | --------: | ---------: | ----------: | --------: |
+| `4ad3a8c` (main)  | CityMemoryMappedLookup |     39.22 |      0.120 |       0.112 |  89.55 KB |
+| `4ad3a8c` (main)  | CityMemoryLookup       |     38.96 |      0.106 |       0.099 |  89.55 KB |
+| Branch tip (HEAD) | CityMemoryMappedLookup |     42.25 |      0.232 |       0.217 |  89.55 KB |
+| Branch tip (HEAD) | CityMemoryLookup       |     41.26 |      0.107 |       0.100 |  89.55 KB |
 
 ### Run 2
 
-| Commit           | Method                 | Mean (us) | Error (us) | StdDev (us) | Allocated |
-| ---------------- | ---------------------- | --------: | ---------: | ----------: | --------: |
-| `4ad3a8c` (main) | CityMemoryMappedLookup |     40.72 |      0.260 |       0.243 |  89.55 KB |
-| `4ad3a8c` (main) | CityMemoryLookup       |     39.33 |      0.266 |       0.249 |  89.55 KB |
-| `20728f4` (HEAD) | CityMemoryMappedLookup |     41.47 |      0.263 |       0.246 |  89.55 KB |
-| `20728f4` (HEAD) | CityMemoryLookup       |     41.95 |      0.145 |       0.128 |  89.55 KB |
+| Commit            | Method                 | Mean (us) | Error (us) | StdDev (us) | Allocated |
+| ----------------- | ---------------------- | --------: | ---------: | ----------: | --------: |
+| `4ad3a8c` (main)  | CityMemoryMappedLookup |     40.72 |      0.260 |       0.243 |  89.55 KB |
+| `4ad3a8c` (main)  | CityMemoryLookup       |     39.33 |      0.266 |       0.249 |  89.55 KB |
+| Branch tip (HEAD) | CityMemoryMappedLookup |     41.47 |      0.263 |       0.246 |  89.55 KB |
+| Branch tip (HEAD) | CityMemoryLookup       |     41.95 |      0.145 |       0.128 |  89.55 KB |
 
 ### Averaged across both runs
 
