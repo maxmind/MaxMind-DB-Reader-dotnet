@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.ExceptionServices;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 #endregion
@@ -358,25 +360,107 @@ namespace MaxMind.Db.Test
         public static void TestContainerDepthBoundaryRejectsOneOverTheLimit()
         {
             // Pins the corrected format-level boundary from the tight side:
-            // 513 nested containers must reject. This does not pin a
-            // matching 512-container accept case. Commit b254329 on this
-            // branch deliberately dropped that accept row from
-            // TestContainerDepthIsBounded (513 down to 32/33) after a deep
-            // container decode terminated the .NET 8 test host on macOS and
-            // Windows with an uncatchable StackOverflowException. A 512
-            // versus 513 container difference is one stack-frame group
-            // through the same heavier decode path, so the risk is the
-            // same. Do not re-add a 512-container accept row here. The
-            // tight accept side stays pinned by
-            // TestPointerChainDepthIsBounded instead, where each level is
-            // cheap. A rejection cannot overflow the stack: the guard fires
-            // before the recursion that would grow it.
+            // 513 nested containers must reject. Commit b254329 on this
+            // branch deliberately dropped a matching 512-container accept row
+            // from TestContainerDepthIsBounded (513 down to 32/33) after a
+            // deep container decode terminated the .NET 8 test host on macOS
+            // and Windows with an uncatchable StackOverflowException. Do not
+            // re-add a 512-container accept row here.
+            // TestContainerDepthAtLimitSucceedsGivenSufficientStack below
+            // pins the accept side instead, on a thread with room to spare so
+            // it cannot repeat that crash. A rejection here cannot overflow
+            // the stack: the guard fires before the recursion that would
+            // grow it.
             var bytes = NestedContainers(513);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
             var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
             Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+        }
+
+        [Fact]
+        public static void TestContainerDepthAtLimitSucceedsGivenSufficientStack()
+        {
+            // FINDING 1 of the final whole-branch review: nothing proved that
+            // exactly 512 nested containers -- the format's accepted depth
+            // boundary -- can actually be decoded. b254329 added the
+            // HasSufficientExecutionStack probe and, in the same commit,
+            // removed a 512-container accept row, because a deep container
+            // decode had already killed the .NET 8 test host with an
+            // uncatchable StackOverflowException on macOS and Windows. That
+            // left the probe itself unverified at the boundary it exists to
+            // guard. lessons.md's depth section requires that 512 valid
+            // logical levels decode safely, or that the decoder become
+            // iterative.
+            //
+            // This test proves the accept side on a thread given 16 MiB of
+            // stack, far more than 512 container levels need, so it cannot
+            // reproduce the crash b254329 was written to avoid. The
+            // companion test below,
+            // TestContainerDepthAtLimitDoesNotCrashTheHostOnADefaultStack,
+            // proves the reject-or-succeed side on whatever stack the test
+            // host actually gives it. Together they show the limit is
+            // reachable when the stack allows it, and the probe converts a
+            // stack shortage into a catchable database error rather than
+            // terminating the process. Neither branch can crash a host: a
+            // rejection happens before the recursion grows, and this
+            // large-stack thread has room to spare.
+            var bytes = NestedContainers(512);
+            Exception? failure = null;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+                    var decoder = new Decoder(database, 0);
+                    decoder.Decode<object>(0, out var offset);
+                    Assert.Equal(bytes.Length, offset);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+            }, maxStackSize: 16 << 20);
+            thread.Start();
+            thread.Join();
+
+            if (failure != null)
+            {
+                ExceptionDispatchInfo.Capture(failure).Throw();
+            }
+        }
+
+        [Fact]
+        public static void TestContainerDepthAtLimitDoesNotCrashTheHostOnADefaultStack()
+        {
+            // Companion to TestContainerDepthAtLimitSucceedsGivenSufficientStack
+            // above. On whatever stack this test happens to run on, decoding
+            // exactly 512 nested containers must either succeed or fail with
+            // the decoder's own catchable InvalidDatabaseException, never an
+            // uncatchable StackOverflowException. That is what
+            // HasSufficientExecutionStack (added in b254329) exists to
+            // guarantee: it turns a stack shortage into a database error
+            // instead of terminating the process.
+            //
+            // Do not change this to require success. Requiring 512 containers
+            // to decode on a default stack is exactly the case b254329
+            // removed after it crashed the .NET 8 test host on macOS and
+            // Windows.
+            var bytes = NestedContainers(512);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            try
+            {
+                decoder.Decode<object>(0, out var offset);
+                Assert.Equal(bytes.Length, offset);
+            }
+            catch (InvalidDatabaseException ex)
+            {
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+            }
         }
 
         [Fact]
