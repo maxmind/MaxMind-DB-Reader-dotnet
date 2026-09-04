@@ -724,6 +724,57 @@ namespace MaxMind.Db.Test
             Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
         }
 
+        // FINDING 2 of the final whole-branch review: a followed pointer costs
+        // depth but no value, so the decoder's worst uncharged-work shape is
+        // many container slots, each following its own long pointer chain.
+        // That shape is bounded at MaxDecodedValues * MaxDepth chain follows
+        // (about 65,536 * 512 ~= 33.5M, measured at roughly 300 ms for a
+        // 132 KB file -- see docs/stf-1488-benchmark.md), but nothing tested
+        // that the bounded shape actually terminates. This builds the same
+        // shape at a reduced scale that stays within both budgets, so the
+        // decode must succeed, and asserts only that it returns. This is a
+        // termination proof, not a timing test: it carries no duration
+        // assertion and does not build the full-scale, ~300 ms version, which
+        // would triple the suite's runtime for no extra correctness.
+        private static byte[] ManySlotsEachFollowingALongPointerChain(int slotCount, int chainLength, out int arrayOffset)
+        {
+            var chain = PointerChain(chainLength);
+            var bytes = new List<byte>(chain.Length + slotCount * 2 + 8);
+            bytes.AddRange(chain);
+            arrayOffset = bytes.Count;
+            var encodedSize = slotCount - 285;
+            bytes.Add(0x1E); // array with a two-byte encoded size
+            bytes.Add(0x04);
+            bytes.Add((byte)(encodedSize >> 8));
+            bytes.Add((byte)encodedSize);
+            for (var i = 0; i < slotCount; i++)
+            {
+                // Every slot follows the same chain from its head, so each
+                // decode walks the full chain again from scratch.
+                WritePointer1(bytes, 0);
+            }
+
+            return [.. bytes];
+        }
+
+        [Fact]
+        public static void TestManySlotsEachFollowingALongPointerChainTerminates()
+        {
+            // 1,000 slots x a 300-link chain = 300,000 pointer follows, well
+            // under the 65,536-value and 512-depth budgets (the array itself
+            // only charges 1,000 values, and the deepest point reached is
+            // depth 1 + 300 = 301). The decode must succeed.
+            const int slotCount = 1_000;
+            const int chainLength = 300;
+            var bytes = ManySlotsEachFollowingALongPointerChain(slotCount, chainLength, out var arrayOffset);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out var offset));
+            Assert.Equal(slotCount, decoded.Count);
+            Assert.Equal(bytes.Length, offset);
+        }
+
         [Fact]
         public static void TestWideIntegerConsumesPayloadBudget()
         {
