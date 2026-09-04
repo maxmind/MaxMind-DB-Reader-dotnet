@@ -31,7 +31,8 @@
   bytes value larger than 2 MiB. Available stack space can impose a lower
   nesting limit.
 - Truncated or out-of-bounds data reads now throw `InvalidDatabaseException`
-  instead of `ArgumentOutOfRangeException`.
+  instead of `ArgumentOutOfRangeException`. This also prevents incorrect decoded
+  values on `netstandard2.0`.
 
 ## 5.1.0 (2026-05-22)
 
