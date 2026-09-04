@@ -773,6 +773,55 @@ namespace MaxMind.Db.Test
             Assert.NotNull(reader.Find<object>(IPAddress.Parse("1.1.1.1")));
         }
 
+        // Exercise the memory-loading path with the same hostile fixture.
+        [Fact]
+        public void TestPayloadLimitAppliesToMemoryMode()
+        {
+            var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-payload-amplification-dos.mmdb");
+            using var reader = new Reader(path, FileAccessMode.Memory);
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public void TestPayloadLimitAppliesToStreamConstruction()
+        {
+            var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-payload-amplification-dos.mmdb");
+            using var stream = File.OpenRead(path);
+            using var reader = new Reader(stream);
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public async Task TestPayloadLimitAppliesToAsyncConstruction()
+        {
+            var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-payload-amplification-dos.mmdb");
+            using var reader = await Reader.CreateAsync(path);
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public void TestPayloadLimitAppliesToFindAll()
+        {
+            // Enumeration must reject the hostile record when it is decoded.
+            var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-payload-amplification-dos.mmdb");
+            using var reader = new Reader(path);
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () =>
+                {
+                    foreach (var node in reader.FindAll<object>())
+                    {
+                        _ = node;
+                    }
+                });
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;
