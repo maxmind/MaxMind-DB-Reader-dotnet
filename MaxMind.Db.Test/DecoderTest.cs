@@ -258,13 +258,15 @@ namespace MaxMind.Db.Test
             // field on Decoder. Decoding the same at-limit record three times
             // from one Decoder must succeed all three times. It fails on the
             // second decode if the budget lived on the Decoder instead.
+            const int childCount = 65_535;
             var bytes = AtValueBudgetLimitArray();
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
             for (var i = 0; i < 3; i++)
             {
-                Assert.NotNull(decoder.Decode<object>(0, out _));
+                var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(0, out _));
+                Assert.Equal(childCount, decoded.Count);
             }
         }
 
@@ -273,24 +275,33 @@ namespace MaxMind.Db.Test
         {
             // Same proof as above, for the payload budget: 8,192 pointers at
             // 256 bytes each lands the payload budget at exactly zero.
-            var bytes = FlatScalarPointerTargets(8_192, out var arrayOffset);
+            const int pointerCount = 8_192;
+            var bytes = FlatScalarPointerTargets(pointerCount, out var arrayOffset);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
             for (var i = 0; i < 3; i++)
             {
-                Assert.NotNull(decoder.Decode<object>(arrayOffset, out _));
+                var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out _));
+                Assert.Equal(pointerCount, decoded.Count);
             }
         }
 
         [Fact]
-        public static void TestConcurrentAtBudgetLimitDecodesSucceed()
+        public static void TestManySimultaneousAtBudgetLimitDecodesSucceed()
         {
-            // Both at-limit shapes live in one buffer, decoded through one
-            // shared Decoder, from many threads at once. A budget hoisted
-            // onto the Decoder would let one thread's decode drain another
-            // thread's allowance and throw.
-            var payloadBytes = FlatScalarPointerTargets(8_192, out var arrayOffset);
+            // A smoke test, not a race detector: Parallel.For does not
+            // guarantee real thread overlap, so this alone cannot prove
+            // thread safety. The actual regression lock against a budget
+            // hoisted onto Decoder is the pair of repeated tests above,
+            // since a shared counter fails those on the second decode
+            // regardless of threading. This test only checks that many
+            // simultaneous at-limit decodes through one shared Decoder all
+            // still succeed. ThreadingTest.cs carries this reader's real
+            // concurrency coverage (TestParallelFor, TestManyOpens).
+            const int pointerCount = 8_192;
+            const int childCount = 65_535;
+            var payloadBytes = FlatScalarPointerTargets(pointerCount, out var arrayOffset);
             var valueBytes = AtValueBudgetLimitArray();
             var valueOffset = payloadBytes.Length;
             var bytes = new byte[payloadBytes.Length + valueBytes.Length];
@@ -302,8 +313,16 @@ namespace MaxMind.Db.Test
 
             System.Threading.Tasks.Parallel.For(0, 16, i =>
             {
-                var offset = i % 2 == 0 ? arrayOffset : valueOffset;
-                Assert.NotNull(decoder.Decode<object>(offset, out _));
+                if (i % 2 == 0)
+                {
+                    var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out _));
+                    Assert.Equal(pointerCount, decoded.Count);
+                }
+                else
+                {
+                    var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(valueOffset, out _));
+                    Assert.Equal(childCount, decoded.Count);
+                }
             });
         }
 
