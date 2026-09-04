@@ -689,11 +689,11 @@ namespace MaxMind.Db.Test
         [Theory]
         [InlineData("MaxMind-DB-test-payload-amplification-dos.mmdb", "maximum payload size")]
         [InlineData("MaxMind-DB-test-payload-amplification-dos-string.mmdb", "maximum payload size")]
-        // The worst-case fixture keeps its payload just under 2 MiB, so only a
-        // bound other than the payload budget can reject it. This reader charges
-        // the array's declared size and each pointer follow, so its value budget
-        // rejects the huge fan-out first; either way the amplification is stopped.
-        [InlineData("MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb", "maximum number of values")]
+        // The worst-case fixture decodes to exactly 65,536 values, so it meets
+        // the value limit and only the payload budget can reject it. Its 65,535
+        // pointers all target one 65,535-byte value, so the 32nd occurrence
+        // crosses 2 MiB.
+        [InlineData("MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb", "maximum payload size")]
         public void TestPayloadAmplificationIsRejected(string fixture, string expected)
         {
             using var reader = new Reader(Path.Combine(_testDataRoot, fixture));
@@ -742,11 +742,11 @@ namespace MaxMind.Db.Test
         // must reject this through the real tree walk and pointer base, not
         // only in a hand-built buffer. See GHSA-hj94-g986-h9r7.
         //
-        // This reader charges the value budget on every pointer follow, so a
-        // depth-40 fan-out exhausts the value limit long before the depth
-        // limit. The message below records that; a reader that charged depth
-        // first would see "exceeds the maximum depth" instead, which is
-        // equally conformant.
+        // Every re-decode of a shared container recharges its declared size, so
+        // the charges grow as 2**depth and a depth-40 fan-out exhausts the
+        // value limit long before the depth limit. The message below records
+        // that; a reader that charged depth first would see "exceeds the
+        // maximum depth" instead, which is equally conformant.
         [Theory]
         [InlineData("MaxMind-DB-test-pointer-decoder-dos.mmdb", "1.1.1.1")]
         [InlineData("MaxMind-DB-test-pointer-decoder-dos-ipv6.mmdb", "::1")]
