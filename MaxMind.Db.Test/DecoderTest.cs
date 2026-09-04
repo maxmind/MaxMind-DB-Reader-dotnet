@@ -347,6 +347,54 @@ namespace MaxMind.Db.Test
             Assert.Contains("maximum depth", ex.Message);
         }
 
+        // Ordering proofs. Each buffer holds only a header that declares more
+        // than the limit allows, with no body. If the guard runs before the
+        // read or the loop, the limit exception is thrown. If it runs after,
+        // the decoder reads past the end and reports truncation instead. The
+        // message discriminates the two, so these fail if a check ever moves
+        // below the read or the loop it protects.
+
+        [Fact]
+        public static void TestOversizedArrayIsRejectedBeforeFirstChild()
+        {
+            // The root value costs one against the budget, leaving 65,535 for
+            // an array's declared children. 0x1e is an extended type with size
+            // code 30; 0x04 selects array (11 - 7). The two size bytes encode
+            // 65,536 - 285 = 65,251 (0xfee3), one child past what remains.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x1e, 0x04, 0xfe, 0xe3], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public static void TestOversizedStringIsRejectedBeforeItIsRead()
+        {
+            // A string declaring one byte past the 2 MiB payload budget, with
+            // no payload following. 0x5f is a string with size code 31; the
+            // three size bytes encode 2,097,153 - 65,821 = 2,031,332
+            // (0x1efee4).
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x5f, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public static void TestOversizedBytesIsRejectedBeforeItIsRead()
+        {
+            // The same shape as the oversized string, as bytes. Bytes (4) is a
+            // direct type, so no extended type byte is needed: 0x9f is bytes
+            // with size code 31, followed by the same three size bytes
+            // declaring 2,097,153 bytes.
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x9f, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         [Fact]
         public static void TestTruncatedPayloadThrowsDatabaseException()
         {
