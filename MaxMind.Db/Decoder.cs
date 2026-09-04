@@ -122,6 +122,11 @@ namespace MaxMind.Db
         // container's declared size against the value budget before its
         // elements are read, so an oversized declared size is rejected up front
         // and a re-decoded (fanned-out) container drains the budget.
+        // Subtracting before comparing is safe here, unlike a general
+        // untrusted subtraction: CtrlData caps a declared size at about
+        // 16.8 million, and the caller doubles a map's size before passing
+        // it, so valueCount cannot exceed about 33.6 million. Adding that to
+        // a negative budget cannot wrap a 32-bit int.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckContainer(int depth, int valueCount, ref int budget)
         {
