@@ -96,6 +96,9 @@ namespace MaxMind.Db
         }
 
         // Check depth and charge declared children before reading or allocating.
+        // The budget is nonnegative on entry. CtrlData limits valueCount
+        // to less than 34 million, so subtraction cannot overflow. A negative
+        // result throws before another subtraction can occur.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckContainer(int depth, int valueCount, ref int budget)
         {
