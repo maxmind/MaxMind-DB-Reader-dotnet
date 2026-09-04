@@ -279,6 +279,57 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
+        public static void TestContainerDepthAtLimitSucceedsGivenSufficientStack()
+        {
+            // Give the thread enough stack to verify that exactly 512
+            // container levels decode.
+            var bytes = NestedContainers(512);
+            Exception? failure = null;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+                    var decoder = new Decoder(database, 0);
+                    decoder.Decode<object>(0, out var offset);
+                    Assert.Equal(bytes.Length, offset);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+            }, maxStackSize: 16 << 20);
+            thread.Start();
+            thread.Join();
+
+            if (failure != null)
+            {
+                ExceptionDispatchInfo.Capture(failure).Throw();
+            }
+        }
+
+        [Fact]
+        public static void TestContainerDepthAtLimitDoesNotCrashTheHostOnADefaultStack()
+        {
+            // A default stack may be too small for 512 levels. Require success
+            // or a catchable depth error, rather than host termination.
+            var bytes = NestedContainers(512);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            try
+            {
+                decoder.Decode<object>(0, out var offset);
+                Assert.Equal(bytes.Length, offset);
+            }
+            catch (InvalidDatabaseException ex)
+            {
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+            }
+        }
+
+        [Fact]
         public static void TestCyclicPointerThrows()
         {
             // A pointer cycle has no container charges. The depth guard
