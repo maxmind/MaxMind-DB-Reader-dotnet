@@ -427,6 +427,104 @@ namespace MaxMind.Db.Test
             Assert.Contains("beyond the end", negativeOffset.Message);
         }
 
+        private static byte[] PointerChain(int length)
+        {
+            // A chain of one-byte-payload pointers ending in a uint16 leaf.
+            // Link i sits at offset 2*i and points at offset 2*(i+1), so the
+            // leaf lands at offset 2*length. A pointer follow no longer
+            // charges the value budget, so each follow costs one depth
+            // level and no value.
+            var bytes = new List<byte>(length * 2 + 1);
+            for (var i = 0; i < length; i++)
+            {
+                WritePointer1(bytes, 2 * (i + 1));
+            }
+            bytes.Add(0xA0); // leaf: uint16 with value 0
+            return [.. bytes];
+        }
+
+        [Theory]
+        [InlineData(511, false)]
+        [InlineData(513, false)]
+        [InlineData(514, true)]
+        public static void TestPointerChainDepthIsBounded(int chainLength, bool exceedsLimit)
+        {
+            // Pointer follows guard depth on their own code path, separate
+            // from the container path that TestContainerDepthIsBounded
+            // covers. This test pins the pointer-chain boundary. A pointer
+            // follow costs fewer stack frames than a container level, so the
+            // exact boundary is reachable on this runtime. Verified: 513
+            // links decode with no stack-probe rejection on .NET 10 on
+            // Linux, the CI-representative runtime for this repo.
+            //
+            // The boundary sits at 513/514, not 512/513. CheckDepth guards
+            // the depth of the pointer being followed, not the depth being
+            // entered. A chain of N links only checks depths 0 through N-1,
+            // and trips only once that value exceeds 512, at N=514. This
+            // matches TestContainerDepthIsBounded, whose failing case is
+            // also 514.
+            var bytes = PointerChain(chainLength);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            if (exceedsLimit)
+            {
+                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+            }
+            else
+            {
+                Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(0, out _)));
+            }
+        }
+
+        [Fact]
+        public static void TestContainerSlotsEachExceedDepthViaPointerChain()
+        {
+            // Pointer follows no longer cost value budget. The worst case is
+            // now MaxDecodedValues container slots, each walking a long
+            // pointer chain past MaxDepth. TestCyclicPointerThrows covers the
+            // depth guard on one pointer. TestPointerChainDepthIsBounded pins
+            // the exact chain boundary. Neither pins this shape: a container
+            // whose every slot independently crosses the depth limit. A
+            // three-slot array is enough to pin the shape. A 65,535-slot
+            // fixture is not needed.
+            var chain = PointerChain(600);
+            var arrayOffset = chain.Length;
+            var bytes = new List<byte>(chain.Length + 8);
+            bytes.AddRange(chain);
+            bytes.Add(0x03); // extended type, size 3 (an array of 3 elements)
+            bytes.Add(0x04); // extended type byte: array (11 - 7)
+            WritePointer1(bytes, 0);
+            WritePointer1(bytes, 0);
+            WritePointer1(bytes, 0);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(arrayOffset, out _));
+            Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+        }
+
+        [Fact]
+        public static void TestWideIntegerConsumesPayloadBudget()
+        {
+            // DecodeBigInteger calls ConsumePayload before ReadBigInteger
+            // copies the declared bytes into a new array. An oversized
+            // uint128 must be charged against the payload budget before the
+            // copy. This declares a size one byte over the 2 MiB budget with
+            // no body. An early charge reports the payload limit. A late
+            // charge would instead read past the end and report truncation.
+            // 0x1f selects the extended type with size code 31 (three size
+            // bytes). 0x03 is the extended type byte for uint128
+            // (ObjectType.Uint128 - 7). The size bytes encode
+            // 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
+            using var database = new MemoryMapBuffer(
+                new MemoryStream([0x1f, 0x03, 0x1e, 0xfe, 0xe4], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
