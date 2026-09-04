@@ -102,18 +102,10 @@ namespace MaxMind.Db.Test
         // reach exactly the 2 MiB payload budget and 8,193 cross it.
         private const int FlatFanOutTargetSize = 256;
 
-        [Theory]
-        [InlineData(8_192, false)]
-        [InlineData(8_193, true)]
-        public static void TestFlatScalarPointerTargetsConsumePayloadBudget(int pointerCount, bool exceedsLimit)
+        // An array of pointers to one string isolates repeated payload
+        // charges from container fan-out and depth limits.
+        private static byte[] FlatScalarPointerTargets(int pointerCount, out int arrayOffset)
         {
-            // Many pointers to one string value is a flat fan-out. The value
-            // budget cannot bound it, because the array charges each pointer
-            // once and following a pointer adds no value of its own. The
-            // payload budget bounds it instead: it charges the target length on
-            // every occurrence, so the copied bytes stay under 2 MiB. This is
-            // intentionally flat so neither depth nor exponential container
-            // fan-out can hide incorrect payload accounting.
             var encodedSize = pointerCount - 285;
             var bytes = new List<byte>(pointerCount * 2 + FlatFanOutTargetSize + 8)
             {
@@ -121,7 +113,7 @@ namespace MaxMind.Db.Test
                 (byte)(FlatFanOutTargetSize - 29),
             };
             bytes.AddRange(new byte[FlatFanOutTargetSize]);
-            var arrayOffset = bytes.Count;
+            arrayOffset = bytes.Count;
             bytes.Add(0x1E);
             bytes.Add(0x04); // array with a two-byte encoded size
             bytes.Add((byte)(encodedSize >> 8));
@@ -131,7 +123,19 @@ namespace MaxMind.Db.Test
                 WritePointer1(bytes, 0);
             }
 
-            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            return [.. bytes];
+        }
+
+        [Theory]
+        [InlineData(8_192, false)]
+        [InlineData(8_193, true)]
+        public static void TestFlatScalarPointerTargetsConsumePayloadBudget(int pointerCount, bool exceedsLimit)
+        {
+            // This is intentionally flat so neither depth nor exponential
+            // container fan-out can hide incorrect payload accounting.
+            var bytes = FlatScalarPointerTargets(pointerCount, out var arrayOffset);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
             if (exceedsLimit)
             {
@@ -142,9 +146,12 @@ namespace MaxMind.Db.Test
             }
             else
             {
-                var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out var offset));
-                Assert.Equal(pointerCount, decoded.Count);
-                Assert.Equal(bytes.Count, offset);
+                for (var i = 0; i < 3; i++)
+                {
+                    var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out var offset));
+                    Assert.Equal(pointerCount, decoded.Count);
+                    Assert.Equal(bytes.Length, offset);
+                }
             }
         }
 
@@ -188,6 +195,60 @@ namespace MaxMind.Db.Test
                 Assert.Null(decoded.Name);
                 Assert.Equal(bytes.Count, offset);
             }
+        }
+
+        // The root and 65,535 booleans use the entire value budget
+        // without consuming payload bytes.
+        private static byte[] AtValueBudgetLimitArray()
+        {
+            const int childCount = 65_535;
+            var encodedSize = childCount - 285;
+            var bytes = new List<byte>(childCount * 2 + 4)
+            {
+                0x1E, // array with a two-byte encoded size
+                0x04,
+                (byte)(encodedSize >> 8),
+                (byte)encodedSize,
+            };
+            for (var i = 0; i < childCount; i++)
+            {
+                bytes.Add(0x00); // extended boolean
+                bytes.Add(0x07); // false
+            }
+
+            return [.. bytes];
+        }
+
+        [Fact]
+        public static void TestManySimultaneousAtBudgetLimitDecodesSucceed()
+        {
+            // Exercise both budgets through one shared decoder. The repeated
+            // lookup tests check budget reset without relying on thread overlap.
+            const int pointerCount = 8_192;
+            const int childCount = 65_535;
+            var payloadBytes = FlatScalarPointerTargets(pointerCount, out var arrayOffset);
+            var valueBytes = AtValueBudgetLimitArray();
+            var valueOffset = payloadBytes.Length;
+            var bytes = new byte[payloadBytes.Length + valueBytes.Length];
+            payloadBytes.CopyTo(bytes, 0);
+            valueBytes.CopyTo(bytes, valueOffset);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+
+            System.Threading.Tasks.Parallel.For(0, 16, i =>
+            {
+                if (i % 2 == 0)
+                {
+                    var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out _));
+                    Assert.Equal(pointerCount, decoded.Count);
+                }
+                else
+                {
+                    var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(valueOffset, out _));
+                    Assert.Equal(childCount, decoded.Count);
+                }
+            });
         }
 
         [Theory]

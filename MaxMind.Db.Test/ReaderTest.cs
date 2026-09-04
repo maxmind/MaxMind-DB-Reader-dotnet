@@ -748,7 +748,11 @@ namespace MaxMind.Db.Test
             // Exactly 65,536 decoded values, the boundary the limit allows.
             using var reader = new Reader(
                 Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-value-limit.mmdb"));
-            Assert.NotNull(reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            for (var i = 0; i < 3; i++)
+            {
+                var values = Assert.IsType<List<object>>(reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+                Assert.Equal(65_535, values.Count);
+            }
         }
 
         [Fact]
