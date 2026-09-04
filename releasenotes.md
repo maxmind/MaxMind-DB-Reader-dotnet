@@ -30,6 +30,9 @@
   reject some previously accepted databases, including those with a string or
   bytes value larger than 2 MiB. Available stack space can impose a lower
   nesting limit.
+- Truncated or out-of-bounds data reads now throw `InvalidDatabaseException`
+  instead of `ArgumentOutOfRangeException`.
+
 ## 5.1.0 (2026-05-22)
 
 - `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
