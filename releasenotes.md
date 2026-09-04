@@ -24,8 +24,8 @@
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
 - Added decoding limits to prevent crafted databases from consuming excessive
-  time and memory. Each lookup and metadata read has a 2 MiB budget for combined
-  string, bytes, uint32, uint64, and uint128 payload. Exceeding a limit or
+  time and memory. Each lookup and metadata read allows at most 65,536 decoded
+  values and 2 MiB of combined string, bytes, uint32, uint64, and uint128 payload. Exceeding a limit or
   encountering a pointer cycle throws `InvalidDatabaseException`. These limits
   reject some previously accepted databases, including those with a string or
   bytes value larger than 2 MiB. Available stack space can impose a lower

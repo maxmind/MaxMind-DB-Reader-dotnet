@@ -46,19 +46,10 @@ namespace MaxMind.Db
         private readonly bool _followPointers;
         private readonly int[] _pointerValueOffset = [0, 0, 1 << 11, (1 << 19) + (1 << 11), 0];
 
-        // Per-lookup decode limits recommended by the MaxMind DB specification.
-        // The depth limit stops pointer cycles and over-deep data before the
-        // stack overflows (a StackOverflowException cannot be caught in .NET).
-        // The value limit stops a pointer fan-out, where nested pointers to
-        // shared targets would otherwise cost 2**depth decode operations. The
-        // payload limit stops payload amplification, where many pointers to one
-        // large string or bytes value would otherwise materialize N*size bytes
-        // from a small file; each string, bytes, and wide-integer value is
-        // charged by its length wherever it is decoded, so a re-decoded shared
-        // target is recharged. The running depth, value budget, and payload
-        // budget are passed through the decode call, so a single Decoder stays
-        // safe for concurrent lookups with no shared mutable state. The largest
-        // real records decode a few hundred values and a few kilobytes.
+        // Per-lookup limits recommended by the MaxMind DB specification.
+        // The root costs one value. Containers charge their declared children
+        // on every visit, including visits through shared pointers. Pointer
+        // follows add depth but no value charge of their own.
         private const int MaxDepth = 512;
         private const int MaxDecodedValues = 1 << 16;
         // Limit encoded string, bytes, uint32, uint64, and uint128 payload
@@ -117,19 +108,6 @@ namespace MaxMind.Db
             }
         }
 
-        // A pointer field is charged by its enclosing container. Its target is
-        // another decoded value and must be charged each time it is followed.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ConsumePointerTarget(ref int budget)
-        {
-            budget--;
-            if (budget < 0)
-            {
-                throw new InvalidDatabaseException(
-                    "The MaxMind DB file's data section exceeds the maximum number of values.");
-            }
-        }
-
         // Charge encoded payload before reading it, including each visit
         // to a shared target and each map key examined.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,12 +150,9 @@ namespace MaxMind.Db
         /// <returns>An object containing the data read from the stream</returns>
         internal T Decode<T>(long offset, out long outOffset, InjectableValues? injectables = null, Network? network = default) where T : class
         {
-            // The per-lookup decode limits are threaded as parameters (a value
-            // depth, a shared remaining-value budget, and a shared remaining
-            // payload-byte budget) rather than stored on the shared Decoder, so
-            // they add no thread-local access and keep the decoder safe for
-            // concurrent reads.
-            var budget = MaxDecodedValues;
+            // Budgets are local to each lookup, including concurrent lookups.
+            // Charge the root value before decoding its children.
+            var budget = MaxDecodedValues - 1;
             var payloadBudget = MaxPayloadBytes;
             return DecodeNested<T>(offset, out outOffset, 0, ref budget, ref payloadBudget, injectables, network);
         }
@@ -285,8 +260,12 @@ namespace MaxMind.Db
                         return pointer;
                     }
 
+                    // The pointer occupies a logical slot its container already
+                    // charged, so following it adds depth but no value. The
+                    // resolved value charges itself: a container charges its
+                    // declared size and a string, bytes, or wide integer
+                    // charges its length.
                     CheckDepth(depth);
-                    ConsumePointerTarget(ref budget);
                     return Decode(expectedType, pointer, out _, depth + 1, ref budget, ref payloadBudget, injectables, network);
 
                 case ObjectType.Map:
@@ -554,7 +533,7 @@ namespace MaxMind.Db
 
             for (var i = 0; i < size; i++)
             {
-                var key = DecodeKey(offset, out offset, depth + 1, ref budget, ref payloadBudget);
+                var key = DecodeKey(offset, out offset, depth + 1, ref payloadBudget);
                 if (constructor.DeserializationParameters.TryGetValue(key, out var v))
                 {
                     var param = v;
@@ -646,20 +625,20 @@ namespace MaxMind.Db
 
         private readonly TypeActivatorCreator _typeActivatorCreator;
 
-        private Key DecodeKey(long offset, out long outOffset, int depth, ref int budget, ref int payloadBudget)
+        private Key DecodeKey(long offset, out long outOffset, int depth, ref int payloadBudget)
         {
             var type = CtrlData(offset, out var size, out offset);
             switch (type)
             {
                 case ObjectType.Pointer:
-                    // A key can only be a string, so it cannot fan out and needs
-                    // no value budget. It can still point at another pointer, so
-                    // guard the depth to stop a pointer cycle from overflowing
-                    // the stack with an uncatchable StackOverflowException.
+                    // A key can only be a string, so it cannot fan out, and the
+                    // enclosing map already charged this key against the value
+                    // budget. It can still point at another pointer, so guard
+                    // the depth to stop a pointer cycle from overflowing the
+                    // stack with an uncatchable StackOverflowException.
                     CheckDepth(depth);
                     offset = DecodePointer(offset, size, out outOffset);
-                    ConsumePointerTarget(ref budget);
-                    return DecodeKey(offset, out _, depth + 1, ref budget, ref payloadBudget);
+                    return DecodeKey(offset, out _, depth + 1, ref payloadBudget);
 
                 case ObjectType.Utf8String:
                     // The key is hashed over its bytes now and compared later, so
