@@ -33,6 +33,9 @@
   over-deep data, with an `InvalidDatabaseException`. This matches the reader
   resource limits now recommended by the MaxMind DB specification. See
   GHSA-hj94-g986-h9r7.
+- A truncated or out-of-bounds read in the data section now throws
+  `InvalidDatabaseException` instead of `ArgumentOutOfRangeException`. Malformed
+  database content is reported consistently as a database error.
 
 ## 5.1.0 (2026-05-22)
 

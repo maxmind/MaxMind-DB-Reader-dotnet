@@ -324,6 +324,18 @@ namespace MaxMind.Db.Test
             Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
         }
 
+        [Fact]
+        public static void TestTruncatedPayloadThrowsDatabaseException()
+        {
+            // A string header declaring four bytes at the end of the buffer.
+            // Truncated data is malformed input, so it must surface as the
+            // reader's database exception rather than an argument exception.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x44], writable: false));
+            var decoder = new Decoder(database, 0);
+            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("beyond the end", ex.Message);
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>

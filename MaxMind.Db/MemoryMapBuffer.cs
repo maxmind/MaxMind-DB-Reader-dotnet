@@ -263,8 +263,8 @@ namespace MaxMind.Db
         {
             if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
+                throw new InvalidDatabaseException(
+                    "Attempt to read beyond the end of the database.");
             }
             return new ReadOnlySpan<byte>((byte*)_ptr + offset, count);
         }
@@ -302,8 +302,8 @@ namespace MaxMind.Db
 #else
             if ((ulong)offset >= (ulong)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
+                throw new InvalidDatabaseException(
+                    "Attempt to read beyond the end of the database.");
             }
             unsafe
             {
@@ -326,8 +326,8 @@ namespace MaxMind.Db
             }
             if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
+                throw new InvalidDatabaseException(
+                    "Attempt to read beyond the end of the database.");
             }
             var bytes = new byte[count];
             _view.ReadArray(offset, bytes, 0, count);
