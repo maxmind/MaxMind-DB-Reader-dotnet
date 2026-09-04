@@ -737,6 +737,58 @@ namespace MaxMind.Db.Test
             Assert.Contains("maximum payload size", ex.Message);
         }
 
+        // A crafted database can nest pointers to shared targets so one lookup
+        // costs 2**depth decode operations from a tiny file. The value budget
+        // must reject this through the real tree walk and pointer base, not
+        // only in a hand-built buffer. See GHSA-hj94-g986-h9r7.
+        //
+        // This reader charges the value budget on every pointer follow, so a
+        // depth-40 fan-out exhausts the value limit long before the depth
+        // limit. The message below records that; a reader that charged depth
+        // first would see "exceeds the maximum depth" instead, which is
+        // equally conformant.
+        [Theory]
+        [InlineData("MaxMind-DB-test-pointer-decoder-dos.mmdb", "1.1.1.1")]
+        [InlineData("MaxMind-DB-test-pointer-decoder-dos-ipv6.mmdb", "::1")]
+        public void TestPointerFanOutFixtureIsRejected(string fixture, string address)
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, fixture));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse(address)));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public void TestValueCountAtLimitDecodes()
+        {
+            // Exactly 65,536 decoded values, the boundary the limit allows.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-value-limit.mmdb"));
+            Assert.NotNull(reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+        }
+
+        [Fact]
+        public void TestValueCountOverLimitIsRejected()
+        {
+            // One value past 65,536. Catches an off-by-one in the comparison.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-value-limit-over.mmdb"));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Fact]
+        public void TestPointerHeavyValueCountDecodes()
+        {
+            // 65,535 values reached through a depth-15 pointer fan-out, one
+            // under the limit. A reader that over-counts a followed pointer
+            // would reject this conformant database.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-value-limit-pointer-heavy.mmdb"));
+            Assert.NotNull(reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+        }
+
         private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;
