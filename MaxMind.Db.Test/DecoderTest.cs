@@ -336,6 +336,26 @@ namespace MaxMind.Db.Test
             Assert.Contains("beyond the end", ex.Message);
         }
 
+        [Fact]
+        public static void TestBufferReadRejectsOutOfBoundsOffsets()
+        {
+            // MemoryMapBuffer's netstandard2.0 read paths and its modern
+            // GetSpan path share one bounds check. This exercises it
+            // directly through Read rather than through the decoder.
+            using var database = new MemoryMapBuffer(new MemoryStream([0x01, 0x02, 0x03, 0x04], writable: false));
+
+            // A read that ends exactly at Length is accepted.
+            Assert.Equal(new byte[] { 0x01, 0x02, 0x03, 0x04 }, database.Read(0, 4));
+
+            // A read that ends one byte past Length is rejected.
+            var pastEnd = Assert.Throws<InvalidDatabaseException>(() => database.Read(0, 5));
+            Assert.Contains("beyond the end", pastEnd.Message);
+
+            // A negative offset is rejected.
+            var negativeOffset = Assert.Throws<InvalidDatabaseException>(() => database.Read(-1, 1));
+            Assert.Contains("beyond the end", negativeOffset.Message);
+        }
+
         public static IEnumerable<object[]> TestUInt16()
         {
             var uint16s = new Dictionary<object, byte[]>
