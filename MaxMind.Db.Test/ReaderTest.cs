@@ -681,6 +681,53 @@ namespace MaxMind.Db.Test
             }
         }
 
+        // Repeated pointers to one large scalar must exhaust the payload
+        // budget even when the value count is within its limit.
+        [Theory]
+        [InlineData("MaxMind-DB-test-payload-amplification-dos.mmdb", "maximum payload size")]
+        [InlineData("MaxMind-DB-test-payload-amplification-dos-string.mmdb", "maximum payload size")]
+        // Charging pointer targets separately exhausts the value budget first.
+        [InlineData("MaxMind-DB-test-payload-amplification-dos-worst-case.mmdb", "maximum number of values")]
+        public void TestPayloadAmplificationIsRejected(string fixture, string expected)
+        {
+            using var reader = new Reader(Path.Combine(_testDataRoot, fixture));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains(expected, ex.Message);
+        }
+
+        [Fact]
+        public void TestPayloadAtLimitDecodes()
+        {
+            // Exactly 2 MiB of bytes payload must decode.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-payload-limit.mmdb"));
+            var result = reader.Find<object>(IPAddress.Parse("1.1.1.1"));
+            var list = Assert.IsType<List<object>>(result);
+            Assert.Equal(33, list.Count);
+        }
+
+        [Fact]
+        public void TestPayloadOverLimitIsRejected()
+        {
+            // One byte over 2 MiB must be rejected.
+            using var reader = new Reader(
+                Path.Combine(_testDataRoot, "MaxMind-DB-test-decoder-payload-limit-over.mmdb"));
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
+        [Fact]
+        public void TestMetadataPayloadLimitIsRejectedOnOpen()
+        {
+            // The metadata languages array alone exceeds the payload limit.
+            var ex = Assert.Throws<InvalidDatabaseException>(
+                () => new Reader(
+                    Path.Combine(_testDataRoot, "MaxMind-DB-test-metadata-payload-limit.mmdb")));
+            Assert.Contains("maximum payload size", ex.Message);
+        }
+
         private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;

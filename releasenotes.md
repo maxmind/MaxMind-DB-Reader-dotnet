@@ -24,9 +24,12 @@
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
 - Added decoding limits to prevent crafted databases from consuming excessive
-  time and memory during lookups and metadata reads. Excessive work and
-  pointer cycles throw `InvalidDatabaseException`. Available stack space can
-  impose a lower nesting limit.
+  time and memory. Each lookup and metadata read has a 2 MiB budget for combined
+  string, bytes, uint32, uint64, and uint128 payload. Exceeding a limit or
+  encountering a pointer cycle throws `InvalidDatabaseException`. These limits
+  reject some previously accepted databases, including those with a string or
+  bytes value larger than 2 MiB. Available stack space can impose a lower
+  nesting limit.
 ## 5.1.0 (2026-05-22)
 
 - `FileAccessMode.MemoryMapped` now creates an unnamed file-backed memory-mapped
