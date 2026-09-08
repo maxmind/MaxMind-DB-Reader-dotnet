@@ -47,6 +47,28 @@ namespace MaxMind.Db
             return (ObjectActivator)lambda.Compile();
         }
 
+        // Collection factories take a capacity directly, without a boxed
+        // integer and a temporary argument array on each decode.
+        internal static Func<int, object> CreateCapacityActivator(ConstructorInfo constructor)
+        {
+            if (constructor == null)
+            {
+                throw new ArgumentNullException(nameof(constructor));
+            }
+
+            var capacity = Expression.Parameter(typeof(int), "capacity");
+            NewExpression create;
+            if (constructor.GetParameters().Length == 0)
+            {
+                create = Expression.New(constructor);
+            }
+            else
+            {
+                create = Expression.New(constructor, capacity);
+            }
+            return Expression.Lambda<Func<int, object>>(create, capacity).Compile();
+        }
+
         /// <summary>
         ///     Creates a compiled activator that uses <c>MemberInit</c> expressions
         ///     to set properties on an object created via a parameterless constructor.

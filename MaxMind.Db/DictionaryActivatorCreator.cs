@@ -12,10 +12,10 @@ namespace MaxMind.Db
 {
     internal sealed class DictionaryActivatorCreator
     {
-        private readonly ConcurrentDictionary<Type, ObjectActivator> _dictActivators =
+        private readonly ConcurrentDictionary<Type, Func<int, object>> _dictActivators =
             new();
 
-        internal ObjectActivator GetActivator(Type expectedType)
+        internal Func<int, object> GetActivator(Type expectedType)
             => _dictActivators.GetOrAdd(expectedType, DictionaryActivator);
 
 #if NET8_0_OR_GREATER
@@ -28,7 +28,7 @@ namespace MaxMind.Db
             "IL2070",
             Justification = "Generated dictionary registrations return before this reflection path. This path serves only the documented fallback for unregistered dictionary types, which is unsupported in trimmed applications.")]
 #endif
-        private static ObjectActivator DictionaryActivator(Type expectedType)
+        private static Func<int, object> DictionaryActivator(Type expectedType)
         {
             var genericArgs = expectedType.GetGenericArguments();
             ConstructorInfo? constructor;
@@ -45,7 +45,7 @@ namespace MaxMind.Db
             }
             if (constructor == null)
                 throw new DeserializationException($"Unable to find default constructor for {expectedType}");
-            return ReflectionUtil.CreateActivator(constructor);
+            return ReflectionUtil.CreateCapacityActivator(constructor);
         }
     }
 }
