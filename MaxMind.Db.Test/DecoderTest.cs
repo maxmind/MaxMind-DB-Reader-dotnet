@@ -634,58 +634,144 @@ namespace MaxMind.Db.Test
             Assert.Equal(bytes.Length, offset);
         }
 
-        [Fact]
-        public static void TestWideIntegerConsumesPayloadBudget()
+        [Theory]
+        [InlineData(6, 4)]
+        [InlineData(9, 8)]
+        [InlineData(10, 16)]
+        public static void TestIntegerWidthBoundaries(int type, int maximumSize)
         {
-            // DecodeBigInteger calls ConsumePayload before ReadBigInteger
-            // copies the declared bytes into a new array. An oversized
-            // uint128 must be charged against the payload budget before the
-            // copy. This declares a size one byte over the 2 MiB budget with
-            // no body. An early charge reports the payload limit. A late
-            // charge would instead read past the end and report truncation.
-            // 0x1f selects the extended type with size code 31 (three size
-            // bytes). 0x03 is the extended type byte for uint128
-            // (ObjectType.Uint128 - 7). The size bytes encode
-            // 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
-            using var database = new MemoryMapBuffer(
-                new MemoryStream([0x1f, 0x03, 0x1e, 0xfe, 0xe4], writable: false));
-            var decoder = new Decoder(database, 0);
-            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-            Assert.Contains("maximum payload size", ex.Message);
+            foreach (var size in new[] { 0, maximumSize })
+            {
+                var bytes = EncodedInteger(type, size, size);
+                bytes.Add(0xA0); // next value: uint16 zero
+                using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+                var decoder = new Decoder(database, 0);
+                var value = decoder.Decode<object>(0, out var offset);
+                var expected = (BigInteger.One << (size * 8)) - 1;
+                if (type == 6)
+                {
+                    Assert.Equal((long)expected, Assert.IsType<long>(value));
+                }
+                else if (type == 9)
+                {
+                    Assert.Equal((ulong)expected, Assert.IsType<ulong>(value));
+                }
+                else
+                {
+                    Assert.Equal(expected, Assert.IsType<BigInteger>(value));
+                }
+                Assert.Equal(bytes.Count - 1, offset);
+                Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(offset, out offset)));
+                Assert.Equal(bytes.Count, offset);
+            }
         }
 
-        [Fact]
-        public static void TestUint32ConsumesPayloadBudget()
+        [Theory]
+        [InlineData(6, 4)]
+        [InlineData(9, 8)]
+        [InlineData(10, 16)]
+        public static void TestOversizedIntegerRejectsBeforeReading(int type, int maximumSize)
         {
-            // DecodeLong shares ConsumePayload's call pattern with
-            // DecodeBigInteger: it charges the declared length before
-            // ReadLong reads it. This is the same shape as
-            // TestWideIntegerConsumesPayloadBudget, for a uint32 instead of
-            // a uint128. Uint32 (type 6) is a direct type, so no extended
-            // type byte is needed: 0xdf is uint32 with size code 31 (three
-            // size bytes). The size bytes encode the same one-byte-over
-            // length, 2,097,153 - 65,821 = 2,031,332 (0x1efee4).
-            using var database = new MemoryMapBuffer(
-                new MemoryStream([0xdf, 0x1e, 0xfe, 0xe4], writable: false));
-            var decoder = new Decoder(database, 0);
-            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-            Assert.Contains("maximum payload size", ex.Message);
+            foreach (var payloadSize in new[] { 0, maximumSize + 1 })
+            {
+                var bytes = EncodedInteger(type, maximumSize + 1, payloadSize);
+                using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+                var decoder = new Decoder(database, 0);
+                var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Contains($"larger than {maximumSize} bytes", error.Message);
+            }
         }
 
-        [Fact]
-        public static void TestUint64ConsumesPayloadBudget()
+        [Theory]
+        [InlineData(6, 4)]
+        [InlineData(9, 8)]
+        [InlineData(10, 16)]
+        public static void TestIntegerSizeLimitPrecedesPayloadLimit(int type, int maximumSize)
         {
-            // Same shape as TestWideIntegerConsumesPayloadBudget, for
-            // DecodeUInt64. 0x1f selects the extended type with size code
-            // 31 (three size bytes). 0x02 is the extended type byte for
-            // uint64 (ObjectType.Uint64 - 7). The size bytes encode the
-            // same one-byte-over length, 2,097,153 - 65,821 = 2,031,332
-            // (0x1efee4).
-            using var database = new MemoryMapBuffer(
-                new MemoryStream([0x1f, 0x02, 0x1e, 0xfe, 0xe4], writable: false));
+            // Declare 2 MiB + 1 bytes without a body. Reject the width before
+            // charging payload or attempting a read.
+            var bytes = new List<byte>();
+            if (type == 6)
+            {
+                bytes.Add(0xDF);
+            }
+            else
+            {
+                bytes.Add(0x1F);
+                bytes.Add((byte)(type - 7));
+            }
+            bytes.AddRange([0x1E, 0xFE, 0xE4]);
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
             var decoder = new Decoder(database, 0);
-            var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-            Assert.Contains("maximum payload size", ex.Message);
+            var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains($"larger than {maximumSize} bytes", error.Message);
+        }
+
+        [Theory]
+        [InlineData(6, 4)]
+        [InlineData(9, 8)]
+        [InlineData(10, 16)]
+        public static void TestValidIntegerSharesPayloadBudgetWithString(int type, int maximumSize)
+        {
+            foreach (var exceedsLimit in new[] { false, true })
+            {
+                foreach (var stringFirst in new[] { false, true })
+                {
+                    var stringSize = (1 << 21) - maximumSize;
+                    if (exceedsLimit)
+                    {
+                        stringSize++;
+                    }
+                    var encodedSize = stringSize - 65821;
+                    var text = new List<byte> { 0x5F, (byte)(encodedSize >> 16), (byte)(encodedSize >> 8), (byte)encodedSize };
+                    text.AddRange(Encoding.UTF8.GetBytes(new string('a', stringSize)));
+                    var integer = EncodedInteger(type, maximumSize, maximumSize);
+                    var bytes = new List<byte> { 0x02, 0x04 }; // array of two values
+                    if (stringFirst)
+                    {
+                        bytes.AddRange(text);
+                        bytes.AddRange(integer);
+                    }
+                    else
+                    {
+                        bytes.AddRange(integer);
+                        bytes.AddRange(text);
+                    }
+                    using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+                    var decoder = new Decoder(database, 0);
+                    if (exceedsLimit)
+                    {
+                        var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                        Assert.Contains("maximum payload size", error.Message);
+                    }
+                    else
+                    {
+                        var values = Assert.IsType<List<object>>(decoder.Decode<object>(0, out var offset));
+                        Assert.Equal(2, values.Count);
+                        Assert.Contains(values, value => value is string textValue && textValue.Length == stringSize);
+                        Assert.Equal(bytes.Count, offset);
+                    }
+                }
+            }
+        }
+
+        private static List<byte> EncodedInteger(int type, int size, int payloadSize)
+        {
+            var bytes = new List<byte>();
+            if (type == 6)
+            {
+                bytes.Add((byte)(0xC0 | size));
+            }
+            else
+            {
+                bytes.Add((byte)size);
+                bytes.Add((byte)(type - 7));
+            }
+            for (var i = 0; i < payloadSize; i++)
+            {
+                bytes.Add(0xFF);
+            }
+            return bytes;
         }
 
         public static IEnumerable<object[]> TestUInt16()

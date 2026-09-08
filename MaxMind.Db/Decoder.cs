@@ -726,9 +726,10 @@ namespace MaxMind.Db
             {
                 ReflectionUtil.CheckType(expectedType, typeof(long));
             }
-            // A well-formed uint32 is at most four bytes, but the size is not
-            // range-checked before the read, so charge the declared length to
-            // bound an oversized or fanned-out integer before it is read.
+            if (size > 4)
+            {
+                throw new InvalidDatabaseException("The MaxMind DB file contains a uint32 larger than 4 bytes.");
+            }
             ConsumePayload(size, ref payloadBudget);
             return _database.ReadLong(offset, size);
         }
@@ -828,6 +829,10 @@ namespace MaxMind.Db
             {
                 ReflectionUtil.CheckType(expectedType, typeof(ulong));
             }
+            if (size > 8)
+            {
+                throw new InvalidDatabaseException("The MaxMind DB file contains a uint64 larger than 8 bytes.");
+            }
             ConsumePayload(size, ref payloadBudget);
             return _database.ReadULong(offset, size);
         }
@@ -843,6 +848,10 @@ namespace MaxMind.Db
                 ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
             }
             // Charge the payload before ReadBigInteger allocates its byte array.
+            if (size > 16)
+            {
+                throw new InvalidDatabaseException("The MaxMind DB file contains a uint128 larger than 16 bytes.");
+            }
             ConsumePayload(size, ref payloadBudget);
             return _database.ReadBigInteger(offset, size);
         }

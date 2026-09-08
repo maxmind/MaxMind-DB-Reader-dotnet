@@ -2,6 +2,8 @@
 
 ## 5.2.0 (YYYY-MM-DD)
 
+- Oversized unsigned integers now throw `InvalidDatabaseException` instead of
+  returning truncated or out-of-range values.
 - Added NativeAOT and trimming support for C# model deserialization. The NuGet
   package now includes a source generator for constructor-based and
   property-based models, including models with annotated properties inherited
