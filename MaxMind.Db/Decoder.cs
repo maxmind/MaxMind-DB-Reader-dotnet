@@ -174,7 +174,11 @@ namespace MaxMind.Db
             // Depth and value checks apply at containers and pointers.
             // Scalars charge payload where applicable.
             var type = CtrlData(offset, out var size, out offset);
-            return DecodeByType(expectedType, type, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
+            if (type == ObjectType.Pointer || type == ObjectType.Map || type == ObjectType.Array)
+            {
+                return DecodeContainer(expectedType, type, offset, size, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
+            }
+            return DecodeScalar(expectedType, type, offset, size, out outOffset, ref payloadBudget);
         }
 
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
@@ -224,7 +228,7 @@ namespace MaxMind.Db
         }
 
         /// <summary>
-        ///     Decodes the value by type.
+        ///     Decodes a pointer or container.
         /// </summary>
         /// <param name="expectedType"></param>
         /// <param name="type">The type.</param>
@@ -238,7 +242,7 @@ namespace MaxMind.Db
         /// <param name="network"></param>
         /// <returns></returns>
         /// <exception cref="Exception">Unable to handle type!</exception>
-        private object DecodeByType(
+        private object DecodeContainer(
             Type expectedType,
             ObjectType type,
             long offset,
@@ -278,6 +282,19 @@ namespace MaxMind.Db
                     CheckContainer(depth, size, ref budget);
                     return DecodeArray(expectedType, size, offset, out outOffset, depth, ref budget, ref payloadBudget, injectables, network);
 
+                default:
+                    throw new InvalidDatabaseException("Unable to handle type: " + type);
+            }
+        }
+
+        // Keep scalars out of the container dispatch frame. They need no depth,
+        // value budget, injectables, or network, and dominate ordinary records.
+        private object DecodeScalar(Type expectedType, ObjectType type, long offset, int size,
+            out long outOffset, ref int payloadBudget)
+        {
+            outOffset = offset + size;
+            switch (type)
+            {
                 case ObjectType.Boolean:
                     outOffset = offset;
                     return DecodeBoolean(expectedType, size);
