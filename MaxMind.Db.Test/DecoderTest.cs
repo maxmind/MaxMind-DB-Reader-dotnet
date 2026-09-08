@@ -406,6 +406,43 @@ namespace MaxMind.Db.Test
             Assert.Contains("maximum depth", ex.Message);
         }
 
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(511, false)]
+        [InlineData(512, true)]
+        public static void TestMapKeyPointerChainPreservesValueOffset(int pointerCount, bool exceedsLimit)
+        {
+            // Place the pointer targets before the map so that its following
+            // value is only found by retaining the first pointer's end offset.
+            var bytes = new List<byte> { 0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e' };
+            var target = 0;
+            for (var i = 1; i < pointerCount; i++)
+            {
+                var pointerOffset = bytes.Count;
+                WritePointer1(bytes, target);
+                target = pointerOffset;
+            }
+            var mapOffset = bytes.Count;
+            bytes.Add(0xE1);
+            WritePointer1(bytes, target);
+            bytes.AddRange([0x43, (byte)'v', (byte)'a', (byte)'l']);
+
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(mapOffset, out _));
+                Assert.Contains("maximum depth", error.Message);
+            }
+            else
+            {
+                var record = decoder.Decode<KeyOnlyModel>(mapOffset, out var offset);
+                Assert.Equal("val", record.Name);
+                Assert.Equal(bytes.Count, offset);
+            }
+        }
+
         [Fact]
         public static void TestCyclicPointerAsMapKeyThrows()
         {

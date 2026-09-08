@@ -646,29 +646,36 @@ namespace MaxMind.Db
         private Key DecodeKey(long offset, out long outOffset, int depth, ref int payloadBudget)
         {
             var type = CtrlData(offset, out var size, out offset);
-            switch (type)
+            if (type == ObjectType.Pointer)
             {
-                case ObjectType.Pointer:
-                    // A key can only be a string, so it cannot fan out, and the
-                    // enclosing map already charged this key against the value
-                    // budget. It can still point at another pointer, so guard
-                    // the depth to stop a pointer cycle from overflowing the
-                    // stack with an uncatchable StackOverflowException.
+                CheckDepth(depth);
+                offset = DecodePointer(offset, size, out outOffset);
+                while (true)
+                {
+                    depth++;
+                    type = CtrlData(offset, out size, out offset);
+                    if (type != ObjectType.Pointer)
+                    {
+                        break;
+                    }
                     CheckDepth(depth);
-                    offset = DecodePointer(offset, size, out outOffset);
-                    return DecodeKey(offset, out _, depth + 1, ref payloadBudget);
-
-                case ObjectType.Utf8String:
-                    // The key is hashed over its bytes now and compared later, so
-                    // a pointer-backed key re-hashes its target on every visit.
-                    // Charge its length so a fan-out of large keys is bounded.
-                    ConsumePayload(size, ref payloadBudget);
-                    outOffset = offset + size;
-                    return new Key(_database, offset, size);
-
-                default:
-                    throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
+                    offset = DecodePointer(offset, size, out _);
+                }
             }
+            else
+            {
+                outOffset = offset + size;
+            }
+
+            if (type != ObjectType.Utf8String)
+            {
+                throw new InvalidDatabaseException($"Database contains a non-string as map key: {type}");
+            }
+
+            // Preserve the offset after the first pointer and charge the final
+            // string once, regardless of the number of pointers followed.
+            ConsumePayload(size, ref payloadBudget);
+            return new Key(_database, offset, size);
         }
 
         // The enclosing container charged numberToSkip. Skipped containers
