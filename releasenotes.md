@@ -2,6 +2,7 @@
 
 ## 5.2.0 (YYYY-MM-DD)
 
+- Fixed decoding of some valid four-byte data pointers.
 - Oversized unsigned integers now throw `InvalidDatabaseException` instead of
   returning truncated or out-of-range values.
 - Added NativeAOT and trimming support for C# model deserialization. The NuGet

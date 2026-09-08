@@ -212,6 +212,12 @@ namespace MaxMind.Db
 
             // The size calculation is inlined as it is hot code
             size = ctrlByte & 0x1f;
+            // Pointer control bits encode the pointer width and value, not a payload size.
+            if (type == ObjectType.Pointer)
+            {
+                outOffset = offset;
+                return type;
+            }
             if (size >= 29)
             {
                 var bytesToRead = size - 28;

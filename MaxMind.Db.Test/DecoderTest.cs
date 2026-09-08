@@ -927,6 +927,90 @@ namespace MaxMind.Db.Test
             yield return [floats];
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public static void TestFourBytePointerIgnoresLowControlBits(int lowBits)
+        {
+            byte[] bytes = [(byte)(0x38 | lowBits), 0, 0, 0, 5, 0xA1, 7];
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            Assert.Equal(7, Assert.IsType<int>(decoder.Decode<object>(0, out var offset)));
+            Assert.Equal(5, offset);
+            var rawDecoder = new Decoder(database, 0, false);
+            Assert.Equal(5L, Assert.IsType<long>(rawDecoder.Decode<object>(0, out offset)));
+            Assert.Equal(5, offset);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public static void TestFourByteMapKeyPointerPreservesValueOffset(int lowBits)
+        {
+            byte[] bytes = [0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e',
+                0xE1, (byte)(0x38 | lowBits), 0, 0, 0, 0,
+                0x43, (byte)'v', (byte)'a', (byte)'l'];
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            var model = decoder.Decode<KeyOnlyModel>(5, out var offset);
+            Assert.Equal("val", model.Name);
+            Assert.Equal(bytes.Length, offset);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public static void TestSkippedFourBytePointerPreservesNextField(int lowBits)
+        {
+            byte[] bytes = [0xE2, 0x41, (byte)'x', (byte)(0x38 | lowBits), 0, 0, 0, 0,
+                0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e',
+                0x43, (byte)'v', (byte)'a', (byte)'l'];
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            var model = decoder.Decode<KeyOnlyModel>(0, out var offset);
+            Assert.Equal("val", model.Name);
+            Assert.Equal(bytes.Length, offset);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public static void TestTruncatedFourBytePointerThrows(int lowBits)
+        {
+            for (var payloadSize = 0; payloadSize < 4; payloadSize++)
+            {
+                var bytes = new byte[payloadSize + 1];
+                bytes[0] = (byte)(0x38 | lowBits);
+                using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+                var decoder = new Decoder(database, 0, false);
+                Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            }
+        }
+
         public static IEnumerable<object[]> TestPointers()
         {
             var pointers = new Dictionary<object, byte[]>
