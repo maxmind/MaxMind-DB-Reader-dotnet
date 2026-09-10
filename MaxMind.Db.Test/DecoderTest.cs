@@ -199,9 +199,8 @@ namespace MaxMind.Db.Test
 
         // The root and 65,535 booleans use the entire value budget
         // without consuming payload bytes.
-        private static byte[] AtValueBudgetLimitArray()
+        private static byte[] ValueBudgetArray(int childCount = 65_535)
         {
-            const int childCount = 65_535;
             var encodedSize = childCount - 285;
             var bytes = new List<byte>(childCount * 2 + 4)
             {
@@ -220,33 +219,49 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public static void TestManySimultaneousAtBudgetLimitDecodesSucceed()
+        public static void TestConcurrentSuccessfulAndRejectedLookupsHaveSeparateBudgets()
         {
             // Exercise both budgets through one shared decoder. The repeated
             // lookup tests check budget reset without relying on thread overlap.
             const int pointerCount = 8_192;
             const int childCount = 65_535;
             var payloadBytes = FlatScalarPointerTargets(pointerCount, out var arrayOffset);
-            var valueBytes = AtValueBudgetLimitArray();
+            var valueBytes = ValueBudgetArray();
             var valueOffset = payloadBytes.Length;
-            var bytes = new byte[payloadBytes.Length + valueBytes.Length];
+            var excessiveValues = ValueBudgetArray(childCount + 1);
+            var excessiveValueOffset = payloadBytes.Length + valueBytes.Length;
+            var excessivePayload = FlatScalarPointerTargets(pointerCount + 1, out var excessiveArrayOffset);
+            var excessivePayloadOffset = excessiveValueOffset + excessiveValues.Length;
+            var bytes = new byte[excessivePayloadOffset + excessivePayload.Length];
             payloadBytes.CopyTo(bytes, 0);
             valueBytes.CopyTo(bytes, valueOffset);
+            excessiveValues.CopyTo(bytes, excessiveValueOffset);
+            excessivePayload.CopyTo(bytes, excessivePayloadOffset);
 
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
             System.Threading.Tasks.Parallel.For(0, 16, i =>
             {
-                if (i % 2 == 0)
+                if (i % 4 == 0)
                 {
                     var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out _));
                     Assert.Equal(pointerCount, decoded.Count);
                 }
-                else
+                else if (i % 4 == 1)
                 {
                     var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(valueOffset, out _));
                     Assert.Equal(childCount, decoded.Count);
+                }
+                else if (i % 4 == 2)
+                {
+                    var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(excessiveValueOffset, out _));
+                    Assert.Contains("maximum number of values", error.Message);
+                }
+                else
+                {
+                    var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(excessivePayloadOffset + excessiveArrayOffset, out _));
+                    Assert.Contains("maximum payload size", error.Message);
                 }
             });
         }
@@ -356,6 +371,38 @@ namespace MaxMind.Db.Test
             var decoder = new Decoder(database, 0);
             var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
             Assert.Contains("maximum number of values", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(32_767, false)]
+        [InlineData(32_768, true)]
+        public static void TestMapValueBudgetBoundary(int entryCount, bool exceedsLimit)
+        {
+            var size = entryCount - 285;
+            var bytes = new List<byte> { 0xFE, (byte)(size >> 8), (byte)size };
+            if (!exceedsLimit)
+            {
+                for (var i = 0; i < entryCount; i++)
+                {
+                    bytes.Add(0x44);
+                    bytes.AddRange(Encoding.ASCII.GetBytes(i.ToString("X4", System.Globalization.CultureInfo.InvariantCulture)));
+                    bytes.AddRange([0x00, 0x07]); // false
+                }
+            }
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            if (exceedsLimit)
+            {
+                var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Contains("maximum number of values", error.Message);
+            }
+            else
+            {
+                var record = decoder.Decode<Dictionary<string, object>>(0, out var offset);
+                Assert.Equal(entryCount, record.Count);
+                Assert.False(Assert.IsType<bool>(record["7FFE"]));
+                Assert.Equal(bytes.Count, offset);
+            }
         }
 
         [Fact]

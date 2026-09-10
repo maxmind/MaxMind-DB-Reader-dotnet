@@ -848,6 +848,54 @@ namespace MaxMind.Db.Test
             }
         }
 
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.Memory)]
+        public void TestReaderRecoversAfterModelLimitFailure(FileAccessMode mode)
+        {
+            // Populate one constructor argument before the next field exceeds
+            // the value limit. The successful record omits that first field.
+            byte[] hostile = [0xE2, 0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e',
+                0x43, (byte)'b', (byte)'a', (byte)'d',
+                0x46, (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s',
+                0x1E, 0x04, 0xFE, 0xE2];
+            byte[] valid = [0xE1, 0x46, (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s',
+                0x01, 0x04, 0x01, 0x07]; // one-element array containing true
+            var path = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllBytes(path, DatabaseWithRootRecords(hostile, valid));
+                using var reader = new Reader(path, mode);
+                for (var i = 0; i < 3; i++)
+                {
+                    var error = Assert.Throws<InvalidDatabaseException>(() => reader.Find<RecoveryRecord>(IPAddress.Parse("1.1.1.1")));
+                    Assert.Contains("maximum number of values", error.Message);
+                    var record = reader.Find<RecoveryRecord>(IPAddress.Parse("129.1.1.1"));
+                    Assert.NotNull(record);
+                    Assert.Null(record.Name);
+                    Assert.NotNull(record.Values);
+                    Assert.True(Assert.IsType<bool>(Assert.Single(record.Values)));
+                }
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        private sealed class RecoveryRecord
+        {
+            [Constructor]
+            public RecoveryRecord(string? name = null, List<object>? values = null)
+            {
+                Name = name;
+                Values = values;
+            }
+
+            public string? Name { get; }
+            public List<object>? Values { get; }
+        }
+
         private byte[] DatabaseWithRootRecords(byte[] left, byte[] right)
         {
             var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv4-24.mmdb");
