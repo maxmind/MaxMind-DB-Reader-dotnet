@@ -1,6 +1,6 @@
 # Release Notes
 
-## 5.2.0 (YYYY-MM-DD)
+## 5.2.0 (2026-09-10)
 
 - Fixed decoding of some valid four-byte data pointers.
 - Fixed truncated or out-of-range results when decoding oversized integers.
