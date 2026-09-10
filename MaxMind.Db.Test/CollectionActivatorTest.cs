@@ -29,6 +29,9 @@ namespace MaxMind.Db.Test
             var factory = new DictionaryActivatorCreator().GetActivator(typeof(IDictionary<string, long>));
             var dictionary = Assert.IsType<Dictionary<string, long>>(factory(123));
             Assert.Empty(dictionary);
+#if NET8_0_OR_GREATER
+            Assert.True(dictionary.EnsureCapacity(0) >= 123);
+#endif
             dictionary.Add("value", 7);
             Assert.Equal(7, dictionary["value"]);
         }
