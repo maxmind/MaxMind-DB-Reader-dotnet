@@ -66,6 +66,7 @@ namespace MaxMind.Db
             {
                 create = Expression.New(constructor, capacity);
             }
+            // The Compile limitation described in CreateActivator also applies here.
             return Expression.Lambda<Func<int, object>>(create, capacity).Compile();
         }
 

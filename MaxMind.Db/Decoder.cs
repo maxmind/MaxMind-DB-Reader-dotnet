@@ -181,6 +181,10 @@ namespace MaxMind.Db
             return DecodeScalar(expectedType, type, offset, size, out outOffset, ref payloadBudget);
         }
 
+        /// <summary>
+        ///     Reads the type and size. For pointers, size contains the five
+        ///     raw control bits. For other types, it contains the expanded size.
+        /// </summary>
         private ObjectType CtrlData(long offset, out int size, out long outOffset)
         {
             if (offset >= _database.Length)
@@ -247,7 +251,7 @@ namespace MaxMind.Db
         /// <param name="injectables"></param>
         /// <param name="network"></param>
         /// <returns></returns>
-        /// <exception cref="Exception">Unable to handle type!</exception>
+        /// <exception cref="InvalidDatabaseException">The data is invalid or exceeds a decoding limit.</exception>
         private object DecodeContainer(
             Type expectedType,
             ObjectType type,
@@ -274,8 +278,8 @@ namespace MaxMind.Db
                     }
 
                     // The logical slot is already charged. Following a pointer
-                    // adds depth. Its target charges children or payload as
-                    // applicable. Boolean and double targets add no payload charge.
+                    // adds depth. Containers charge their children, and strings,
+                    // bytes, uint32, uint64, and uint128 charge their payload.
                     CheckDepth(depth);
                     return DecodePointerTarget(expectedType, pointer, depth + 1, ref budget, ref payloadBudget, injectables, network);
 
@@ -862,7 +866,6 @@ namespace MaxMind.Db
             {
                 ReflectionUtil.CheckType(expectedType, typeof(BigInteger));
             }
-            // Charge the payload before ReadBigInteger allocates its byte array.
             if (size > 16)
             {
                 throw new InvalidDatabaseException("The MaxMind DB file contains a uint128 larger than 16 bytes.");

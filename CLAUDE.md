@@ -35,14 +35,14 @@ dotnet build MaxMind.Db.sln
 
 ```bash
 # Run all tests
-dotnet test MaxMind.Db.Test/MaxMind.Db.Test.csproj
+dotnet test --project MaxMind.Db.Test/MaxMind.Db.Test.csproj
 
 # Run specific test class
-dotnet test --filter "FullyQualifiedName~ReaderTest"
-dotnet test --filter "FullyQualifiedName~DecoderTest"
+dotnet test --project MaxMind.Db.Test/MaxMind.Db.Test.csproj -- --filter-class "*ReaderTest"
+dotnet test --project MaxMind.Db.Test/MaxMind.Db.Test.csproj -- --filter-class "*DecoderTest"
 
 # Run specific test method
-dotnet test --filter "FullyQualifiedName~ReaderTest.TestMany"
+dotnet test --project MaxMind.Db.Test/MaxMind.Db.Test.csproj -- --filter-method "*ReaderTest.TestPointerHeavyValueCountDecodes"
 ```
 
 ### Running Benchmarks

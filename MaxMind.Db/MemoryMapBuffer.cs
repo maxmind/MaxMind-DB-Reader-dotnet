@@ -268,8 +268,9 @@ namespace MaxMind.Db
 
         // Check the database length, since the view accessor can include
         // padding beyond the file. GetSpan shares this check on other targets.
-        // Unsigned addition prevents a large offset from wrapping negative
-        // and passing a signed bounds comparison.
+        // Reject negative offsets before unsigned addition, which could wrap.
+        // For nonnegative offsets and counts, the unsigned sum cannot overflow
+        // and keeps offsets beyond long.MaxValue outside the database.
         private void CheckBounds(long offset, int count)
         {
             if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
@@ -311,6 +312,7 @@ namespace MaxMind.Db
             CheckBounds(offset, 1);
             return _view.ReadByte(offset);
 #else
+            // This single-byte check rejects negative offsets and needs no addition.
             if ((ulong)offset >= (ulong)Length)
             {
                 throw new InvalidDatabaseException(
@@ -380,6 +382,7 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            // Zero reads nothing. Four delegates to ReadInt, which checks bounds.
             if (count == 1 || count == 2 || count == 3)
             {
                 CheckBounds(offset, count);
