@@ -277,7 +277,7 @@ namespace MaxMind.Db
                     // adds depth. Its target charges children or payload as
                     // applicable. Boolean and double targets add no payload charge.
                     CheckDepth(depth);
-                    return Decode(expectedType, pointer, out _, depth + 1, ref budget, ref payloadBudget, injectables, network);
+                    return DecodePointerTarget(expectedType, pointer, depth + 1, ref budget, ref payloadBudget, injectables, network);
 
                 case ObjectType.Map:
                     // A map entry decodes a key and a value, so it costs two values.
@@ -291,6 +291,21 @@ namespace MaxMind.Db
                 default:
                     throw new InvalidDatabaseException("Unable to handle type: " + type);
             }
+        }
+
+        private object DecodePointerTarget(Type expectedType, long offset, int depth,
+            ref int budget, ref int payloadBudget, InjectableValues? injectables, Network? network)
+        {
+            var type = CtrlData(offset, out var size, out offset);
+            if (type == ObjectType.Pointer)
+            {
+                throw new InvalidDatabaseException("The MaxMind DB file contains a pointer to another pointer.");
+            }
+            if (type == ObjectType.Map || type == ObjectType.Array)
+            {
+                return DecodeContainer(expectedType, type, offset, size, out _, depth, ref budget, ref payloadBudget, injectables, network);
+            }
+            return DecodeScalar(expectedType, type, offset, size, out _, ref payloadBudget);
         }
 
         // Keep scalars out of the container dispatch frame. They need no depth,
@@ -656,16 +671,10 @@ namespace MaxMind.Db
             {
                 CheckDepth(depth);
                 offset = DecodePointer(offset, size, out outOffset);
-                while (true)
+                type = CtrlData(offset, out size, out offset);
+                if (type == ObjectType.Pointer)
                 {
-                    depth++;
-                    type = CtrlData(offset, out size, out offset);
-                    if (type != ObjectType.Pointer)
-                    {
-                        break;
-                    }
-                    CheckDepth(depth);
-                    offset = DecodePointer(offset, size, out _);
+                    throw new InvalidDatabaseException("The MaxMind DB file contains a pointer to another pointer.");
                 }
             }
             else
@@ -679,7 +688,7 @@ namespace MaxMind.Db
             }
 
             // Preserve the offset after the first pointer and charge the final
-            // string once, regardless of the number of pointers followed.
+            // string once.
             ConsumePayload(size, ref payloadBudget);
             return new Key(_database, offset, size);
         }

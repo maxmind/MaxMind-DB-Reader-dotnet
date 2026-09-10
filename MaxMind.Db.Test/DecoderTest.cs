@@ -332,12 +332,11 @@ namespace MaxMind.Db.Test
         [Fact]
         public static void TestCyclicPointerThrows()
         {
-            // A pointer cycle has no container charges. The depth guard
-            // must stop it with a catchable database exception.
+            // Reject a self-pointer before following it again.
             using var database = new MemoryMapBuffer(new MemoryStream([0x20, 0x00], writable: false));
             var decoder = new Decoder(database, 0);
             var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-            Assert.Contains("maximum depth", ex.Message);
+            Assert.Contains("pointer to another pointer", ex.Message);
         }
 
         private sealed class KeyOnlyModel
@@ -408,8 +407,8 @@ namespace MaxMind.Db.Test
 
         [Theory]
         [InlineData(1, false)]
-        [InlineData(2, false)]
-        [InlineData(511, false)]
+        [InlineData(2, true)]
+        [InlineData(511, true)]
         [InlineData(512, true)]
         public static void TestMapKeyPointerChainPreservesValueOffset(int pointerCount, bool exceedsLimit)
         {
@@ -433,7 +432,7 @@ namespace MaxMind.Db.Test
             if (exceedsLimit)
             {
                 var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(mapOffset, out _));
-                Assert.Contains("maximum depth", error.Message);
+                Assert.Contains("pointer to another pointer", error.Message);
             }
             else
             {
@@ -451,7 +450,7 @@ namespace MaxMind.Db.Test
             using var database = new MemoryMapBuffer(new MemoryStream([0xe1, 0x20, 0x01], writable: false));
             var decoder = new Decoder(database, 0);
             var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
-            Assert.Contains("maximum depth", ex.Message);
+            Assert.Contains("pointer to another pointer", ex.Message);
         }
 
         // These headers declare oversized values without a body. Expect
@@ -533,54 +532,115 @@ namespace MaxMind.Db.Test
         }
 
         [Theory]
-        [InlineData(511, false)]
-        [InlineData(512, false)]
-        [InlineData(513, true)]
-        public static void TestPointerChainDepthIsBounded(int chainLength, bool exceedsLimit)
+        [InlineData(1, false)]
+        [InlineData(2, true)]
+        [InlineData(512, true)]
+        public static void TestPointerToPointerIsRejected(int chainLength, bool invalid)
         {
-            // A chain of 512 pointer follows is allowed. The 513th follow
-            // exceeds the depth limit.
             var bytes = PointerChain(chainLength);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
-
-            if (exceedsLimit)
+            if (invalid)
             {
-                var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
-                Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+                var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                Assert.Contains("pointer to another pointer", error.Message);
             }
             else
             {
-                Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(0, out _)));
+                Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(0, out var offset)));
+                Assert.Equal(2, offset);
             }
         }
 
-        [Fact]
-        public static void TestDepthAccumulatesAcrossContainerIntoPointerChain()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestTwoNodePointerCycleIsRejected(bool mapKey)
         {
-            // The array element adds one pointer to a 511-link chain.
-            // Those 512 follows succeed at root depth but exceed the limit
-            // when the array contributes one level. Give the thread enough
-            // stack to test the depth limit without a runtime stack rejection.
-            var chain = PointerChain(511);
-            var arrayOffset = chain.Length;
-            var bytes = new List<byte>(chain.Length + 4);
-            bytes.AddRange(chain);
-            bytes.Add(0x01); // extended type, size 1
-            bytes.Add(0x04); // extended type byte: array (11 - 7)
-            var pointerOffset = bytes.Count;
-            WritePointer1(bytes, 0);
-            Exception? failure = null;
+            var bytes = new List<byte> { 0x20, 0x02, 0x20, 0x00, 0xE1, 0x20, 0x00 };
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
+            var decoder = new Decoder(database, 0);
+            var error = Assert.Throws<InvalidDatabaseException>(() =>
+            {
+                if (mapKey)
+                {
+                    decoder.Decode<KeyOnlyModel>(4, out _);
+                }
+                else
+                {
+                    decoder.Decode<object>(0, out _);
+                }
+            });
+            Assert.Contains("pointer to another pointer", error.Message);
+        }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestPointerTargetIsRejectedBeforeReadingItsPayload(bool mapKey)
+        {
+            byte[] bytes;
+            if (mapKey)
+            {
+                bytes = [0xE1, 0x20, 0x03, 0x20];
+            }
+            else
+            {
+                bytes = [0x20, 0x02, 0x20];
+            }
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            var error = Assert.Throws<InvalidDatabaseException>(() =>
+            {
+                if (mapKey)
+                {
+                    decoder.Decode<KeyOnlyModel>(0, out _);
+                }
+                else
+                {
+                    decoder.Decode<object>(0, out _);
+                }
+            });
+            Assert.Contains("pointer to another pointer", error.Message);
+        }
+
+        [Theory]
+        [InlineData(255, false)]
+        [InlineData(256, false)]
+        [InlineData(257, true)]
+        public static void TestDepthAccumulatesAcrossPointersToContainers(int count, bool exceedsLimit)
+        {
+            // Every pointer targets a one-element array. Each pair costs two
+            // levels, and no pointer directly targets another pointer.
+            var bytes = new List<byte>();
+            for (var i = 0; i < count; i++)
+            {
+                WritePointer1(bytes, bytes.Count + 2);
+                bytes.AddRange([0x01, 0x04]);
+            }
+            bytes.Add(0xA0);
+            Exception? failure = null;
             var thread = new Thread(() =>
             {
                 try
                 {
                     using var database = new MemoryMapBuffer(new MemoryStream(bytes.ToArray(), writable: false));
                     var decoder = new Decoder(database, 0);
-                    Assert.Equal(0, Assert.IsType<int>(decoder.Decode<object>(pointerOffset, out _)));
-                    var ex = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(arrayOffset, out _));
-                    Assert.Equal("The MaxMind DB file's data section exceeds the maximum depth.", ex.Message);
+                    if (exceedsLimit)
+                    {
+                        var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+                        Assert.Contains("maximum depth", error.Message);
+                    }
+                    else
+                    {
+                        object value = decoder.Decode<object>(0, out var offset);
+                        Assert.Equal(2, offset);
+                        for (var i = 0; i < count; i++)
+                        {
+                            value = Assert.Single(Assert.IsType<List<object>>(value));
+                        }
+                        Assert.Equal(0, Assert.IsType<int>(value));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -589,7 +649,6 @@ namespace MaxMind.Db.Test
             }, maxStackSize: 16 << 20);
             thread.Start();
             thread.Join();
-
             if (failure != null)
             {
                 ExceptionDispatchInfo.Capture(failure).Throw();
@@ -618,20 +677,18 @@ namespace MaxMind.Db.Test
         }
 
         [Fact]
-        public static void TestManySlotsEachFollowingALongPointerChainTerminates()
+        public static void TestManySlotsEachFollowingALongPointerChainIsRejected()
         {
-            // Each slot adds one pointer before the 300-link chain: 301,000
-            // follows in total. The root and slots cost 1,001 values, and the
-            // leaf is reached at depth 302, within both limits.
-            const int slotCount = 1_000;
-            const int chainLength = 300;
+            // A shared chain could previously amplify one lookup into tens
+            // of millions of pointer follows while staying within the limits.
+            const int slotCount = 65_534;
+            const int chainLength = 509;
             var bytes = ManySlotsEachFollowingALongPointerChain(slotCount, chainLength, out var arrayOffset);
             using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
             var decoder = new Decoder(database, 0);
 
-            var decoded = Assert.IsType<List<object>>(decoder.Decode<object>(arrayOffset, out var offset));
-            Assert.Equal(slotCount, decoded.Count);
-            Assert.Equal(bytes.Length, offset);
+            var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(arrayOffset, out _));
+            Assert.Contains("pointer to another pointer", error.Message);
         }
 
         [Theory]
@@ -925,6 +982,84 @@ namespace MaxMind.Db.Test
             };
 
             yield return [floats];
+        }
+
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(3, false)]
+        [InlineData(4, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(3, true)]
+        [InlineData(4, true)]
+        public static void TestPointerWidthsPreserveValueAndOffset(int width, bool mapKey)
+        {
+            // Use the smallest encoded target that leaves room for the record.
+            // Two- and three-byte pointers have an implicit offset added.
+            var target = 16;
+            if (width == 2)
+            {
+                target += 1 << 11;
+            }
+            else if (width == 3)
+            {
+                target += (1 << 19) + (1 << 11);
+            }
+            var bytes = new byte[target + 5];
+            bytes[0] = 0xA0; // scalar target for the pointer inside the array
+            var start = 1;
+            if (mapKey)
+            {
+                bytes[start++] = 0xE1;
+            }
+            bytes[start] = (byte)(0x20 | ((width - 1) << 3));
+            bytes[start + width] = 16;
+            var end = start + width + 1;
+            if (mapKey)
+            {
+                bytes[end++] = 0x43;
+                bytes[end++] = (byte)'v';
+                bytes[end++] = (byte)'a';
+                bytes[end++] = (byte)'l';
+                new byte[] { 0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e' }.CopyTo(bytes, target);
+            }
+            else
+            {
+                // A pointer to a container containing a pointer remains valid.
+                new byte[] { 0x01, 0x04, 0x20, 0x00 }.CopyTo(bytes, target);
+            }
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            if (mapKey)
+            {
+                var record = decoder.Decode<KeyOnlyModel>(1, out var offset);
+                Assert.Equal("val", record.Name);
+                Assert.Equal(end, offset);
+            }
+            else
+            {
+                var record = decoder.Decode<List<object>>(1, out var offset);
+                Assert.Equal(0, Assert.IsType<int>(Assert.Single(record)));
+                Assert.Equal(end, offset);
+            }
+            var rawDecoder = new Decoder(database, 0, false);
+            Assert.Equal((long)target, Assert.IsType<long>(rawDecoder.Decode<object>(start, out var rawOffset)));
+            Assert.Equal(start + width + 1, rawOffset);
+        }
+
+        [Fact]
+        public static void TestSkippedPointerDoesNotValidateItsTarget()
+        {
+            byte[] bytes = [0xE2, 0x44, (byte)'s', (byte)'k', (byte)'i', (byte)'p',
+                0x20, 17, 0x44, (byte)'n', (byte)'a', (byte)'m', (byte)'e',
+                0x43, (byte)'v', (byte)'a', (byte)'l', 0x20];
+            // The unknown field points at a pointer header with no payload.
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            var record = decoder.Decode<KeyOnlyModel>(0, out var offset);
+            Assert.Equal("val", record.Name);
+            Assert.Equal(17, offset);
         }
 
         [Theory]
