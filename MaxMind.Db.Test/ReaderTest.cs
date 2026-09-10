@@ -826,6 +826,51 @@ namespace MaxMind.Db.Test
             Assert.Contains("maximum payload size", ex.Message);
         }
 
+        [Theory]
+        [InlineData(FileAccessMode.MemoryMapped)]
+        [InlineData(FileAccessMode.Memory)]
+        public void TestTruncatedRecordThrowsDatabaseException(FileAccessMode mode)
+        {
+            // The string declares 4,096 bytes, extending past the metadata and
+            // the end of this small database. Its header is inside the file.
+            var bytes = DatabaseWithRootRecords([0x5E, 0x0E, 0xE3], [0xA0]);
+            var path = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllBytes(path, bytes);
+                using var reader = new Reader(path, mode);
+                var error = Assert.Throws<InvalidDatabaseException>(() => reader.Find<object>(IPAddress.Parse("1.1.1.1")));
+                Assert.Contains("beyond the end", error.Message);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        private byte[] DatabaseWithRootRecords(byte[] left, byte[] right)
+        {
+            var path = Path.Combine(_testDataRoot, "MaxMind-DB-test-ipv4-24.mmdb");
+            using var source = new Reader(path);
+            var original = File.ReadAllBytes(path);
+            byte[] marker = [0xAB, 0xCD, 0xEF, (byte)'M', (byte)'a', (byte)'x', (byte)'M', (byte)'i', (byte)'n', (byte)'d', (byte)'.', (byte)'c', (byte)'o', (byte)'m'];
+            var metadataOffset = Enumerable.Range(0, original.Length - marker.Length + 1)
+                .Last(i => original.Skip(i).Take(marker.Length).SequenceEqual(marker));
+            var bytes = new List<byte>(original.Take(metadataOffset));
+            var leftPointer = bytes.Count - source.Metadata.SearchTreeSize + source.Metadata.NodeCount;
+            bytes.AddRange(left);
+            var rightPointer = bytes.Count - source.Metadata.SearchTreeSize + source.Metadata.NodeCount;
+            bytes.AddRange(right);
+            bytes.AddRange(original.Skip(metadataOffset));
+            // Root children select the two records by the address's first bit.
+            for (var i = 0; i < 3; i++)
+            {
+                bytes[i] = (byte)(leftPointer >> (16 - 8 * i));
+                bytes[i + 3] = (byte)(rightPointer >> (16 - 8 * i));
+            }
+            return [.. bytes];
+        }
+
         private static void TestMetadata(Reader reader, int ipVersion)
         {
             var metadata = reader.Metadata;

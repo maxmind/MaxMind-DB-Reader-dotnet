@@ -500,6 +500,26 @@ namespace MaxMind.Db.Test
             Assert.Contains("beyond the end", ex.Message);
         }
 
+        [Theory]
+        [InlineData(new byte[] { 0xC4 })]
+        [InlineData(new byte[] { 0x08, 0x02 })]
+        public static void TestTruncatedIntegerThrowsDatabaseException(byte[] bytes)
+        {
+            using var database = new MemoryMapBuffer(new MemoryStream(bytes, writable: false));
+            var decoder = new Decoder(database, 0);
+            var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<object>(0, out _));
+            Assert.Contains("beyond the end", error.Message);
+        }
+
+        [Fact]
+        public static void TestTruncatedModelKeyThrowsDatabaseException()
+        {
+            using var database = new MemoryMapBuffer(new MemoryStream([0xE1, 0x44], writable: false));
+            var decoder = new Decoder(database, 0);
+            var error = Assert.Throws<InvalidDatabaseException>(() => decoder.Decode<KeyOnlyModel>(0, out _));
+            Assert.Contains("beyond the end", error.Message);
+        }
+
         [Fact]
         public static void TestBufferReadRejectsOutOfBoundsOffsets()
         {
