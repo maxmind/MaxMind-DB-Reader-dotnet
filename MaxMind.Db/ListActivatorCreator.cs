@@ -11,10 +11,10 @@ namespace MaxMind.Db
 {
     internal sealed class ListActivatorCreator
     {
-        private readonly ConcurrentDictionary<Type, ObjectActivator> _listActivators =
+        private readonly ConcurrentDictionary<Type, Func<int, object>> _listActivators =
             new();
 
-        internal ObjectActivator GetActivator(Type expectedType)
+        internal Func<int, object> GetActivator(Type expectedType)
             => _listActivators.GetOrAdd(expectedType, ListActivator);
 
 #if NET8_0_OR_GREATER
@@ -27,7 +27,7 @@ namespace MaxMind.Db
             "IL2070",
             Justification = "Generated collection registrations return before this reflection path. This path serves only the documented fallback for unregistered collection types, which is unsupported in trimmed applications.")]
 #endif
-        private static ObjectActivator ListActivator(Type expectedType)
+        private static Func<int, object> ListActivator(Type expectedType)
         {
             var genericArgs = expectedType.GetGenericArguments();
             var argType = genericArgs.Length switch
@@ -51,7 +51,7 @@ namespace MaxMind.Db
             }
             if (constructor == null)
                 throw new DeserializationException($"Unable to find default constructor for {expectedType}");
-            return ReflectionUtil.CreateActivator(constructor);
+            return ReflectionUtil.CreateCapacityActivator(constructor);
         }
     }
 }

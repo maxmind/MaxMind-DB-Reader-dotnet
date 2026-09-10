@@ -2,6 +2,8 @@
 
 ## 5.2.0 (YYYY-MM-DD)
 
+- Fixed decoding of some valid four-byte data pointers.
+- Fixed truncated or out-of-range results when decoding oversized integers.
 - Added NativeAOT and trimming support for C# model deserialization. The NuGet
   package now includes a source generator for constructor-based and
   property-based models, including models with annotated properties inherited
@@ -11,6 +13,8 @@
   collection types used directly with `Find<T>` and `FindAll<T>`.
 - Reused immutable source-generated activation metadata across readers, reducing
   the time and allocation cost of the first model lookup on a new reader.
+- Improved lookup performance and reduced allocations when creating collections
+  through reflection.
 - Enabled trim, AOT, and single-file compatibility analysis.
 - Added the `MMDBSG001` through `MMDBSG016` diagnostics, which report model
   shapes the generator cannot support so that they are caught at build time
@@ -23,6 +27,20 @@
 - Fixed a `[MapKey(..., true)]` member of a non-nullable value type throwing
   during property-based activation instead of keeping its default. This affected
   the reflection path before this release and is now consistent across both.
+- Added decoding limits to prevent crafted databases from consuming excessive
+  time and memory. Each lookup and metadata read allows at most 65,536 decoded
+  values, 512 nesting levels (including pointer follows), and 2 MiB of combined
+  string, bytes, uint32, uint64, and uint128 payload. Exceeding a limit or
+  encountering a pointer cycle throws `InvalidDatabaseException`. These limits
+  reject some previously accepted databases, including those with a string or
+  bytes value larger than 2 MiB. Available stack space can impose a lower
+  nesting limit.
+- Pointers that point directly to other pointers now throw
+  `InvalidDatabaseException`.
+- Truncated or out-of-bounds data reads now throw `InvalidDatabaseException`
+  instead of `ArgumentOutOfRangeException`. This also prevents incorrect decoded
+  values on `netstandard2.0`. Update error handlers to catch
+  `InvalidDatabaseException`.
 
 ## 5.1.0 (2026-05-22)
 

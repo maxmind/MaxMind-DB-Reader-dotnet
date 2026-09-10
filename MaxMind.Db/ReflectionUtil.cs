@@ -47,6 +47,29 @@ namespace MaxMind.Db
             return (ObjectActivator)lambda.Compile();
         }
 
+        // Collection factories take a capacity directly, without a boxed
+        // integer and a temporary argument array on each decode.
+        internal static Func<int, object> CreateCapacityActivator(ConstructorInfo constructor)
+        {
+            if (constructor == null)
+            {
+                throw new ArgumentNullException(nameof(constructor));
+            }
+
+            var capacity = Expression.Parameter(typeof(int), "capacity");
+            NewExpression create;
+            if (constructor.GetParameters().Length == 0)
+            {
+                create = Expression.New(constructor);
+            }
+            else
+            {
+                create = Expression.New(constructor, capacity);
+            }
+            // The Compile limitation described in CreateActivator also applies here.
+            return Expression.Lambda<Func<int, object>>(create, capacity).Compile();
+        }
+
         /// <summary>
         ///     Creates a compiled activator that uses <c>MemberInit</c> expressions
         ///     to set properties on an object created via a parameterless constructor.
@@ -93,8 +116,15 @@ namespace MaxMind.Db
             }
             if (!expected.IsAssignableFrom(from))
             {
-                throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
+                ThrowCannotConvert(expected, from);
             }
+        }
+
+        // Keep error-message construction out of callers that inline CheckType.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowCannotConvert(Type expected, Type from)
+        {
+            throw new DeserializationException($"Could not convert '{from}' to '{expected}'.");
         }
     }
 }

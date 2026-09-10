@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 
-BenchmarkRunner.Run<CityBenchmark>();
+BenchmarkRunner.Run<CityBenchmark>(args: args);
 
 [MemoryDiagnoser]
 public class CityBenchmark

@@ -261,14 +261,24 @@ namespace MaxMind.Db
         // that databases larger than 2 GiB still work (Span length is int).
         private unsafe ReadOnlySpan<byte> GetSpan(long offset, int count)
         {
-            if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
-            }
+            CheckBounds(offset, count);
             return new ReadOnlySpan<byte>((byte*)_ptr + offset, count);
         }
 #endif
+
+        // Check the database length, since the view accessor can include
+        // padding beyond the file. GetSpan shares this check on other targets.
+        // Reject negative offsets before unsigned addition, which could wrap.
+        // For nonnegative offsets and counts, the unsigned sum cannot overflow
+        // and keeps offsets beyond long.MaxValue outside the database.
+        private void CheckBounds(long offset, int count)
+        {
+            if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
+            {
+                throw new InvalidDatabaseException(
+                    "Attempt to read beyond the end of the database.");
+            }
+        }
 
         internal byte[] Read(long offset, int count)
         {
@@ -282,6 +292,7 @@ namespace MaxMind.Db
             {
                 return Array.Empty<byte>();
             }
+            CheckBounds(offset, count);
             var bytes = new byte[count];
             _view.ReadArray(offset, bytes, 0, count);
             return bytes;
@@ -298,12 +309,14 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            CheckBounds(offset, 1);
             return _view.ReadByte(offset);
 #else
+            // This single-byte check rejects negative offsets and needs no addition.
             if ((ulong)offset >= (ulong)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
+                throw new InvalidDatabaseException(
+                    "Attempt to read beyond the end of the database.");
             }
             unsafe
             {
@@ -324,11 +337,7 @@ namespace MaxMind.Db
             {
                 return string.Empty;
             }
-            if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    "Attempt to read beyond the end of the MemoryMappedFile.");
-            }
+            CheckBounds(offset, count);
             var bytes = new byte[count];
             _view.ReadArray(offset, bytes, 0, count);
             return Encoding.UTF8.GetString(bytes);
@@ -348,6 +357,7 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            CheckBounds(offset, 4);
             return _view.ReadByte(offset) << 24 |
                    _view.ReadByte(offset + 1) << 16 |
                    _view.ReadByte(offset + 2) << 8 |
@@ -372,6 +382,11 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            // Zero reads nothing. Four delegates to ReadInt, which checks bounds.
+            if (count == 1 || count == 2 || count == 3)
+            {
+                CheckBounds(offset, count);
+            }
             return count switch
             {
                 0 => 0,
@@ -411,6 +426,7 @@ namespace MaxMind.Db
         internal int HashBytes(long offset, int count)
         {
 #if NETSTANDARD2_0
+            CheckBounds(offset, count);
             var code = 17;
             for (var i = 0; i < count; i++)
             {
@@ -432,6 +448,8 @@ namespace MaxMind.Db
         internal bool EqualsBytes(long offset, MemoryMapBuffer other, long otherOffset, int count)
         {
 #if NETSTANDARD2_0
+            CheckBounds(offset, count);
+            other.CheckBounds(otherOffset, count);
             for (var i = 0; i < count; i++)
             {
                 if (_view.ReadByte(offset + i) != other._view.ReadByte(otherOffset + i))
@@ -450,6 +468,7 @@ namespace MaxMind.Db
         internal bool EqualsBytes(long offset, byte[] other, int otherOffset, int count)
         {
 #if NETSTANDARD2_0
+            CheckBounds(offset, count);
             for (var i = 0; i < count; i++)
             {
                 if (_view.ReadByte(offset + i) != other[otherOffset + i])
@@ -512,6 +531,7 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            CheckBounds(offset, size);
             long val = 0;
             for (var i = 0; i < size; i++)
             {
@@ -540,6 +560,7 @@ namespace MaxMind.Db
             }
 
 #if NETSTANDARD2_0
+            CheckBounds(offset, size);
             ulong val = 0;
             for (var i = 0; i < size; i++)
             {
