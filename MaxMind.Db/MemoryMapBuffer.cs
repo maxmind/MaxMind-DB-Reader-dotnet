@@ -259,6 +259,7 @@ namespace MaxMind.Db
         // pointer access removed, at negligible cost (~1 cmp per index).
         // Uses a targeted slice rather than spanning the full buffer so
         // that databases larger than 2 GiB still work (Span length is int).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe ReadOnlySpan<byte> GetSpan(long offset, int count)
         {
             CheckBounds(offset, count);
@@ -271,6 +272,7 @@ namespace MaxMind.Db
         // Reject negative offsets before unsigned addition, which could wrap.
         // For nonnegative offsets and counts, the unsigned sum cannot overflow
         // and keeps offsets beyond long.MaxValue outside the database.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(long offset, int count)
         {
             if (offset < 0 || (ulong)offset + (ulong)count > (ulong)Length)
@@ -301,6 +303,7 @@ namespace MaxMind.Db
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal byte ReadOne(long offset)
         {
             if (_disposed)

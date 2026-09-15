@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased
+
+- Improved NativeAOT lookup performance by inlining decoder and buffer helpers.
+
 ## 5.2.0 (2026-09-10)
 
 - Fixed decoding of some valid four-byte data pointers.
