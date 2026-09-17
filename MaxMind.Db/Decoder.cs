@@ -160,6 +160,7 @@ namespace MaxMind.Db
             return DecodeNested<T>(offset, out outOffset, 0, ref budget, ref payloadBudget, injectables, network);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private T DecodeNested<T>(long offset, out long outOffset, int depth, ref int budget, ref int payloadBudget, InjectableValues? injectables, Network? network) where T : class
         {
             if (Decode(typeof(T), offset, out outOffset, depth, ref budget, ref payloadBudget, injectables, network) is not T decoded)
