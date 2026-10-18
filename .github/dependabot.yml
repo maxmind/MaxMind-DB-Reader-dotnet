@@ -10,6 +10,12 @@ updates:
     open-pull-requests-limit: 10
     cooldown:
       default-days: 7
+    # The source generator pins the lowest Roslyn version that provides
+    # the APIs it uses, so consumers on older SDKs can load it. Bump
+    # these packages by hand.
+    ignore:
+      - dependency-name: Microsoft.CodeAnalysis.CSharp
+      - dependency-name: Microsoft.CodeAnalysis.Analyzers
   - package-ecosystem: github-actions
     directory: /
     schedule:
