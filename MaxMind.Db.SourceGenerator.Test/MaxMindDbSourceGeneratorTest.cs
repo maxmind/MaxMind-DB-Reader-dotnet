@@ -1268,6 +1268,22 @@ namespace MaxMind.Db.SourceGenerator.Test
             Assert.Empty(result.Errors);
         }
 
+        [Fact]
+        public void ReferencesRoslynFloor()
+        {
+            // A consumer whose SDK compiler is older than this version gets
+            // CS9057, and the generator does not run. If you raise the floor,
+            // also update the SDK version in README.md and the comment in
+            // MaxMind.Db.SourceGenerator.csproj.
+            var roslyn = typeof(MaxMindDbSourceGenerator).Assembly
+                .GetReferencedAssemblies()
+                .Where(a => a.Name!.StartsWith("Microsoft.CodeAnalysis", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.NotEmpty(roslyn);
+            Assert.All(roslyn, a => Assert.Equal(new Version(4, 4, 0, 0), a.Version));
+        }
+
         private static GeneratorResult RunGenerator(
             string source,
             bool aotDiagnostics = false,
