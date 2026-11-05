@@ -12,7 +12,7 @@ updates:
       default-days: 7
     # The source generator pins the lowest Roslyn version that provides
     # the APIs it uses, so consumers on older SDKs can load it. Bump it
-    # by hand.
+    # by hand. ReferencesRoslynFloor checks the floor.
     ignore:
       - dependency-name: Microsoft.CodeAnalysis.CSharp
   - package-ecosystem: github-actions
