@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## 5.3.0 (2026-11-17)
 
 - Improved NativeAOT lookup performance by inlining decoder and buffer helpers.
 
