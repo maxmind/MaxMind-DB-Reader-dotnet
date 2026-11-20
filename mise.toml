@@ -6,7 +6,7 @@ disable_backends = [
 ]
 
 [tools]
-dotnet = ["10", "9", "8"]
+dotnet = ["11", "10", "9", "8"]
 "github:houseabsolute/precious" = "latest"
 lychee = "latest"
 node = "latest"

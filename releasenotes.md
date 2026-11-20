@@ -1,5 +1,9 @@
 # Release Notes
 
+## 5.4.0 (TBD)
+
+- Added .NET 11 as a target framework.
+
 ## 5.3.0 (2026-11-17)
 
 - Improved NativeAOT lookup performance by inlining decoder and buffer helpers.

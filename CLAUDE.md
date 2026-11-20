@@ -12,7 +12,8 @@ GeoIP2-dotnet client library.
 
 **Key Technologies:**
 
-- .NET 10.0, .NET 9.0, .NET 8.0, .NET Standard 2.1, and .NET Standard 2.0
+- .NET 11.0, .NET 10.0, .NET 9.0, .NET 8.0, .NET Standard 2.1, and .NET Standard
+  2.0
 - xUnit for testing
 - BenchmarkDotNet for performance benchmarking
 - Modern C# features (nullable reference types, unsafe code, Span<T>)
@@ -404,8 +405,9 @@ public ReturnType MethodName(ParamType paramName)
 
 ## Version Requirements
 
-- **Target Frameworks**: net10.0, net9.0, net8.0, netstandard2.1, netstandard2.0
-- **Language Version**: C# 14.0
+- **Target Frameworks**: net11.0, net10.0, net9.0, net8.0, netstandard2.1,
+  netstandard2.0
+- **Language Version**: C# 15.0
 - **Key Dependencies**:
   - `xunit.v3`: 3.0.0 (testing framework)
   - `BenchmarkDotNet`: For performance benchmarking
